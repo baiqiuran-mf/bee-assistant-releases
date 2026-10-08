@@ -1,39 +1,29 @@
-# 蜜蜂信息采集 · 软件发布页
+# Bee Information · Software Release Page
 
-这是 **蜜蜂信息采集**（Windows 桌面软件）的官方发布仓库。
+This is the official release repository for **Bee Information**, a Windows desktop application.
 
-这个仓库只放**安装包**，不放源代码。客户点下面的链接就能下载最新版。
+This repository contains **installation packages only** and does not include the source code.
 
----
+Customers can use the link below to download the latest version.
 
-## 下载最新版
+## Download the Latest Version
 
-**[点击这里下载最新版安装包 →](https://github.com/baiqiuran-mf/bee-assistant-releases/releases/latest)**
+**[Click here to download the latest installer →](https://github.com/baiqiuran-mf/bee-assistant-releases/releases/latest)**
 
-点开是一个 `.exe` 安装文件（约 132 MB），双击安装即可。
+The page contains a `.exe` installer (approximately 132 MB). Simply download it and double-click the file to install the software.
 
-如果链接打不开，就到 [Releases 页面](https://github.com/baiqiuran-mf/bee-assistant-releases/releases) 手动挑最新的那个版本，下载 `wa-assistant-setup-*.exe`。
+If the link above doesn't open, go to the [Releases page](https://github.com/baiqiuran-mf/bee-assistant-releases/releases) and manually select the latest release. Download the file named `wa-assistant-setup-*.exe`.
 
----
+## Software Updates (For Existing Users)
 
-## 软件更新（已装过旧版的同学）
+If you already have an older version installed, simply click **"Check for Updates"** inside the software to upgrade.
 
-软件装好之后，直接在软件里点 **「检查更新」** 就能升级，不用重新下载安装包 —— 软件会自动只下载变化的部分，很快。
-
----
-
-## 使用前提
-
-- **Windows 电脑**（Win 10 / 11 都可以）
-- 用 **WhatsApp** 或 **Signal** 收发客户消息
-- 如果要用 Signal 采集，**Signal 电脑版需要保持启动并登录状态**
+You don't need to download and reinstall the entire installer. The software will automatically download only the changed parts, making the update process quick and efficient.
 
 ---
 
-## 遇到问题
+## System Requirements
 
-如果安装或使用有问题，联系 Sherry。
+- **Windows PC** (Windows 10 / 11)
 
----
-
-*本页由发布流程自动维护，每次发新版本会自动更新。*
+*This page is automatically maintained by the release process and will be updated whenever a new version is published.*
