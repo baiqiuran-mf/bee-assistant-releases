@@ -5536,6 +5536,37 @@ function tgMsgIsChinese(text) {
  * 下面都跟一个「译」气泡（浅蓝底 + 深蓝 #1f6aa5 中文），紧贴在消息正下方。
  * 数据走 /api/customer/<code>（和旧资料卡底部版同一条路），只画最近的 30 条。
  */
+// 🔴 2026-10-21：Telegram 对话信息顶部的媒体缩略图带（复用 WA 同套 .tv-img-row / .conv-thumb 样式）。
+//   只展示图片/语音/视频（视频用首帧缩略图 + 🎬 角标）；媒体文件本体走 /media/ 路由直接出图。
+function tgMediaStripHtml(msgs) {
+  const mediaMsgs = (msgs || []).filter((m) => {
+    const k = String(m.mediaKind || m.mediaType || '').toLowerCase();
+    return (m.direction === 'in' || m.direction === 'out')
+      && (m.media_path || /^(image|sticker|video|audio|ptt)$/.test(k));
+  });
+  if (!mediaMsgs.length) return '';
+  return '<div class="tv-img-row">' + mediaMsgs.slice(-30).map((m) => {
+    const k = String(m.mediaKind || m.mediaType || '').toLowerCase();
+    if (m.media_path) {
+      const nm = String(m.media_path).split(/[\\/]/).pop();
+      const url = '/media/' + encodeURIComponent(nm);
+      if (k === 'image' || k === 'sticker') {
+        const tip = esc(String(m.body || '').slice(0, 60));
+        return `<img class="conv-thumb" src="${url}" title="${tip}" alt="${tip}" loading="lazy" onerror="this.classList.add('conv-thumb-bad')">`;
+      }
+      if (k === 'video') {
+        return `<a class="conv-thumb-link" href="${url}" target="_blank" rel="noopener" title="点开看视频首帧">`
+          + `<img class="conv-thumb" src="${url}" alt="视频缩略图" loading="lazy" onerror="this.classList.add('conv-thumb-bad')">`
+          + `<span class="conv-thumb-badge">🎬 视频</span></a>`;
+      }
+      if (k === 'audio' || k === 'ptt') return `<a class="conv-ph" href="${url}" target="_blank" rel="noopener">🎤 语音</a>`;
+      return `<a class="conv-ph" href="${url}" target="_blank" rel="noopener">📎 文件</a>`;
+    }
+    const phTxt = k === 'video' ? '视频' : (k === 'audio' || k === 'ptt') ? '语音' : k === 'sticker' ? '贴纸' : '图片';
+    return `<span class="conv-ph conv-ph-wait">${phTxt} · 正在取文件…</span>`;
+  }).join('') + '</div>';
+}
+
 function renderTgChat(code, mp) {
   const pane = mp || 'tele1';
   const box = tgEl(pane, 'tg-chat-body');
@@ -5554,11 +5585,12 @@ function renderTgChat(code, mp) {
     .then((data) => {
       if (tgCodeOf(pane) !== code) return;                // 期间又切走了就别画了（按页签判，别被另一个页签抢
       const msgs = (data && data.messages) || [];
+      const strip = tgMediaStripHtml(msgs);
       if (!msgs.length) {
         box.innerHTML = '<div class="tv-empty">这个客户还没有采到消息</div>';
         return;
       }
-      box.innerHTML = msgs.slice(-30).map((m) => {
+      box.innerHTML = strip + msgs.slice(-30).map((m) => {
         const isOut = m.direction === 'out';
         // 🔴 v2.6.1136：正文尾部时间先剥出来（第二道保险），时间只用方框渲染一次
         const sp = tgSplitTime(String(m.body || '').trim(), m.msg_time);

@@ -7,7 +7,144 @@
 > **规矩：每次改动都要在这里加一条**，写清「优化了什么」和「修好了什么问题」——  
 > 老版本记录一律保留，不许删。
 
-## 2.6.1195（Telegram 客户编号前缀 7A/7B/7C → TA/TB/TC）
+## 2.7.1201（话术编排台内容通用化 · 话题碎片/对话信息全账号共享一份）
+
+> 老板 2026-10-22：非管理员会员登进去，话术编排台的话题碎片和对话信息是从云端按客户号各读一份，A 客户改了 B 客户看不到——内容应该是通用的，不能每个好友单独一份。每个客户单独的只是「任务进度」（用过哪些碎片/对话），先存本机，关闭软件时同步到后台。
+
+### 根因
+- 旧模型：`getBoard(code)` 按客户号从云端拉各自仓库、`board/<编号>.json` 各自独立 → 内容分叉，A 改 B 看不到。
+- 进度（sent）虽已本机化（`.sent.json`），但内容仍 per-code，导致重复维护。
+
+### 改动（只动内容落点 + 关闭序列挂接，四模块零改动）
+| 位置 | 改动 |
+|---|---|
+| src/scriptBoard.js · 新增通用内容层 | `loadMasterBoard/saveMasterBoard` 统一读写 `board/_master.json`（一份，所有客户共享）；`getBoard/saveBoard`、六个增删改写操作全部改走 `_master.json` |
+| src/scriptBoard.js · 进度与内容解耦 | `setSent/setFragmentSentAll` 不再把 sent 写进通用内容，只写 `board/<编号>.sent.json`；进度 key 即使不在本地通用内容里也不抛错（云/历史进度可能引用本地没有的 id） |
+| src/scriptBoard.js · 后台同步 | 新增 `scheduleProgressFlush()`（改动后 3s 防抖推回后台）+ `syncAllProgressToCloud()`（遍历所有 `.sent.json` 经 `cloud.setSent` 推后台），`module.exports` 已导出 |
+| electron/main.js · finishClose | 标准「确定关闭」退出序列里 `await syncAllProgressToCloud()`（8s 超时兜底，失败不阻断退出）—— 关闭软件时把任务进度全量同步到后台数据库 |
+| 删除 | 旧 `pullBoard`（按客户号拉云端仓库已无用） |
+
+### 验证（可核对）
+- `node --check` src/scriptBoard.js / electron/main.js 通过 ✅
+- `node --experimental-sqlite test/board.test.js` → **通过 84 项，失败 0 项** ✅（含老数据迁移、重 id 修复、云端 sent 采纳、V3.7.6 幂等、HTTP 接口与「已发/恢复」本机化护栏）
+- 修复 MIG2 迁移兜底用例：旧 per-code 模型下 `setSent` 会去 per-code 文件找对话，通用化后改为只写进度 map，不再因找不到对话抛错崩测试。
+
+### 未动清单
+- WA①②③④⑤ / Telegram①②③ / Signal / 外置 WA 四个模块代码与界面：零改动。
+- 图片（Tele① 取图）问题：仍 parked，未在本版本处理。
+- board.html / board.js 前端：仅消费 `getBoard/saveBoard` 等既有签名，无需改。
+
+## 2.6.1200（Tele① 取图修复 · 真正改对模块：网页抓取路径从页面 <img> 抓图）
+
+> 老板 2026-10-22：装 2.6.1199 仍看不到图；提示"网页版 T 有图片下载功能，能不能从页面代码获取图片"。
+> 排查后**重大更正**：之前 2.6.1197/1199 改的 `telegramMtproto.js` 根本没在跑——全工程搜 `telegramMtproto.startWatching/ensureWatching/registerWatching` **零调用**，它只用于登录/档案/会话；真正喂「对话信息」的是 **`telegramRead.js`（web.telegram.org 网页抓取器）**，而它**从不下图片字节**，且 `reportBubble`/`readOpenChat` 对空文字气泡直接 `return`/`continue`、`toMessage` 对空 body 直接 `return null`——所以图片消息（无文字）被整个丢掉，带说明的图片也只留文字无图。老板"从页面拿图"的直觉正是正解。
+
+### 改动（严格只动 Telegram 网页抓取路径，WA/Signal/Tele②③ 零改动）
+| 位置 | 改动 |
+|---|---|
+| src/telegramRead.js · pagePollerSource 内 | 新增 `imgToBase64(url)`（页面内 `fetch` blob:/同源 https，FileReader 转 base64，带 8s 超时）+ `grabBubbleImage(el)`（取气泡内第一个 `<img>`） |
+| 同上 · reportBubble / readOpenChat | 抓取时调用 `grabBubbleImage`；**不再因「无文字」就丢**（`if (!body && !media) return/continue`），把 `media:{mime,b64}` 与 `hasAttachment` 一并 `window.__tgReport` 上报 |
+| src/telegramRead.js · toMessage | 解 base64 → `mediaBuffer`(Buffer) + `mediaExt`；空 body 但有图不再 `return null`；`mediaType` 按真实 mime 判 image/video/audio；带 `mediaSrc:'web'` |
+| src/main.js · handleTelegramMessage | `mediaSrc = m.mediaSrc || 'mtproto'`（网页路径现在标 'web'，不再是错的 'mtproto'）；原有 `m.mediaBuffer` 落盘逻辑直接复用 |
+
+### 验证（可核对）
+- `node --check` src/telegramRead.js / src/main.js 通过 ✅
+- **toMessage 单测 5 例全过**（临时导出跑，跑完删）：① 纯图片→Buffer(ext=png,type=image,src=web,hasAtt) ② 带说明图片→image+Buffer ③ 视频→video ④ 无图无文→null(正确丢弃) ⑤ 纯文字→无媒体 ✅
+- ⚠️ 沙箱无 web.telegram.org 登录态，真机回归需老板装 2.6.1200 复测：登录 Tele① → 好友/自己发带图消息 → 对话信息出现缩略图
+- 注：2.6.1197/1199 对 `telegramMtproto.js` 的改动无害（该模块不参与采集），保留不动；本次才是真正修到"在跑的那条路"
+
+## 2.6.1199（Tele① 取图修复 · 改用 teleproto 官方 client.downloadMedia）
+
+> 老板 2026-10-22：2.6.1197 装上去仍看不到 Telegram 好友消息的图片缩略图。要求是去 git 找现成代码复用；但全分支 `git log --all -S` 检索 `downloadFile / InputPhotoFileLocation / saveMedia / getFile / FILE_REFERENCE / getMessages / downloadMedia` 全部 0 提交 —— 仓库历史从来没有过 Telegram 取图代码，无现成可抄，只能基于 teleproto 库自身能力修。
+
+### 根因
+- 2.6.1197 自己写的 `pickPhotoSize` **只接受 `className === 'PhotoSize'`**，但真实对话里最常见的是 **`PhotoSizeProgressive`**（大图、高清图几乎都走这个）→ 永远挑不到尺寸 → 直接 return null → 取不到图。
+- teleproto 官方 `_downloadPhoto`（`node_modules/teleproto/client/downloads.js:509-511`）本来就正确处理 `PhotoSizeProgressive`，自己重写纯属多此一举且写错。
+- 无 `fileReference` 过期兜底（照片访问凭证过期会 `FILE_REFERENCE_EXPIRED`）。
+
+### 改动
+| 位置 | 改动 |
+|---|---|
+| src/telegramMtproto.js · downloadTgMedia | 删掉手写 `pickPhotoSize` 与 `client.downloadFile + Api.InputPhotoFileLocation/InputDocumentFileLocation` 整段逻辑；**主路径改为 teleproto 官方 `client.downloadMedia(media, {})`**（TelegramClient.js:581）。直接把 `msg.media`（MessageMediaPhoto / MessageMediaDocument 实例）交给它，库内部自动挑尺寸（含 PhotoSizeProgressive）、处理 DC / fileReference / msgData，无 outputFile 时返回 Buffer |
+| 同上 | `msg.media` 直接当参数传，避开了"msg 是不是 Api.Message 实例"的歧义（库对 media 对象走 `else` 分支直接下载）；视频仍只取内嵌首帧缩略图字节，不下载整段大文件 |
+| 同上 | 新增 `FILE_REFERENCE_EXPIRED` 兜底：第一次失败时用 `client.getMessages(msg.peerId, {ids:[msg.id]})` 重新拉这条消息拿新 fileReference，再下载一次 |
+| 同上 | 保留 `[telegram-media]` 日志，失败原因可见 |
+
+### 验证（可核对）
+- `node --check` src/telegramMtproto.js 通过 ✅
+- **隔离冒烟测试（临时导出 downloadTgMedia + 假 client 跑通）6 例全过**：① 图片 → 返回 image/jpg + Buffer，且确认传给 `downloadMedia` 的就是 media 对象（非 Message 实例）；② 文档图片 image/png；③ 视频 → 内嵌首帧 video/jpg；④ MessageMediaEmpty → null；⑤ 无媒体 → null；⑥ 首次 `FILE_REFERENCE_EXPIRED` → getMessages 重试成功（2 次调用）✅
+- 导入已去掉子路径 `downloadMedia`，函数体不再引用 `Api.InputPhotoFileLocation / InputDocumentFileLocation / pickPhotoSize`，无悬空引用 ✅
+- ⚠️ 沙箱无 Telegram 登录态 + better-sqlite3 未装，无法真机回归；需老板本机装 2.6.1199 复测：登录 Tele① → 好友发带图消息 → 对话信息顶部出现缩略图带
+
+## 2.6.1198（启动进度条 + 加载完自动进入账号密码）
+
+> 老板 2026-10-22：软件刚启动慢、一片空白像卡住；要求把前期启动动作做成缓存进度条，全部加载完再进入"输入账号密码"的位置。
+
+### 改动
+| 位置 | 改动 |
+|---|---|
+| src/bootLog.js | 新增 `onStep(fn)` 订阅器：`step()` 触发时回调所有订阅者（不影响原有的文件落盘）。进度条靠它拿到每一步 |
+| public/splash.html（新） | 启动进度条窗的界面：进度条 + 百分比 + 阶段清单（绿勾逐条点亮），自包含、用软件三色线配色（绿 #63bd93 / 紫 #a795de / 橙 #ecb27c），暴露 `window.__addStep/__done` |
+| electron/splash.js（新） | 无边框 / 置顶 / 跳过任务栏的启动窗；`createSplash()` / `addStep(label)` / `done()`。用 `webContents.executeJavaScript` 把 bootLog 的每一步推到界面，加载完才关窗 |
+| src/main.js（startCore） | 在真实启动节点插入 `bootLog.step`：清理历史空消息与假号码 → 校验知识库与 AI 配置 → 生成浏览器插件令牌 → 创建本地 HTTP 服务 → 启动图片延时重抓 → 启动器预热（Signal S1~S3）→ 加载 Telegram 登录/登出控制器。进度条显示的就是这些真实动作 |
+| electron/main.js | `startDesktop` 启动即建 splash 并订阅 `bootLog.onStep → Splash.addStep`；主窗口 `did-finish-load` 后 `Splash.done()` 收尾关窗；未登录云端则 `openSettingsWindow('cloud')` 自动落到「编号 + 密码」登录界面 |
+
+### 验证（可核对）
+- `node --check`：src/bootLog.js / electron/splash.js / src/main.js / electron/main.js 全部通过 ✅
+- `bootLog.onStep` 订阅冒烟测试：step() 触发 listener 收到全部步骤 ✅
+- 逻辑贯通：进度条显示的每一步 = startCore 真实执行的重活，非编造（老板说"五个阶段我也不清楚"，故直接从代码核出真实阶段）
+- ⚠️ 沙箱无 Electron 运行环境，无法真机看进度条动画；需老板本机装 2.6.1198 复测：双击后应先看到进度条 → 100% 后进入云端「编号 + 密码」登录
+
+## 2.6.1197（Tele① 取图修复 · 改用 client.downloadFile 直连）
+
+> 老板 2026-10-21 实机反馈：2.6.1196 装好后 Tele① 仍然拿不到图片。根因定位 + 改用仓库已实证可用的取图路径。
+
+### 根因
+- 上一版 `downloadTgMedia` 调的是 `downloadMedia(client, msg)`。teleproto 的 `downloadMedia` 要求第一个参数是**活的 `Api.Message` 实例**（`messageOrMedia instanceof Api.Message` 才当成消息、去取它的 `.media`）。
+- 实际运行里事件链传下来的 `msg` 已不是 `Api.Message` 实例，`downloadMedia` 把它**误当成 media 本身**，`media instanceof MessageMediaPhoto` 不成立 → 走到 `else` 抛 `Cannot download media of type Message` → 被外层 `catch` 吞掉 → `mediaBuffer` 恒为 null → 取不到图（静默失败，所以日志里看不到）。
+- git 仓库历史 `git log -S "downloadMedia"` 为空：本仓库从来没有过 Telegram 图片下载代码可复用；唯一被实证能真下载字节的路径是 `downloadProfilePhoto` → `client.downloadFile(new Api.InputPeerPhotoFileLocation(...))`。
+
+### 改动
+| 位置 | 改动 |
+|---|---|
+| src/telegramMtproto.js | **重写 `downloadTgMedia`**：弃用 `downloadMedia(client, msg)`，改走 `client.downloadFile` + 显式 `Api.InputPhotoFileLocation`（图片）/ `Api.InputDocumentFileLocation`（图片型文档/语音），`dcId` 取自 `photo.dcId`/`doc.dcId`。这是仓库里头像下载同一条已验证底层路径，绕开 downloadMedia 的实例判定 |
+| src/telegramMtproto.js | 新增 `pickPhotoSize(photo)`：从 `photo.sizes` 里挑一个有服务端真实文件的 `PhotoSize`（跳过 CachedSize/StrippedSize/Empty/PathSize），用它的 `type` 做 `thumbSize`，确保 `upload.GetFile` 能下到字节 |
+| src/telegramMtproto.js | 视频仍只取内嵌首帧缩略图（`doc.thumbs[].bytes`），不下载整段；图片型文档 / 语音走 `InputDocumentFileLocation` 下载 |
+| src/telegramMtproto.js | `downloadMedia` 降级为**兜底**（仅当直连 `client.downloadFile` 没拿到字节、且 msg 恰好是 Api.Message 实例时再试一次）；全程加 `console.warn('[telegram-media] ...')` 日志，失败原因可见 |
+| src/main.js / public/app.js | **未改动**（落盘 + 缩略图带逻辑沿用 2.6.1196，本身没问题，问题只在"取不到字节"） |
+
+### 验证（可核对）
+- `node --check src/telegramMtproto.js` ✅
+- 运行时确认 `Api.InputPhotoFileLocation` / `Api.InputDocumentFileLocation` / `Api.PhotoSize` / `Api.DocumentEmpty` / `Api.PhotoEmpty` 均为 function ✅
+- `require('./src/telegramMtproto.js')` 运行时加载成功 ✅
+- ⚠️ 沙箱无 Telegram 登录态 + `better-sqlite3` 未装，**无法真机采集回归**；取图是否真生效需老板本机装 2.6.1197 后实测。若仍取不到，看日志里 `[telegram-media]` 开头的报错即可定位（最常见是 `FILE_REFERENCE_EXPIRED`，需补"重新拉消息"逻辑）
+
+## 2.6.1196（Telegram 提醒净化 + Tele① 对话缩略图）
+
+> 老板 2026-10-21 三条指令：① Saved Messages 不提醒不建档（堵住采集日志漏出）；② 解答好友唯一不变编码＝数字 peerId；③ 对话信息上方展示图片缩略图（Tele① 先落地）。
+
+### 改动
+| 位置 | 改动 |
+|---|---|
+| src/main.js | **问题①**：`telegramHooks().onMessages` 广播处（`~3147`）加 `&& !telegramMerge.isSavedMessage(...)`，Saved Messages 不再被广播到前端 → 采集日志/左栏/顶栏全部不再出现它（后端建档拦截面 `2478` 早已 `return null`，此次补的是广播漏点） |
+| src/telegramMtproto.js | **问题③**：新增 `downloadTgMedia()` —— 用 `client.downloadMedia`（teleproto）把 Tele①（MTProto 直连）抓到的图片/语音/视频首帧落盘；视频只取首帧缩略图（不下载整段）；文档/未知大文件第一版不下载。失败/超时（20s）一律返回 null，绝不耽误消息入库 |
+| src/main.js | **问题③**：`handleTelegramMessage` 落盘 `data/media/TG<账号>_<msgId>.<ext>`（`mediaSrc='mtproto'`、`mediaFetchState='done'`），写盘失败降级为无媒体、消息照存；`saveMessage` 不再写死空媒体 |
+| public/app.js | **问题③**：`renderTgChat` 顶部新增 `tgMediaStripHtml()` 缩略图带（复用 WA 的 `.tv-img-row`/`.conv-thumb` 样式与 `/media/` 路由），图片/贴纸出图、视频出首帧图+🎬角标、语音/文件出链接 |
+
+### 验证（可核对）
+- `node --check`：src/main.js / src/telegramMtproto.js / public/app.js 全部通过 ✅
+- `require('./src/telegramMtproto.js')` 运行时加载成功，确认 `teleproto/client/downloads` 的 `downloadMedia` 子路径导入有效 ✅
+- 老行为零破坏：无媒体消息 `mediaPath=''`/`mediaFetchState='na'` 与原逻辑完全一致；Tele②/③ 网页抓取路径不带 `mediaBuffer`，保持原样不落盘（符合"先只做 Tele①"的口径）
+
+### 未动清单（本版严守）
+WA 系列、Signal、Tele②/③ 抓取逻辑、`ids.js`、`db.js` 媒体表结构（列早已存在）、WA 对话信息缩略图（原功能不动）、四模块红线互不串线。
+
+### 待老板真机确认
+- 🔴 本沙箱无 Telegram 登录态 + 原生 better-sqlite3 未装，**无法跑真实账号采集回归**；媒体下载逻辑按"失败即降级"写成，需老板在本机登录 Tele① 后实采一条带图/语音/视频的消息，看缩略图带是否正常出现。
+- 问题②（好友唯一不变编码）：答案为数字 `peerId`，落库为 `wa_jid=tg:<peerId>`（如 `tg:7207229390`），`@username` 为次要标识；内部编号 `TA00001…` 与 peerId 独立、靠 `wa_jid`/`tg_username` 关联。无需改代码。
+
+
+
 
 > 老板要求：Telegram 客户文件名编号前缀，从 `7A/7B/7C` 改成 `TA/TB/TC`。🔴 **本版只改 Tele①（账号 7）的编号生成，WA 系列、Signal、Tele②/③（账号 8/9）一行代码都没动**。
 

@@ -25,6 +25,7 @@ const os = require('os');
  *   全程同步写也是同一个道理 —— 异步写在闪退时会随进程一起丢。
  *   细节见 src/bootLog.js 文件头。 */
 const bootLog = require('../src/bootLog');
+const Splash = require('./splash'); // v2.6.1198：启动进度条窗
 let _pkgVer = '未知';
 try { _pkgVer = require('../package.json').version || '未知'; } catch (e) { /* 版本读不到不影响启动 */ }
 bootLog.init({ 应用版本: _pkgVer, 打包: (typeof app !== 'undefined' && app.isPackaged) ? '是（安装版）' : '否（开发模式）' });
@@ -274,6 +275,15 @@ function createWindow(PORT) {
     pushWinState();
     // 走到这一行 = 界面已经真的出来了。以后再出问题，就不属于「启动闪退」那一类了。
     bootLog.step('主窗口页面加载完成，界面已交给用户');
+    // 🔴 v2.6.1198：启动进度条收尾 + 加载完自动落到「编号 + 密码」登录界面
+    Splash.done();
+    try {
+      const cloudMod = require('../src/cloud');
+      if (cloudMod && typeof cloudMod.isLoggedIn === 'function' && !cloudMod.isLoggedIn()) {
+        // splash 关闭后再弹云端登录（设置 → ☁ 云端），避免抢在进度条上面
+        setTimeout(() => { try { openSettingsWindow('cloud'); } catch (e) { /* 登入窗开不了不影响主流程 */ } }, 750);
+      }
+    } catch (e) { /* 云端模块读不到不影响主流程 */ }
   });
   return win;
 }
@@ -813,6 +823,12 @@ app.on('will-quit', () => { try { globalShortcut.unregisterAll(); } catch (e) { 
 /** 正常模式：开桌面窗口 */
 async function startDesktop() {
   try {
+    // 🔴 v2.6.1198：启动进度条窗 —— 先把 splash 起出来，再订阅 bootLog 的每一步，
+    // 这样 startCore 里的重活（数据库 / 采集模块 / HTTP 服务 …）都能实时画成进度条，
+    // 不再是一片空白让人觉得"卡"。
+    Splash.createSplash();
+    bootLog.onStep((label) => Splash.addStep(label));
+
     // startCore 内部已经把 HTTP 服务 listen 好了，返回的 srv 是【正在监听】的 server。
     // 这里绝对不能再 listen 一次 —— 再 listen 会立刻抛
     // ERR_SERVER_ALREADY_LISTEN，把 startDesktop 打断，窗口就永远打不开
@@ -1048,13 +1064,25 @@ async function runCloseSequence() {
   }
 }
 
-function finishClose(win, statusText, wrotePending) {
+async function finishClose(win, statusText, wrotePending) {
   tmSyncDone = true;
   if (win && !win.isDestroyed()) {
     // 把最终结论（成功/失败）发给渲染进程，覆盖之前的「重试中…」字样
     try { win.webContents.send('tm:sync-progress', { phase: wrotePending ? 'gaveUp' : 'done', status: statusText }); } catch (e) {}
     try { win.webContents.send('tm:sync-end'); } catch (e) {}
   }
+  // 🔴 2026-10-22：退出前把话术编排台的任务进度（board/<编号>.sent.json）全量推回后台。
+  //   进度本机先存、改动时也会防抖同步（scriptBoard.scheduleProgressFlush）；
+  //   这里在「确定关闭」的标准退出序列里再兜底一次，确保关闭软件时一定同步到后台数据库。
+  //   失败/超时都不阻断退出（最多等 8s）。
+  try {
+    const sb = require('../src/scriptBoard');
+    if (sb && typeof sb.syncAllProgressToCloud === 'function') {
+      const sync = sb.syncAllProgressToCloud();
+      const timeout = new Promise((_r, rej) => setTimeout(() => rej(new Error('timeout')), 8000));
+      await Promise.race([sync, timeout]).catch(() => {});
+    }
+  } catch (e) { /* 进度同步失败不阻断退出 */ }
   // 留出 ~1.6s 让用户看清最终结论（同步成功/失败），再真正退出
   setTimeout(() => {
     try { shutdownSessions(); } catch (e) {}

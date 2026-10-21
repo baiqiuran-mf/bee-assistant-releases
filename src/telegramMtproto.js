@@ -21,9 +21,10 @@
 
 const fs = require('fs');
 const path = require('path');
-const { TelegramClient } = require('teleproto');
+const { TelegramClient, Api } = require('teleproto');
 const { StringSession } = require('teleproto/sessions');
 const { NewMessage } = require('teleproto/events');
+// 🔴 取图走 teleproto 官方 client.downloadMedia(media, {})（返回 Buffer），不单独引子路径
 /* v2.6.1136：Telegram 专属的「Saved Messages 判定 / 正文时间剥离」——
  * 与网页抓取（src/telegramRead.js）共用同一套 Telegram 自己的规则，
  * 但**不**与 WhatsApp / Signal 共用任何东西（各渠道抓取方式不同，不许合并）。 */
@@ -131,6 +132,77 @@ async function getPeerEntity(client, peer, cache) {
  * 把 teleproto 的 Api.Message 映射成 handleTelegramMessage 需要的统一结构。
  * 取「对话对方」实体当客户（私聊时对方=user，群聊时=群），不受发送方向影响。
  */
+// 🔴 2026-10-21：把一条 Telegram 媒体消息的字节抓下来（图片/语音/视频首帧）。
+//   失败/超时都返回 null —— 绝不耽误消息入库。视频只取首帧缩略图，避免下载整段大文件。
+function withTimeout(p, ms) {
+  return Promise.race([
+    p,
+    new Promise((_, rej) => setTimeout(() => rej(new Error('media download timeout')), ms)),
+  ]);
+}
+// 🔴 2026-10-22（v2.6.1199 修复）：Telegram 媒体字节下载。
+//   主路径 = teleproto 官方 client.downloadMedia(media, {})（TelegramClient.js:581）。
+//   直接把 msg.media（MessageMediaPhoto / MessageMediaDocument 实例）交给它 —— 库内部自动：
+//   ① 挑尺寸（含最常见的 PhotoSizeProgressive，2.6.1197 自己写的 pickPhotoSize 漏了它 → 永远挑不到 → 取不到图）；
+//   ② 处理 DC / fileReference / msgData；无 outputFile 时返回 Buffer（downloads.js getWriter 走 BinaryWriter）。
+//   不再手写 InputPhotoFileLocation / pickPhotoSize —— 那是 2.6.1197 仍取不到图的根因。
+//   视频：只取内嵌首帧缩略图字节，避免下载整段大文件。
+async function downloadTgMedia(client, msg) {
+  try {
+    const media = msg && msg.media;
+    if (!media || !media.className || media.className === 'MessageMediaEmpty') return null;
+    const log = (...a) => console.warn('[telegram-media]', ...a);
+    let type = '';
+    let ext = '';
+    let buf = null;
+
+    if (media.className === 'MessageMediaPhoto') {
+      type = 'image'; ext = 'jpg';
+    } else if (media.className === 'MessageMediaDocument') {
+      const doc = media.document || {};
+      const mime = (doc.mimeType) ? String(doc.mimeType).toLowerCase() : '';
+      if (mime.startsWith('image/')) { type = 'image'; ext = mime.split('/')[1] || 'jpg'; }
+      else if (mime.startsWith('audio/') || mime === 'application/ogg') { type = 'audio'; ext = mime.split('/')[1] || 'ogg'; }
+      else if (mime.startsWith('video/')) {
+        // 视频：只取内嵌首帧缩略图，避免下载整段大文件
+        const th = (doc.thumbs && doc.thumbs.length) ? doc.thumbs[doc.thumbs.length - 1] : doc.thumb;
+        const tb = (th && th.bytes) ? Buffer.from(th.bytes) : null;
+        if (tb && tb.length) { type = 'video'; ext = 'jpg'; buf = tb; }
+        else { log('视频无内嵌首帧，跳过'); return null; }
+      } else {
+        return null; // 文档/未知大文件：第一版不下载
+      }
+    } else {
+      return null;
+    }
+
+    // 视频已经用内嵌首帧字节，无需再下载
+    if (!buf) {
+      try {
+        buf = await withTimeout(client.downloadMedia(media, {}), 25000);
+      } catch (e) {
+        const m = (e && e.message) || String(e);
+        // fileReference 过期：重新拉一次这条消息拿新 fileReference，再试一次
+        if (/FILE_REFERENCE_EXPIRED/i.test(m) && msg.peerId && msg.id) {
+          try {
+            const fresh = await client.getMessages(msg.peerId, { ids: [msg.id] });
+            const fm = fresh && fresh[0] && fresh[0].media;
+            if (fm) buf = await withTimeout(client.downloadMedia(fm, {}), 25000);
+          } catch (e2) { log('fileReference 重试失败：', (e2 && e2.message) || e2); }
+        } else {
+          log('downloadMedia 失败：', m);
+        }
+      }
+    }
+
+    if (!buf || !Buffer.isBuffer(buf) || !buf.length) return null;
+    return { type, ext: ext || 'bin', buffer: buf };
+  } catch (e) {
+    console.warn('[telegram-media] downloadTgMedia 异常：', (e && e.message) || e);
+    return null;
+  }
+}
+
 async function toContract(msg, acc, client, cache) {
   if (!msg) return null;
   const peer = msg.peerId;
@@ -178,6 +250,18 @@ async function toContract(msg, acc, client, cache) {
    *   只有名字才是 "Saved Messages"，所以两个判据都要过一遍（键 / 名称）。 */
   if (tgMerge.isSavedMessage(chatKey, name)) return null;
 
+  // 🔴 2026-10-21：Tele①（MTProto 直连）能真下载媒体 —— 图片/语音/视频首帧直接落盘，
+  //   对话信息顶部缩略图带复用 WA 同套 /media/ 机制。文档类大文件第一版不下载（只标类型）。
+  let mediaType = '';
+  let mediaBuffer = null;
+  let mediaExt = '';
+  if (hasAttachment) {
+    try {
+      const dl = await downloadTgMedia(client, msg);
+      if (dl) { mediaType = dl.type; mediaBuffer = dl.buffer; mediaExt = dl.ext; }
+    } catch (e) { /* 下载失败绝不影响消息入库 */ }
+  }
+
   return {
     accountId: acc.id,
     displayJid: `tg:${chatKey}`,
@@ -193,6 +277,10 @@ async function toContract(msg, acc, client, cache) {
     username,
     phone,
     isGroup,
+    // 🔴 2026-10-21：媒体落盘所需字段（main.js handleTelegramMessage 消费；无媒体时为空）
+    mediaType,
+    mediaBuffer,
+    mediaExt,
   };
 }
 

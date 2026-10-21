@@ -33,6 +33,7 @@ let dir = null;
 let file = null;
 let seq = 0;
 let startedAt = 0;
+let stepListeners = [];
 
 /** 挑一个「大概率能写」的目录；都写不了就退回系统临时目录 */
 function pickDir() {
@@ -124,6 +125,19 @@ function step(label, detail) {
   const ms = String(Date.now() - startedAt).padStart(6, ' ');
   write('[' + localTime() + ' +' + ms + 'ms] #' + String(seq).padStart(2, '0') + ' ' + label
     + (detail ? '  →  ' + detail : ''));
+  for (const fn of stepListeners) {
+    try { fn(label, detail); } catch (e) { /* 监听器出错绝不拖累启动 */ }
+  }
+}
+
+/**
+ * 订阅每一步进度（v2.6.1198 启动进度条用）。
+ * 传入的回调会在每次 step() 时被调用（label 是这一步在干什么，detail 是补充信息）。
+ * 多个订阅者互不干扰；回调内抛错会被静默吞掉。
+ * @param {(label:string, detail?:string)=>void} fn
+ */
+function onStep(fn) {
+  if (typeof fn === 'function' && !stepListeners.includes(fn)) stepListeners.push(fn);
 }
 
 /**
@@ -196,6 +210,7 @@ function logDir() {
 module.exports = {
   init,
   step,
+  onStep,
   warn,
   fail,
   installCrashHooks,

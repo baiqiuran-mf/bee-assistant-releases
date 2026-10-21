@@ -217,6 +217,7 @@ const translationMemory = require('./translationMemory'); // v2.6.1122：跨消�
 const scanConfig = require('./scanConfig'); // v2.6.1171：扫描图片用哪家视觉模型（服务商 key）
 const voiceConfig = require('./voiceConfig'); // v2.6.1188：语音识别用哪家模型（服务商 key）
 const { createServer } = require('./server');
+const bootLog = require('./bootLog'); // v2.6.1198：启动进度条订阅每一步
 
 ai.setAiConfig(cfg.ai || {});
 knowledge.setKnowledgeConfig(cfg.knowledge || {});
@@ -2586,15 +2587,37 @@ function handleTelegramMessage(m, outcome) {
   // 不 await、不阻塞；取不到也不影响下面存消息/通知/广播。有四道保险，见autoFetchTelegramPhone 注释。
   if (isNew) autoFetchTelegramPhone(customer.code, accountId, m);
 
+  // 🔴 2026-10-21：Tele①（MTProto）抓到的媒体落盘到 data/media/，复用 WA 同套 media_path 机制。
+  //   m.mediaBuffer 只在 MTProto 路径带下来（网页抓取路径不带 → 保持原行为不落盘）。
+  //   落盘失败绝不阻断入库：降级为无媒体，消息照样存。
+  let mediaPath = '';
+  let mediaSrc = 'none';
+  let mediaType = m.mediaType || (m.hasAttachment && !String(m.body || '').trim() ? 'image' : '');
+  let mediaFetchState = 'na';
+  if (m.mediaBuffer && m.mediaExt) {
+    try {
+      const safeId = String(m.msgId || 'x').replace(/[^A-Za-z0-9_-]/g, '');
+      const safeExt = String(m.mediaExt).replace(/[^A-Za-z0-9]/g, '');
+      const fname = `TG${accountId}_${safeId}.${safeExt}`;
+      fs.writeFileSync(path.join(MEDIA_DIR, fname), m.mediaBuffer);
+      mediaPath = fname;
+      mediaSrc = m.mediaSrc || 'mtproto';
+      mediaFetchState = 'done';
+      if (m.mediaType) mediaType = m.mediaType;
+    } catch (e) {
+      console.warn(`[telegram] 媒体落盘失败（不影响消息入库）：${(e && e.message) || e}`);
+    }
+  }
+
   const saved = db.saveMessage({
     customerCode: customer.code,
     accountId,
     direction: m.direction,
     body: m.body,
-    mediaPath: '',
-    mediaSrc: 'none',
-    mediaType: m.hasAttachment && !m.body.trim() ? 'image' : '',
-    mediaFetchState: 'na', // 同 Signal：附件解密未接，写 'na' 别让它被 WhatsApp 重抓链路捞走
+    mediaPath,
+    mediaSrc,
+    mediaType,
+    mediaFetchState,
     // 用 chatKey + msgId 拼成全局唯一键：同一消息重复采集/重捞不会重复入库
     waMsgId: `${m.customerKey}:${m.msgId}`,
     msgTs: m.ts,
@@ -3144,7 +3167,11 @@ function telegramHooks() {
         }
 
         // v2.5.1085：把收到的消息实时广播给前端（Tele① 应用版原生界面即时刷新）
-        if (m && m.accountId >= 7) broadcastSafe('telegram_message', m);
+        // 🔴 2026-10-21：Saved Messages（收藏夹/系统消息）已在 2478 处不建档不入库，
+        //   这里再拦一道 —— 否则它仍会被广播到前端、在采集日志里写出「收到新消息 · Saved Messages」。
+        if (m && m.accountId >= 7 && !telegramMerge.isSavedMessage(m.customerKey, m.name)) {
+          broadcastSafe('telegram_message', m);
+        }
       }
       broadcastSafe('pending', { code: '*', pending: db.countUnprocessed(), unread: db.totalUnread() });
     },
@@ -3519,14 +3546,18 @@ async function startCore(opt = {}) {
     console.warn('清理假号码失败：', e.message);
   }
 
+  bootLog.step('清理历史空消息与假号码');
   for (const taskName of ['translate', 'suggest']) {
     if (!ai.isReady(taskName)) {
       console.warn(`AI「${taskName}」未配置：${ai.notConfiguredReason(taskName)}　—— 消息照常入库，只是不翻译/不出建议`);
     }
   }
 
+  bootLog.step('校验知识库与 AI 配置');
+
   // 浏览器插件（网页版 WhatsApp 抓图）连接令牌：启动即生成/读取，确保插件能连上
   ensureWaWebToken();
+  bootLog.step('生成浏览器插件连接令牌');
 
   // 🔴 v2.6.1176：Telegram 登录/登出控制器原本在「启动同步路径」里创建（依赖 telegramLogin 模块 ~0.3s），
   //   连同 telegramRead（~1.2s MTProto）一起挪到「窗口出现后」由 loadTelegramModules() 延迟加载与创建，
@@ -3558,6 +3589,7 @@ async function openTelegramAccount(id) {
 
   const deps = { db, doc, ai, knowledge, cfg, getAccountStates, openAccount, openTelegramAccount, prefillChat, jumpToChat, simulateMessage, clearSimulated, grabProfilePhone, update, signalStatus, launcher, configDrift: CONFIG_DRIFT, ingestExtensionImage, startBackgroundServices, telegramLogin: null, telegramLogout: null, telegramWebView };
   const httpServer = createServer(deps, PORT);
+  bootLog.step('创建本地 HTTP 服务');
   broadcast = httpServer.broadcast;
 
   /* 🔴 v2.6.1176：延迟加载 Telegram 重模块（telegramRead ~1.2s MTProto + telegramLogin ~0.3s），
@@ -3597,11 +3629,13 @@ async function openTelegramAccount(id) {
     // 回填给 HTTP server（server.js 在请求时才读 deps.telegramLogin / deps.telegramLogout）
     deps.telegramLogin = tgLogin;
     deps.telegramLogout = tgLogout;
+    bootLog.step('加载 Telegram 登录/登出控制器');
   }
 
   // 窗口出现后再加载（不阻塞登录界面）：setTimeout(0) 在 startDesktop 的 createWindow 之后才执行
   setTimeout(loadTelegramModules, 0);
 
+  bootLog.step('启动图片延时重抓');
   /*
    * 图片延时重抓（v1.1.0）：启动了就挂上，历史上没抓到图的会补一轮。
    * reset:false —— 'fail' 的不复活（试满 5 轮就彻底放手），
@@ -3617,6 +3651,7 @@ async function openTelegramAccount(id) {
    * 启动器预热（v1.5.1017）：把 S1~S3 的配置从 config.yaml 读出来建表。
    * 🔴 失败也不影响主流程：launcher 内部所有异常都兜住，界面只是没灯而已。
    */
+  bootLog.step('启动器预热（Signal S1~S3）');
   try {
     launcher.init(cfg);
     console.log('启动器配置就绪（S1~S3 Signal 三开）');

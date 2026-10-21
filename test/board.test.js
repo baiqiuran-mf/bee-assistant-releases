@@ -18,6 +18,12 @@ const { DIR: DATA_DIR } = require('./_isolate.js');
 const DB = path.join(DATA_DIR, 'assistant.db');
 for (const s of ['', '-wal', '-shm']) if (fs.existsSync(DB + s)) fs.unlinkSync(DB + s);
 
+const boardDir = path.join(DATA_DIR, 'board');
+// 2026-10-22 起内容改成「通用一份」(board/_master.json)，测试用 resetMaster 复位到干净通用主数据
+function resetMaster() {
+  try { fs.unlinkSync(path.join(boardDir, '_master.json')); } catch (e) { /* 没有就当已清 */ }
+}
+
 const store = require('../src/db');
 const doc = require('../src/customerDoc');
 const ai = require('../src/ai');
@@ -88,10 +94,11 @@ const boolean = (v) => typeof v === 'boolean';
   f = r.fragments.find((x) => x.id === M0.id);
   check('两个都送到时仍保持互斥（不会同时为真）', f.morning !== f.evening, f);
 
-  console.log('\n=== 数据层 · 老数据迁移（只有 evening） ===');
-  const boardDir = path.join(DATA_DIR, 'board');
+  console.log('\n=== 数据层 · 老数据迁移（只有 evening → 归一化） ===');
+  // 2026-10-22 起内容改成「通用一份」(board/_master.json)，老数据迁移针对这份主文件
+  resetMaster();
   fs.mkdirSync(boardDir, { recursive: true });
-  fs.writeFileSync(path.join(boardDir, 'OLD001.json'), JSON.stringify({
+  fs.writeFileSync(path.join(boardDir, '_master.json'), JSON.stringify({
     day: 1,
     fragments: [
       { id: 'f_breakfast', name: '早餐照片（食物）', evening: false, dialogues: [] },
@@ -106,7 +113,7 @@ const boolean = (v) => typeof v === 'boolean';
   check('老「称呼对换」→ 通用', og('f_title').morning === false && og('f_title').evening === false, og('f_title'));
   check('老「白天经历」→ 晚上', og('f_dayexp').morning === false && og('f_dayexp').evening === true, og('f_dayexp'));
   check('认不出的自定义碎片 → 通用', og('f_custom').morning === false && og('f_custom').evening === false, og('f_custom'));
-  const persisted = JSON.parse(fs.readFileSync(path.join(boardDir, 'OLD001.json'), 'utf8'));
+  const persisted = JSON.parse(fs.readFileSync(path.join(boardDir, '_master.json'), 'utf8'));
   check('迁移结果已回写落盘', persisted.fragments.every((x) => boolean(x.morning)));
 
   console.log('\n=== 数据层 · 新增碎片 ===');
@@ -121,17 +128,26 @@ const boolean = (v) => typeof v === 'boolean';
   const nf3 = ab3.fragments[ab3.fragments.length - 1];
   check('带 day:2 的新碎片落到 Day2', nf3.day === 2, nf3);
 
-  console.log('\n=== 数据层 · Day 迁移（老数据没有 day） ===');
+  console.log('\n=== 数据层 · Day 迁移（老数据没有 day → 补 Day1） ===');
+  // 重新造一份「缺 day」的老主文件，验证加载时被补成 Day1
+  resetMaster();
+  fs.writeFileSync(path.join(boardDir, '_master.json'), JSON.stringify({
+    fragments: [
+      { id: 'f_x', name: '没 day 的碎片', morning: false, evening: false, dialogues: [] },
+    ],
+  }, null, 2));
   const ob2 = scriptBoard.getBoard('OLD001');
   check('老数据缺 day 的碎片被补成 Day1',
     ob2.fragments.every((x) => x.day === 1), ob2.fragments.map((x) => x.day));
+  resetMaster();
 
   console.log('\n=== 数据层 · 对话 id 全看板唯一（防「改到别的碎片」） ===');
   const seedAll = scriptBoard.getBoard('SEEDCHK').fragments.flatMap((f) => f.dialogues.map((d) => d.id));
   check('种子数据的对话 id 全看板唯一', new Set(seedAll).size === seedAll.length, seedAll);
 
-  // 老数据：两个碎片都从 d1/d2 编号（历史 bug 现场）
-  fs.writeFileSync(path.join(boardDir, 'DUP001.json'), JSON.stringify({
+  // 老数据：两个碎片都从 d1/d2 编号（历史 bug 现场）→ 通用主文件里也要修唯一
+  resetMaster();
+  fs.writeFileSync(path.join(boardDir, '_master.json'), JSON.stringify({
     day: 1,
     fragments: [
       { id: 'f_a', name: '甲', evening: false, dialogues: [
@@ -144,7 +160,7 @@ const boolean = (v) => typeof v === 'boolean';
   check('老数据里撞车的对话 id 被自动改成唯一',
     dupIds.length === 3 && new Set(dupIds).size === 3, dupIds);
   check('迁移结果已回写落盘',
-    new Set(JSON.parse(fs.readFileSync(path.join(boardDir, 'DUP001.json'), 'utf8'))
+    new Set(JSON.parse(fs.readFileSync(path.join(boardDir, '_master.json'), 'utf8'))
       .fragments.flatMap((f) => f.dialogues.map((d) => d.id))).size === 3);
 
   const bDid = dup.fragments.find((f) => f.id === 'f_b').dialogues[0].id;
@@ -158,9 +174,11 @@ const boolean = (v) => typeof v === 'boolean';
     afterDel.fragments.find((f) => f.id === 'f_b').dialogues.length === 0
     && afterDel.fragments.find((f) => f.id === 'f_a').dialogues.length === 2,
     afterDel.fragments.map((f) => f.dialogues.length));
+  resetMaster();
 
   /* ================= 2. HTTP 层 ================= */
   console.log('\n=== HTTP · 独立浮窗页面与接口 ===');
+  resetMaster();   // 内容改成通用一份后，HTTP 用例从干净的通用主数据（种子碎片）开始
   const cfg = loadConfig();
   const prefillCalls = [];
   const srv = createServer({
@@ -378,7 +396,8 @@ const boolean = (v) => typeof v === 'boolean';
 
   /* 老数据迁移：云端仓库里 sent=true、本地没记过 → 读一次就采纳成本地已发（老进度不丢） */
   const MIG = 'MIG001';
-  fs.writeFileSync(path.join(boardDir, `${MIG}.json`), JSON.stringify({
+  resetMaster();
+  fs.writeFileSync(path.join(boardDir, '_master.json'), JSON.stringify({
     day: 1,
     fragments: [
       { id: 'f_m1', name: '迁移话题', day: 1, morning: false, evening: false, dialogues: [
@@ -398,6 +417,7 @@ const boolean = (v) => typeof v === 'boolean';
   const migOff = scriptBoard.setSent(MIG, 'dm1', false);
   const migF2 = migOff.fragments.find((x) => x.id === 'f_m1');
   check('迁移过来的已发也能正常恢复', migF2.dialogues[0].sent === false && migF2.sentCount === 0);
+  resetMaster();
 
   /* 迁移兜底（v1.0.8 实测踩到的真情况）：云端那份记录已经被清了（sent 全 false），
      但本地看板文件里还留着 sent=true（以前从云端抄下来的）——
@@ -428,8 +448,9 @@ const boolean = (v) => typeof v === 'boolean';
     { sentCount: adopted.fragments[0].sentCount });
   check('兜底认回来的结果也落了盘（下次不用再认）',
     JSON.parse(fs.readFileSync(scriptBoard.sentFile(MIG2), 'utf8')).dn1 === true);
+  scriptBoard.setSent(MIG2, 'dn1', false);
   check('兜底认回来的旧已发，用户点「恢复」照样能取消（不会被反复顶回来）',
-    scriptBoard.setSent(MIG2, 'dn1', false).fragments[0].sentCount === 0);
+    JSON.parse(fs.readFileSync(scriptBoard.sentFile(MIG2), 'utf8')).dn1 === false);
 
   try { srv.server.close(); } catch (e) { /* ignore */ }
 
@@ -443,7 +464,8 @@ const boolean = (v) => typeof v === 'boolean';
   fsx.mkdirSync(vDir, { recursive: true });
   const oldJson = pathx.join(vDir, `${OLD}.json`);
   const oldSent = pathx.join(vDir, `${OLD}.sent.json`);
-  // 造一个「老客户」看板：只有 1 个老碎片，且其中一条已发
+  // 2026-10-22 起内容改成「通用一份」：老客户也读 board/_master.json（通用主数据），
+  // 不再读自己那份 per-code 文件。这里造一份 legacy per-code 文件，验证它不影响通用内容。
   fsx.writeFileSync(oldJson, JSON.stringify({
     day: 1,
     fragments: [{
@@ -452,8 +474,8 @@ const boolean = (v) => typeof v === 'boolean';
     }],
   }, null, 2), 'utf8');
 
-check('老客户看板只有 1 个碎片（本地不预置云端内容）',
-    scriptBoard.getBoard(OLD).fragments.length === 1 && scriptBoard.hasV376(OLD) === false);
+check('老客户的 per-code 文件不再是内容来源（看板 = 通用主数据，碎片数远大于 1）',
+    scriptBoard.getBoard(OLD).fragments.length > 100 && scriptBoard.hasV376(OLD) === false);
 
   // 2026-10-06 起：V3.7.6 段只放云端主数据，桌面端**不再本地补全**
   // （这是老板明确要求：只要写进管理员后台数据库，不要加在本地）。
@@ -462,19 +484,13 @@ check('老客户看板只有 1 个碎片（本地不预置云端内容）',
     r1.added === 0 && r1.cloudOnly === true, JSON.stringify(r1));
 
   const after = scriptBoard.getBoard(OLD);
-  check('调用后老碎片原样保留（名字没被覆盖）',
-    after.fragments[0].name === '老客户自己的碎片'
-    && after.fragments[0].dialogues[0].en === '老板改过的英文');
-  check('调用后老碎片的「已发」标记没被冲掉',
-    after.fragments[0].dialogues[0].sent === true);
-  check('本地碎片数不变（仍 1，云端内容不落地本地）',
-    after.fragments.length === 1, String(after.fragments.length));
+  check('调用后内容仍是通用主数据（不受 per-code 文件干扰）', after.fragments.length > 100);
   check('hasV376 恒 false（前端据此隐藏「补全新话术」按钮）',
     scriptBoard.hasV376(OLD) === false);
 
   const r2 = scriptBoard.importV376(OLD);
   check('再点一次：仍是空操作（无副作用）', r2.added === 0, JSON.stringify(r2));
-  check('再点一次后碎片数仍是 1', scriptBoard.getBoard(OLD).fragments.length === 1);
+  check('再点一次后碎片数仍是通用主数据规模', scriptBoard.getBoard(OLD).fragments.length > 100);
 
   const r3 = scriptBoard.importV376(OLD);
   check('第三次点：仍然 added=0（反复点无副作用）', r3.added === 0);

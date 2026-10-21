@@ -129,7 +129,11 @@ function toMessage(raw, accountId) {
   const stripped = tgMerge.stripTrailingTime(raw.body);
   const body = stripped.body;
   const msgTime = stripped.msgTime || '';
-  if (!body) return null;   // 空消息 / 只剩时间 —— 一律不入库（与 WA / Signal 同铁律）
+  // 🔴 v2.6.1200：网页抓取路径也能带图了——raw.media.{mime,data(base64)} 由页面 fetch <img> 后回传。
+  const mediaBuffer = (raw.media && raw.media.data) ? Buffer.from(String(raw.media.data), 'base64') : null;
+  const mediaExt = (raw.media && raw.media.mime) ? (String(raw.media.mime).split('/')[1] || 'jpg').replace(/[^a-z0-9]/gi, '') : '';
+  // 空消息 / 只剩时间 —— 一律不入库；但有图片字节的（纯图片消息）要保留，不能丢
+  if (!body && !mediaBuffer) return null;
   if (!chatKey) return null;
   /* 🔴 v2.6.1194 老板拍板：「红框中的对话信息抓到的是时间，这个不用抓到对话信息里面。
    *   这个日期的格式都是单纯的 英文+数字 的日期格式，所以抓到这个就不要加入到『对话信息』栏里面。」
@@ -147,13 +151,13 @@ function toMessage(raw, accountId) {
 
   return {
     key: chatKey,
-    // 去重键：chatKey + msgId；msgId 为空时退回 正文哈希，至少避免同一条无限重复
-    msgId: msgId || `${chatKey}:${body.slice(0, 40)}`,
+    // 去重键：chatKey + msgId；msgId 为空时退回 正文哈希（纯图片退回 'img'），至少避免同一条无限重复
+    msgId: msgId || `${chatKey}:${(body || 'img').slice(0, 40)}`,
     direction: raw.direction === 'out' ? 'out' : 'in',
     body,
     // 剥出来的显示时间（14:03 / 下午 2:03）—— 单独一个字段，绝不留在 body 里
     msgTime,
-    hasAttachment: !!raw.hasAttachment,
+    hasAttachment: !!(raw.hasAttachment || mediaBuffer),
     // Telegram 网页不给可靠的服务端时间戳（DOM 只有「今天 14:03」这种相对时间），
     // 用抓取时刻的本地时间即可（排序用，够用）
     ts: raw.ts || new Date().toISOString(),
@@ -167,7 +171,15 @@ function toMessage(raw, accountId) {
     // wa_jid 这一列在 Telegram 没有 JID 概念，但 NOT NULL 且被 UNIQUE 用着，
     // 用 `tg:` 前缀值，一眼能看出是 Telegram 渠道来的，排查不跟 WA 混淆。
     displayJid: `tg:${chatKey}`,
-    mediaType: body ? '' : 'image',
+    // 🔴 v2.6.1200：有图字节时按真实 mime 判类型（image/video/audio），否则退回「无正文→image」旧逻辑
+    mediaType: mediaBuffer
+      ? ((raw.media.mime || '').startsWith('video') ? 'video'
+        : (raw.media.mime || '').startsWith('audio') ? 'audio' : 'image')
+      : (body ? '' : 'image'),
+    // 🔴 v2.6.1200：网页抓取路径现在也带图了（之前一直不带，所以对话里永远看不到图）
+    mediaBuffer,
+    mediaExt,
+    mediaSrc: mediaBuffer ? 'web' : '',
     isGroup: !!raw.isGroup,
   };
 }
@@ -261,6 +273,44 @@ function pagePollerSource() {
   function currentPeerId() {
     try { const m = String(location.hash || '').match(/^#(-?\d{3,})$/); return m ? m[1] : ''; } catch (e) { return ''; }
   }
+  // 🔴 v2.6.1200：从气泡里的 <img> 抓图片字节。
+  //   网页版 Telegram 已经把图加载到 <img>（blob: 或同源 https），在页面上下文里 fetch 就能拿到，
+  //   自带登录态，比 MTProto 另走一条下载链路稳得多。返回 { mime, b64 }（b64 不带 data: 前缀）。
+  async function imgToBase64(url) {
+    try {
+      const ctrl = (typeof AbortController === 'function') ? new AbortController() : null;
+      let timer = null;
+      if (ctrl) { timer = setTimeout(() => { try { ctrl.abort(); } catch (e) {} }, 8000); }
+      const resp = await fetch(url, { credentials: 'include', signal: ctrl ? ctrl.signal : undefined });
+      if (timer) clearTimeout(timer);
+      if (!resp || !resp.ok) return null;
+      const blob = await resp.blob();
+      const dataUrl = await new Promise((res, rej) => {
+        const r = new FileReader();
+        r.onload = () => res(r.result);
+        r.onerror = () => rej(new Error('readAsDataURL failed'));
+        r.readAsDataURL(blob);
+      });
+      const mm = /^data:([^;]+);base64,(.*)$/.exec(String(dataUrl || ''));
+      if (!mm) return null;
+      return { mime: mm[1], b64: mm[2] };
+    } catch (e) { return null; }
+  }
+  // 在气泡里找第一张能抓的图，返回 { mime, b64 } 或 null
+  async function grabBubbleImage(el) {
+    try {
+      const imgs = (el && el.querySelectorAll) ? el.querySelectorAll('img') : [];
+      for (const im of imgs) {
+        const src = (im && im.src) ? String(im.src) : '';
+        if (/^blob:/i.test(src) || /^https?:\/\//i.test(src)) {
+          const r = await imgToBase64(src);
+          if (r && r.b64) return r;
+        }
+      }
+    } catch (e) {}
+    return null;
+  }
+
   if (!window.__seen) window.__seen = {};
 
   // ===== 方案③：拦截系统通知（与页面结构无关，右下角弹窗就是它）=====
@@ -294,7 +344,7 @@ function pagePollerSource() {
   }
 
   // ===== 方案②：MutationObserver 实时捕获新渲染的消息气泡 =====
-  function reportBubble(el) {
+  async function reportBubble(el) {
     try {
       const mid = (el.getAttribute && el.getAttribute('data-mid')) || '';
       const dir = (el.classList && (el.classList.contains('is-out') || el.classList.contains('out'))) ? 'out' : 'in';
@@ -304,7 +354,9 @@ function pagePollerSource() {
         if (sub && sub.textContent) { body = sub.textContent.trim(); break; }
       }
       if (!body) body = (el.textContent || '').trim();
-      if (!body) return;
+      // 🔴 v2.6.1200：图片消息（无文字 body）也要抓，不能因为是空文字就丢弃
+      const media = await grabBubbleImage(el);
+      if (!body && !media) return;
       let chatName = '';
       const t = first(SEL.chatTitle);
       if (t) chatName = t.textContent.trim();
@@ -313,7 +365,7 @@ function pagePollerSource() {
         if (dt && !/telegram/i.test(dt)) chatName = dt;
       }
       if (!chatName) chatName = 'Telegram';
-      const uid = chatName + '|' + (mid || body.slice(0, 40));
+      const uid = chatName + '|' + (mid || body.slice(0, 40)) + (media ? '|img' : '');
       if (window.__seen[uid]) return;
       window.__seen[uid] = 1;
       if (typeof window.__tgReport === 'function') {
@@ -321,6 +373,7 @@ function pagePollerSource() {
           chatKey: currentPeerId() || chatName, chatName, username: currentUsername(),
           msgId: mid, direction: dir, body, ts: new Date().toISOString(),
           isGroup: /群|group/i.test(chatName), via: 'observer',
+          media: media || undefined, hasAttachment: !!media,
         });
       }
     } catch (e) {}
@@ -364,8 +417,10 @@ function pagePollerSource() {
       const mid = (b.getAttribute && b.getAttribute('data-mid')) || '';
       const dir = (b.classList && (b.classList.contains('is-out') || b.classList.contains('out'))) ? 'out' : 'in';
       const body = textOf(b, SEL.bubbleText);
-      if (!body) continue;
-      const uid = chatName + '|' + (mid || body.slice(0, 40));
+      // 🔴 v2.6.1200：图片消息（无文字 body）也要抓，不能因为是空文字就跳过
+      const media = await grabBubbleImage(b);
+      if (!body && !media) continue;
+      const uid = chatName + '|' + (mid || body.slice(0, 40)) + (media ? '|img' : '');
       if (window.__seen[uid]) continue;
       window.__seen[uid] = 1;
       n += 1;
@@ -375,6 +430,7 @@ function pagePollerSource() {
             chatKey: currentPeerId() || chatName, chatName, username: currentUsername(),
             msgId: mid, direction: dir, body,
             ts: new Date().toISOString(), isGroup: /群|group/i.test(chatName),
+            media: media || undefined, hasAttachment: !!media,
           });
         } catch (e) {}
       }

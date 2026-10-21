@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<title>蜜蜂信息采集 · 启动中</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+      "Microsoft YaHei", sans-serif;
+    background: #ffffff;
+    color: #1f2329;
+    overflow: hidden;
+  }
+  #app {
+    height: 100%;
+    padding: 30px 32px 26px;
+    display: flex;
+    flex-direction: column;
+  }
+  .dots { display: flex; gap: 7px; margin-bottom: 16px; }
+  .dots i { width: 9px; height: 9px; border-radius: 50%; display: block; }
+  .dots .g { background: #63bd93; }
+  .dots .p { background: #a795de; }
+  .dots .o { background: #ecb27c; }
+  h1 { font-size: 16px; font-weight: 600; letter-spacing: .5px; }
+  .sub { font-size: 13px; color: #8a8f99; margin-top: 4px; }
+  .bar-wrap {
+    margin-top: 20px;
+    height: 8px;
+    border-radius: 4px;
+    background: #eef0f3;
+    overflow: hidden;
+  }
+  #bar {
+    height: 100%;
+    width: 6%;
+    border-radius: 4px;
+    background: #63bd93;
+    transition: width .35s ease;
+  }
+  .bar-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #8a8f99;
+    margin-top: 8px;
+  }
+  #list {
+    margin-top: 18px;
+    flex: 1 1 auto;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+  }
+  .step { display: flex; align-items: center; gap: 9px; font-size: 13px; color: #4b5563; }
+  .step .tick {
+    width: 14px; height: 14px; border-radius: 50%;
+    background: #63bd93; flex: 0 0 auto;
+    position: relative;
+  }
+  .step .tick::after {
+    content: "";
+    position: absolute;
+    left: 4px; top: 2px;
+    width: 4px; height: 7px;
+    border: solid #fff;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+  #done {
+    margin-top: 14px;
+    font-size: 13px;
+    color: #63bd93;
+    font-weight: 600;
+    opacity: 0;
+    transition: opacity .3s ease;
+  }
+  #done.show { opacity: 1; }
+</style>
+</head>
+<body>
+  <div id="app">
+    <div class="dots"><i class="g"></i><i class="p"></i><i class="o"></i></div>
+    <h1>蜜蜂信息采集</h1>
+    <div class="sub">正在启动，先缓存前期加载项…</div>
+    <div class="bar-wrap"><div id="bar"></div></div>
+    <div class="bar-row"><span id="state">加载中</span><span id="pct">6%</span></div>
+    <div id="list"></div>
+    <div id="done">加载完成，正在进入登录…</div>
+  </div>
+
+<script>
+  (function () {
+    var bar = document.getElementById('bar');
+    var pct = document.getElementById('pct');
+    var list = document.getElementById('list');
+    var state = document.getElementById('state');
+    var doneEl = document.getElementById('done');
+    var steps = 0;
+    var MAX_VISIBLE = 7;
+
+    function clampPct(p) { return Math.max(6, Math.min(100, p)); }
+
+    window.__addStep = function (label) {
+      if (!label) return;
+      steps += 1;
+      // 进度条按步数软增长，封顶 92%（done 时再补到 100%）
+      var p = clampPct(6 + steps * 13);
+      bar.style.width = p + '%';
+      pct.textContent = p + '%';
+
+      var row = document.createElement('div');
+      row.className = 'step';
+      var tick = document.createElement('span');
+      tick.className = 'tick';
+      var txt = document.createElement('span');
+      txt.textContent = label;
+      row.appendChild(tick);
+      row.appendChild(txt);
+      list.appendChild(row);
+
+      // 只保留最近若干条，避免列表过长溢出
+      while (list.childElementCount > MAX_VISIBLE) {
+        list.removeChild(list.firstChild);
+      }
+    };
+
+    window.__done = function () {
+      bar.style.width = '100%';
+      pct.textContent = '100%';
+      state.textContent = '就绪';
+      doneEl.classList.add('show');
+    };
+  })();
+</script>
+</body>
+</html>

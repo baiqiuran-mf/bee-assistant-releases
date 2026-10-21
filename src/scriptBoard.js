@@ -67,13 +67,7 @@ function cloudReady() {
   } catch (e) { return false; }
 }
 
-/** 云端在线时，写操作之后把合并结果拉回来返回（保持调用方拿到的 board 是最新的）。
- *  顺手叠加本地「已发」状态、并刷新本地快照。 */
-async function pullBoard(code) {
-  const c = cloudMod();
-  const b = await c.getBoard(code);
-  return (b && Array.isArray(b.fragments)) ? mergeCloudBoard(code, b) : b;
-}
+// 2026-10-22：内容改为通用一份（board/_master.json），不再按客户号拉云端仓库，故 pullBoard 已无用。
 
 function uid(prefix) {
   return (prefix || 'x') + Math.random().toString(36).slice(2, 8);
@@ -1649,6 +1643,41 @@ function boardFile(code) {
  * ========================================================================= */
 function sentFile(code) { return path.join(BOARD_DIR, `${safeCode(code)}.sent.json`); }
 
+/* ---------------- 通用内容（一份，所有客户共享） ----------------
+ * 2026-10-22 优化（老板要求）：话题碎片 + 对话信息 是「通用内容」，全账号只存一份，
+ * 不再按客户号分叉（之前 board/<编号>.json 各自独立，导致 A 客户改了 B 客户看不到）。
+ * 内容统一落在 board/_master.json；任务进度（用过哪些碎片/对话）仍按
+ * board/<编号>.sent.json 各自保留（见 sentFile），本机先存、联网时同步后台。
+ */
+const MASTER_BOARD_KEY = '_master';
+function masterBoardFile() { return path.join(BOARD_DIR, `${MASTER_BOARD_KEY}.json`); }
+
+function loadMasterBoard() {
+  const f = masterBoardFile();
+  if (fs.existsSync(f)) {
+    try {
+      const b = JSON.parse(fs.readFileSync(f, 'utf8'));
+      if (b && Array.isArray(b.fragments)) {
+        if (normalizeBoard(b)) saveMasterBoard(b);  // 老数据补字段 / 修 id 后落盘
+        return b;
+      }
+    } catch (e) { /* 烂文件就重建 */ }
+  }
+  // 首次：优先用云端通用主数据缓存，否则本地内置种子；两者都是「通用内容」
+  const seed = cloudMasterSeed() || buildSeed();
+  normalizeBoard(seed);
+  saveMasterBoard(seed);
+  return seed;
+}
+
+function saveMasterBoard(board) {
+  ensureDir();
+  // 落盘前统一算一遍完成标记：任何一次增删改之后，返回给界面的 board 里
+  // sentCount / total / doneAll 都是新的（不然新加的碎片 / 新加的对话会带着旧值）
+  markDone(board);
+  fs.writeFileSync(masterBoardFile(), JSON.stringify(board, null, 2), 'utf8');
+}
+
 function loadSentMap(code) {
   try {
     const f = sentFile(code);
@@ -1823,20 +1852,11 @@ function buildSeed() {
 
 /** 【异步版】读看板：登录云端时用云端的合并结果（主数据 + 自己编号的差异）；
  *  否则退回本地。界面走这个；测试和老调用点仍可用同步的 getBoard()。 */
+/** 【异步版】读看板：内容 = 通用一份（board/_master.json），进度 = 按客户号叠加。
+ *  这样在 A 客户档案的编排台里加的碎片，切到 B 客户也能立刻看到（老板 2026-10-22 要求）。 */
 async function getBoardAsync(code) {
-  if (cloudReady()) {
-    try {
-      const b = await cloudMod().getBoard(code);
-      if (b && Array.isArray(b.fragments)) {
-        // 内容用云端的，但「已发」以本机为准（v1.0.8 起不再往云端写）
-        return mergeCloudBoard(code, b);
-      }
-    } catch (e) { /* 云端抖动 → 退回本地，不影响用 */ }
-  }
-  const local = getBoard(code);
-  // 本地啥都没有（新客户 + 没登录云端）时，用云端缓存的主数据当种子，
-  // 这样「后台加了碎片 → 新客户也看得到」在没有云端登录的情况下也成立。
-  return local;
+  const board = loadMasterBoard();
+  return applySentState(code, clone(board));
 }
 
 /** 把云端合并结果落一份本地快照（只读用途，不要拿它当权威）。 */
@@ -1865,30 +1885,14 @@ function cloudMasterSeed() {
 }
 
 function getBoard(code) {
-  const f = boardFile(code);
-  if (fs.existsSync(f)) {
-    try {
-      const b = JSON.parse(fs.readFileSync(f, 'utf8'));
-      if (b && Array.isArray(b.fragments)) {
-        if (normalizeBoard(b)) saveBoard(code, b); // 老数据补上 morning 后立刻落盘
-        return applySentState(code, b);            // 「已发」以本机为准，并算好 doneAll
-      }
-    } catch (e) { /* 烂文件就重建 */ }
-  }
-  // ① 有云端同步下来的主数据 → 用它（这样后台改的话术，本地新客户也能看到）
-  // ② 没有 → 退回内置种子
-  const seed = cloudMasterSeed() || buildSeed();
-  normalizeBoard(seed); // 补上每个碎片的 day、修 id
-  saveBoard(code, seed);
-  return applySentState(code, seed);
+  // 内容 = 通用一份（board/_master.json）；进度 = 按客户号叠加（不写回主内容）
+  const board = loadMasterBoard();
+  return applySentState(code, clone(board));
 }
 
 function saveBoard(code, board) {
-  ensureDir();
-  // 落盘前统一算一遍完成标记：任何一次增删改之后，返回给界面的 board 里
-  // sentCount / total / doneAll 都是新的（不然新加的碎片 / 新加的对话会带着旧值）
-  markDone(board);
-  fs.writeFileSync(boardFile(code), JSON.stringify(board, null, 2), 'utf8');
+  // 通用内容统一落 _master.json（code 仅保留签名兼容，不再按客户号分叉）
+  saveMasterBoard(board);
 }
 
 function findFragment(board, fid) {
@@ -1914,43 +1918,27 @@ function findDialogue(board, did, fid) {
  */
 
 async function addFragmentAsync(code, name, patch) {
-  if (cloudReady()) {
-    const p = (patch && typeof patch === 'object') ? patch : { evening: patch };
-    const morning = !!p.morning;
-    const dn = Number(p.day);
-    await cloudMod().addFragment(code, {
-      name: String(name || '').trim() || '新碎片',
-      morning,
-      evening: morning ? false : !!p.evening,
-      day: (Number.isFinite(dn) && dn >= 1) ? Math.floor(dn) : 1,
-    });
-    return pullBoard(code);
-  }
+  // 内容通用一份：直接落到 board/_master.json（不再写 per-code 云端仓库 / 不再分叉）
   return addFragment(code, name, patch);
 }
 
 async function updateFragmentAsync(code, fid, patch) {
-  if (cloudReady()) { await cloudMod().updateFragment(code, fid, patch); return pullBoard(code); }
   return updateFragment(code, fid, patch);
 }
 
 async function deleteFragmentAsync(code, fid) {
-  if (cloudReady()) { await cloudMod().deleteFragment(code, fid); return pullBoard(code); }
   return deleteFragment(code, fid);
 }
 
 async function addDialogueAsync(code, fid, en, zh) {
-  if (cloudReady()) { await cloudMod().addDialogue(code, fid, { en, zh }); return pullBoard(code); }
   return addDialogue(code, fid, en, zh);
 }
 
 async function updateDialogueAsync(code, did, patch, fid) {
-  if (cloudReady()) { await cloudMod().updateDialogue(code, did, { ...patch, fid: fid || patch.fid || '' }); return pullBoard(code); }
   return updateDialogue(code, did, patch, fid);
 }
 
 async function deleteDialogueAsync(code, did, fid) {
-  if (cloudReady()) { await cloudMod().deleteDialogue(code, did, fid); return pullBoard(code); }
   return deleteDialogue(code, did, fid);
 }
 
@@ -1967,36 +1955,35 @@ async function setFragmentSentAllAsync(code, fid, sent, ids) {
 }
 
 function addFragment(code, name, patch) {
-  const b = getBoard(code);
+  const b = loadMasterBoard();
   // 兼容旧调用：第三参传布尔 = evening
   const p = (patch && typeof patch === 'object') ? patch : { evening: patch };
   const morning = !!p.morning;
   const evening = morning ? false : !!p.evening; // 互斥：早上优先
-  // 片段属于第几天（前端在「Day N」页里添加时带上 day；没带就归 Day 1）
   const dn = Number(p.day);
   const day = (Number.isFinite(dn) && dn >= 1) ? Math.floor(dn) : 1;
   b.fragments.push({ id: uid('f'), name: String(name || '').trim() || '新碎片', morning, evening, day, dialogues: [] });
-  saveBoard(code, b);
-  return b;
+  saveMasterBoard(b);
+  return applySentState(code, clone(b));
 }
 
 function updateFragment(code, fid, patch) {
-  const b = getBoard(code);
+  const b = loadMasterBoard();
   const f = findFragment(b, fid);
   if (!f) throw new Error('fragment not found');
   if (typeof patch.name === 'string') f.name = patch.name.trim() || f.name;
   // 三态互斥：勾了早上就取消晚上，勾了晚上就取消早上；都不勾 = 通用
   if (typeof patch.morning === 'boolean') { f.morning = patch.morning; if (patch.morning) f.evening = false; }
   if (typeof patch.evening === 'boolean') { f.evening = patch.evening; if (patch.evening) f.morning = false; }
-  saveBoard(code, b);
-  return b;
+  saveMasterBoard(b);
+  return applySentState(code, clone(b));
 }
 
 function deleteFragment(code, fid) {
-  const b = getBoard(code);
+  const b = loadMasterBoard();
   b.fragments = b.fragments.filter((f) => f.id !== fid);
-  saveBoard(code, b);
-  return b;
+  saveMasterBoard(b);
+  return applySentState(code, clone(b));
 }
 
 /* ================= V3.7.6.1 导入段 · 追加到已有看板（2026-10-06）=================
@@ -2029,7 +2016,7 @@ function hasV376(code) {
 }
 
 function addDialogue(code, fid, en, zh) {
-  const b = getBoard(code);
+  const b = loadMasterBoard();
   const f = findFragment(b, fid);
   if (!f) throw new Error('fragment not found');
   f.dialogues = f.dialogues || [];
@@ -2039,55 +2026,91 @@ function addDialogue(code, fid, en, zh) {
     zh: String(zh || '').trim(),
     sent: false,
   });
-  saveBoard(code, b);
-  return b;
+  saveMasterBoard(b);
+  return applySentState(code, clone(b));
 }
 
 function updateDialogue(code, did, patch, fid) {
-  const b = getBoard(code);
+  const b = loadMasterBoard();
   const hit = findDialogue(b, did, fid);
   if (!hit) throw new Error('dialogue not found');
   if (typeof patch.en === 'string') hit.dialogue.en = patch.en;
   if (typeof patch.zh === 'string') hit.dialogue.zh = patch.zh;
-  saveBoard(code, b);
-  return b;
+  saveMasterBoard(b);
+  return applySentState(code, clone(b));
 }
 
 /** 只删「那一条」（按引用删，不会因为 id 撞车连带删掉别的碎片里的同名条） */
 function deleteDialogue(code, did, fid) {
-  const b = getBoard(code);
+  const b = loadMasterBoard();
   const hit = findDialogue(b, did, fid);
   if (hit) hit.fragment.dialogues = hit.fragment.dialogues.filter((d) => d !== hit.dialogue);
-  saveBoard(code, b);
-  return b;
+  saveMasterBoard(b);
+  return applySentState(code, clone(b));
 }
 
-/** 标已发 / 恢复（只写本机 sent.json；看完返回的看板已带 doneAll）。 */
+/** 标已发 / 恢复（只写本机 sent.json；看完返回的看板已带 doneAll）。
+ *  ⚠️ 通用内容模型下：对话 id 可能来自云端/历史进度，未必在本地通用 _master.json 里，
+ *  因此即使通用看板找不到该对话也照常记录——sent.json 是纯进度 map，不依赖内容存在，
+ *  绝不为一个不存在于本地的进度 id 抛错（否则迁移兜底场景会崩）。 */
 function setSent(code, did, sent, fid) {
-  const b = getBoard(code);
-  const hit = findDialogue(b, did, fid);
-  if (!hit) throw new Error('dialogue not found');
-  hit.dialogue.sent = !!sent;
   const map = loadSentMap(code);
   map[did] = !!sent;   // 连「恢复」的 false 也明确记下，免得又被云端老值采纳回来
   saveSentMap(code, map);
-  return applySentState(code, b);
+  scheduleProgressFlush();   // 联网时把进度推回后台（防抖）
+  const b = loadMasterBoard();
+  return applySentState(code, clone(b));
 }
 
 /** 整个碎片「全部已发 / 全部恢复」。
- *  ids：界面传它手里当前看到的那几条（最准）；不传就按本地看板里的对话算。 */
+ *  ids：界面传它手里当前看到的那几条（最准）；不传就按通用内容里该碎片的对话算。
+ *  找不到碎片也照常跳过（进度纯 map，不为不存在的内容抛错）。 */
 function setFragmentSentAll(code, fid, sent, ids) {
-  const b = getBoard(code);
-  const f = findFragment(b, fid);
-  if (!f) throw new Error('fragment not found');
+  const b = loadMasterBoard();
   const targets = (Array.isArray(ids) && ids.length)
     ? ids.map(String)
-    : (f.dialogues || []).map((d) => d.id);
+    : (() => { const f = findFragment(b, fid); return f ? (f.dialogues || []).map((d) => d.id) : []; })();
   const map = loadSentMap(code);
   targets.forEach((id) => { map[id] = !!sent; });
   saveSentMap(code, map);
-  (f.dialogues || []).forEach((d) => { if (targets.includes(d.id)) d.sent = !!sent; });
-  return applySentState(code, b);
+  scheduleProgressFlush();   // 联网时把进度推回后台（防抖）
+  return applySentState(code, clone(b));
+}
+
+/* ---------------- 进度同步后台（即时防抖） ----------------
+ * 任务进度（用过哪些碎片/对话）按 board/<编号>.sent.json 本机先存（见上）；
+ * 联网时把每个客户的进度推回后台数据库（cloud.setSent）。采用「即时防抖」：
+ * 改动后 3 秒合并推一次，比「只在关闭时推」更稳（意外退出也不丢）。
+ * 仍导出 syncAllProgressToCloud() 供需要时（如退出前）主动全量推一次。 */
+let _progressFlushTimer = null;
+function scheduleProgressFlush() {
+  if (!cloudReady()) return;
+  if (_progressFlushTimer) return;
+  _progressFlushTimer = setTimeout(() => {
+    _progressFlushTimer = null;
+    syncAllProgressToCloud().catch(() => {});
+  }, 3000);
+}
+
+async function syncAllProgressToCloud() {
+  const c = cloudMod();
+  if (!c || !cloudReady()) return { ok: false, reason: 'no-cloud' };
+  if (!fs.existsSync(BOARD_DIR)) return { ok: true, pushed: 0 };
+  let entries = [];
+  try { entries = fs.readdirSync(BOARD_DIR).filter((f) => /^[A-Za-z0-9_]+\.sent\.json$/.test(f)); }
+  catch (e) { return { ok: false, reason: 'read-fail' }; }
+  let pushed = 0;
+  for (const f of entries) {
+    const code = f.replace(/\.sent\.json$/, '');
+    let map = {};
+    try { map = JSON.parse(fs.readFileSync(path.join(BOARD_DIR, f), 'utf8')) || {}; }
+    catch (e) { continue; }
+    for (const did of Object.keys(map)) {
+      try { await c.setSent(code, did, !!map[did], ''); pushed++; }
+      catch (e) { /* 单条失败不影响其它 */ }
+    }
+  }
+  return { ok: true, pushed };
 }
 
 module.exports = {
@@ -2108,5 +2131,6 @@ module.exports = {
   addFragmentAsync, updateFragmentAsync, deleteFragmentAsync,
   addDialogueAsync, updateDialogueAsync, deleteDialogueAsync,
   setSentAsync, setFragmentSentAllAsync,
+  syncAllProgressToCloud,
   cloudReady,
 };
