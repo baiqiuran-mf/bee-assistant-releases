@@ -7,6 +7,34 @@
 > **规矩：每次改动都要在这里加一条**，写清「优化了什么」和「修好了什么问题」——  
 > 老版本记录一律保留，不许删。
 
+## 2.6.1190（修复 ARS千问（阿里语音）语音转写 400：接入 Qwen-ASR 兼容模式调用）
+
+> 老板实测 ARS千问 报 `✗ aliyun_asr HTTP 400（请求地址 .../services/audio/asr/transcription/v1/chat/completions）：No static resource`。根因三层：① 之前 ARS千问 在 `PROVIDER_CATALOG` 无 `type` 字段，被当普通 OpenAI 走 Whisper 式 `/audio/transcriptions` 多段上传；② 阿里 Qwen-ASR（Qwen3-ASR-Flash）是 OpenAI **兼容**模式，要的是 `POST /compatible-mode/v1/chat/completions` + `input_audio`（base64 本地文件），格式根本不同；③ 老板填的 baseUrl 是原始异步转写端点 `.../services/audio/asr/transcription`，连端点都错了。本轮把阿里专属调用接上，并修正目录说明。
+
+### 改动（守四模块红线 / 只动 AI 设置相关文件）
+| 位置 | 改前 | 改后 |
+|---|---|---|
+| src/ai.js `PROVIDER_CATALOG` `ars_qianwen` | 无 `type`；note 写「非 OpenAI 格式、专属调用接入中、选它暂回退默认 asr」 | 加 `type: 'aliyun_asr'`；note 改为「走 OpenAI 兼容模式 `POST /compatible-mode/v1/chat/completions` + `input_audio`（base64 本地文件，无需先传 URL），baseUrl 只填到 /compatible-mode/v1 即可」 |
+| src/ai.js `transcribe()` | 只有 Whisper 式 `audioUrl(p)` 多段上传一条路 | 在开头加专属分支：`p.key==='ars_qianwen' \|\| p.type==='aliyun_asr'` 时改走 `transcribeAliyun()` |
+| src/ai.js 新增 `transcribeAliyun(p, model, audioPath)` | 无 | 按 `cleanBase(p.baseUrl)+'/chat/completions'` 发 `application/json`，body `{model, messages:[{role:'user',content:[{type:'input_audio',input_audio:{data:'data:<mime>;base64,...'}}]}]}`，解析 `choices[0].message.content`；失败时 `httpError('aliyun_asr', ...)` |
+
+### 验证
+- `node --check src/ai.js` ✅
+- `node -e "require('./src/ai.js').catalog().providers.find(p=>p.key==='ars_qianwen')"` → `type='aliyun_asr'`，`sample='https://dashscope.aliyuncs.com/compatible-mode/v1'` ✅
+- 复刻 `cleanBase` 验证 URL 构造：正确 baseUrl → `https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions` ✅；错误 baseUrl（`.../services/audio/asr/transcription`）→ `.../transcription/v1/chat/completions` ✗（证明**光改代码不够，老板必须把设置里的 baseUrl 改成 `https://dashscope.aliyuncs.com/compatible-mode/v1`**）。
+- 服务商总数仍为 15（未新增条目，仅修既有）。
+
+### 能力边界（如实写，防误会）
+- 选「ARS千问（阿里语音）」：本轮起**真正能转写**（走 Qwen-ASR 兼容模式 chat/completions + input_audio）。生效前提：设置里 baseUrl 填 `https://dashscope.aliyuncs.com/compatible-mode/v1`、模型填 `Qwen3-ASR-Flash`、Key 为阿里百炼 `sk-` 开头。
+- ⚠️ **老板需手动改设置**：把之前填错的 `.../services/audio/asr/transcription`（异步文件转写端点）改成 `https://dashscope.aliyuncs.com/compatible-mode/v1`，否则仍报 404/400。
+- 选「钱多多语音识别」：未动，仍走既有 OpenAI 兼容 `/audio/transcriptions`。
+
+### 未动清单（本次没碰的文件）
+- 四模块红线：WA①②③④⑤ / Telegram / Signal / 外置 WA 各自代码均未改动。
+- public/settings.js `VOICE_ALLOW` 未动（仍是 `['qianduoduo_asr','ars_qianwen']`）。
+- 翻译、建议、抽档案、气泡翻译、扫描图片、Word/视频等既有功能文件均未动。
+- app.js 的 `isBase64Garbage` 作用域老 bug（renderBubble 调用处与本定义不在同一闭包，UI 自检「待处理说明」段会崩）属历史问题、非本次范围，仅在此提示，未动。
+
 ## 2.6.1189（新增独立服务商「钱多多语音识别」，语音识别下拉精简为 2 项）
 
 > 老板要：① 在既有「钱多多」之外，再独立新增一个**钱多多语音识别**服务商（不动现有钱多多）；② 语音识别下拉菜单删掉 ChatAnyWhere / API2GPT / 钱多多 / No.1 API-Pro / 智创聚合 五项，只保留新增的「钱多多语音识别」+ 已有的 ARS千问。

@@ -265,15 +265,16 @@ const PROVIDER_CATALOG = [
   },
   {
     key: 'ars_qianwen', cn: 'ARS千问（阿里语音）', short: 'ARS千问', badge: '新增 · 阿里语音专用',
+    type: 'aliyun_asr',
     applyTo: '语音识别（听客户发的语音，转成文字）—— 阿里通义千问语音专属接口，'
       + '在「专项 AI → 语音识别」里选它即可用 ARS千问 处理声音。',
     applyUrl: 'https://dashscope.console.aliyun.com/apiKey',
     applyName: '阿里云百炼控制台（API Key 管理，sk- 开头）',
     sample: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
     modelSample: 'Qwen3-ASR-Flash',
-    note: '阿里通义千问语音走专属 DashScope 接口（非 OpenAI /audio/transcriptions 格式），需要 WorkspaceId，'
-      + '专用调用正在接入中 —— 现在选它能进菜单、管理员可填 key，但真正转写声音要等阿里专属接口接好（本轮先放菜单）。'
-      + '模型填 Qwen3-ASR-Flash / SenseVoice。',
+    note: '阿里通义千问语音（Qwen3-ASR-Flash）走 OpenAI 兼容模式：POST /compatible-mode/v1/chat/completions，'
+      + '消息体用 input_audio（data 为 base64 本地文件，无需先传 URL）。接入地址只要填到 /compatible-mode/v1 为止，'
+      + '软件会自动拼 /chat/completions。模型填 Qwen3-ASR-Flash。',
   },
 ];
 
@@ -1475,8 +1476,15 @@ async function transcribe(audioPath, overrideProvider) {
   if (!r || !p || !p.apiKey || !p.baseUrl) return null;
   if (!fs.existsSync(audioPath)) return null;
 
-  const url = audioUrl(p);
   try {
+    // 阿里 Qwen-ASR：OpenAI 兼容模式 chat/completions + input_audio（base64 本地文件，无需先传 URL）
+    if (p.key === 'ars_qianwen' || p.type === 'aliyun_asr') {
+      const text = await transcribeAliyun(p, r.model, audioPath);
+      recordError('aliyun_asr', text ? null : 'aliyun_asr 返回为空');
+      return text;
+    }
+
+    const url = audioUrl(p);
     const buf = fs.readFileSync(audioPath);
     const form = new FormData();
     form.append('file', new Blob([buf], { type: audioMime(audioPath) }), path.basename(audioPath));
@@ -1502,6 +1510,37 @@ async function transcribe(audioPath, overrideProvider) {
     console.error(`[ai:asr] ${e.message}`);
     return null;
   }
+}
+
+/**
+ * 阿里 Qwen-ASR 专属转写：OpenAI 兼容模式 chat/completions + input_audio
+ * 消息体格式：{ model, messages:[{role:'user', content:[{type:'input_audio', input_audio:{data:'data:<mime>;base64,...'}}]}] }
+ * 支持直接传 base64 本地文件，不需要先上传拿到 URL。
+ */
+async function transcribeAliyun(p, model, audioPath) {
+  const url = `${cleanBase(p.baseUrl)}/chat/completions`;
+  const buf = fs.readFileSync(audioPath);
+  const b64 = buf.toString('base64');
+  const mime = audioMime(audioPath);
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${p.apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: model || 'Qwen3-ASR-Flash',
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'input_audio', input_audio: { data: `data:${mime};base64,${b64}` } },
+          ],
+        },
+      ],
+    }),
+  });
+  if (!res.ok) throw new Error(httpError('aliyun_asr', res, url, await res.text()));
+  const j = await res.json();
+  const text = j?.choices?.[0]?.message?.content || '';
+  return text ? String(text).trim() : null;
 }
 
 /**
