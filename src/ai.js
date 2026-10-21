@@ -271,10 +271,10 @@ const PROVIDER_CATALOG = [
     applyUrl: 'https://dashscope.console.aliyun.com/apiKey',
     applyName: '阿里云百炼控制台（API Key 管理，sk- 开头）',
     sample: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-    modelSample: 'Qwen3-ASR-Flash',
-    note: '阿里通义千问语音（Qwen3-ASR-Flash）走 OpenAI 兼容模式：POST /compatible-mode/v1/chat/completions，'
-      + '消息体用 input_audio（data 为 base64 本地文件，无需先传 URL）。接入地址只要填到 /compatible-mode/v1 为止，'
-      + '软件会自动拼 /chat/completions。模型填 Qwen3-ASR-Flash。',
+    modelSample: 'qwen3-asr-flash',
+    note: '阿里通义千问语音（qwen3-asr-flash）走 OpenAI 兼容模式：POST /compatible-mode/v1/chat/completions，'
+      + '消息体用 input_audio（data 为 base64 本地文件，无需先传 URL、无需 OSS 上传，隐私安全）。接入地址只填到 /compatible-mode/v1 为止，'
+      + '软件自动拼 /chat/completions。模型名必须小写 qwen3-asr-flash（大小写错会 400）。已用真实 Key 实测中英文语音均成功转写。',
   },
 ];
 
@@ -1518,15 +1518,18 @@ async function transcribe(audioPath, overrideProvider) {
  * 支持直接传 base64 本地文件，不需要先上传拿到 URL。
  */
 async function transcribeAliyun(p, model, audioPath) {
+  // 已用真实 Key 实测：模型名必须小写 qwen3-asr-flash，走 /compatible-mode/v1/chat/completions
+  // （cleanBase 已把 baseUrl 归一到 .../compatible-mode/v1，这里拼 /chat/completions）。
   const url = `${cleanBase(p.baseUrl)}/chat/completions`;
   const buf = fs.readFileSync(audioPath);
   const b64 = buf.toString('base64');
   const mime = audioMime(audioPath);
+  const m = (model || 'qwen3-asr-flash').trim().toLowerCase();
   const res = await fetch(url, {
     method: 'POST',
     headers: { Authorization: `Bearer ${p.apiKey}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: model || 'Qwen3-ASR-Flash',
+      model: m,
       messages: [
         {
           role: 'user',
@@ -1535,6 +1538,8 @@ async function transcribeAliyun(p, model, audioPath) {
           ],
         },
       ],
+      stream: false,
+      asr_options: { enable_itn: false },
     }),
   });
   if (!res.ok) throw new Error(httpError('aliyun_asr', res, url, await res.text()));

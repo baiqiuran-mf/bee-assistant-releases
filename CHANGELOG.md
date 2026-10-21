@@ -7,6 +7,33 @@
 > **规矩：每次改动都要在这里加一条**，写清「优化了什么」和「修好了什么问题」——  
 > 老版本记录一律保留，不许删。
 
+## 2.6.1191（ARS千问 模型名大小写修正：用真实 Key 实测中英文语音均成功转写）
+
+> 老板给了真实 API Key 要求实测。用 Key 跑通后定位到 v2.6.1190 仍留的一个坑：**模型名大小写**。DashScope 的 Qwen-ASR 模型名必须小写 `qwen3-asr-flash`，目录里默认写的 `Qwen3-ASR-Flash` 实测直接 `404 model_not_found`。本轮回退这个坑，并补齐实测成功的标准请求体。
+
+### 改动（守四模块红线 / 只动 AI 设置相关文件）
+| 位置 | 改前 | 改后 |
+|---|---|---|
+| src/ai.js `ars_qianwen` 目录项 | `modelSample: 'Qwen3-ASR-Flash'`；note 未强调大小写 | `modelSample: 'qwen3-asr-flash'`；note 明确「模型名必须小写 qwen3-asr-flash，大小写错会 400/404」 |
+| src/ai.js `transcribeAliyun()` | `model: model \|\| 'Qwen3-ASR-Flash'`（大写兜底） | `const m = (model \|\| 'qwen3-asr-flash').trim().toLowerCase()`（小写兜底 + 自动转小写，用户手滑大写也救得回来）；body 补 `stream:false` + `asr_options:{enable_itn:false}`（与实测成功请求体一致） |
+
+### 验证（用老板给的真实 Key 实测，可核对）
+- 真实语音文件（Google TTS 合成 EN/ZH MP3）走同步兼容模式 `POST .../compatible-mode/v1/chat/completions` + `input_audio` base64：
+  - `model='qwen3-asr-flash'` → EN 返回 `Hello. This is a test sentence for speech recognition.`；ZH 返回 `你好，这是一段测试语音转写成文字。` ✅（与输入一致，证明端到端真能转写）
+  - `model='Qwen3-ASR-Flash'`（大写）→ **HTTP 404 `model_not_found`** ✅（坐实根因：大小写错就挂）
+- `node --check src/ai.js` ✅
+- `node --experimental-sqlite test/ai_config.test.js` → 36 通过 / 0 失败（服务商总数仍 15，本轮回退未增删条目）✅
+
+### 能力边界（如实写，防误会）
+- ARS千问（阿里语音）本轮起**真实可用**：本地语音文件 → base64 → 同步返回文字，无需 OSS 上传、公网 URL，客户语音不出本机到阿里之外，隐私安全。
+- 生效三要素（老板设置里必须都填对）：① baseUrl = `https://dashscope.aliyuncs.com/compatible-mode/v1`；② 模型名 = `qwen3-asr-flash`（小写，代码已自动兜底转小写）；③ Key = 阿里百炼 `sk-` 开头。
+- 异步文件转写（`/api/v1/services/audio/asr/transcription` + 轮询 task_id）是另一族接口、且要公网可访问的音频 URL，软件本地语音场景不适用，本轮未采用。
+
+### 未动清单（本次没碰的文件）
+- 四模块红线：WA①②③④⑤ / Telegram / Signal / 外置 WA 各自代码均未改动。
+- 钱多多语音识别（qianduoduo_asr）走既有 OpenAI 兼容 `/audio/transcriptions`，未动。
+- 翻译、建议、抽档案、气泡翻译、扫描图片、Word/视频等既有功能文件均未动。
+
 ## 2.6.1190（修复 ARS千问（阿里语音）语音转写 400：接入 Qwen-ASR 兼容模式调用）
 
 > 老板实测 ARS千问 报 `✗ aliyun_asr HTTP 400（请求地址 .../services/audio/asr/transcription/v1/chat/completions）：No static resource`。根因三层：① 之前 ARS千问 在 `PROVIDER_CATALOG` 无 `type` 字段，被当普通 OpenAI 走 Whisper 式 `/audio/transcriptions` 多段上传；② 阿里 Qwen-ASR（Qwen3-ASR-Flash）是 OpenAI **兼容**模式，要的是 `POST /compatible-mode/v1/chat/completions` + `input_audio`（base64 本地文件），格式根本不同；③ 老板填的 baseUrl 是原始异步转写端点 `.../services/audio/asr/transcription`，连端点都错了。本轮把阿里专属调用接上，并修正目录说明。
