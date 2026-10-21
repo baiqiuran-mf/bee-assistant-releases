@@ -482,11 +482,11 @@ function renderScanImagePicker() {
 
 /** 「专项 AI」里的「语音识别用哪个模型」：决定客户发来的语音/语音消息用哪家模型转成文字。
  *  对应 config 的 scan.voiceModel（服务商 key，'' = 跟随语音任务默认 asr）。
- *  选项 = 5 家 OpenAI 兼容网关 + ARS千问（阿里语音专用，专用接口暂未接，先放菜单）。
+ *  选项 = 钱多多语音识别（独立的语音转写服务商）+ ARS千问（阿里语音专用，专用接口暂未接，先放菜单）。
  *  「其他（跟随语音任务默认）」= 占位（选它 = 跟随 tasks.asr 默认那家）。 */
 function renderVoicePicker() {
   const cur = String(aiSnap?.voiceModel || '');
-  const VOICE_ALLOW = ['chatanywhere', 'api2gpt', 'qianduoduo', 'no1apipro', 'zhichuang', 'ars_qianwen'];
+  const VOICE_ALLOW = ['qianduoduo_asr', 'ars_qianwen'];
   const list = (aiCat?.providers || [])
     .filter((p) => VOICE_ALLOW.includes(p.key));
   const has = list.some((p) => p.key === cur);

@@ -253,6 +253,17 @@ const PROVIDER_CATALOG = [
       + '模型名按智创聚合后台给的写，gpt-4o-mini 仅为占位示例。',
   },
   {
+    key: 'qianduoduo_asr', cn: '钱多多语音识别', short: '钱多多语音', badge: '新增 · 语音识别',
+    applyTo: '语音识别（听客户发的语音，转成文字）—— 钱多多语音转写接口，'
+      + '在「专项 AI → 语音识别」里选它即可。',
+    applyUrl: 'https://api2.aigcbest.top/dashboard/overview',
+    applyName: '在钱多多后台控制台获取 API Key',
+    sample: 'https://api.aigcbest.top/v1',
+    modelSample: 'whisper-1',
+    note: 'OpenAI 兼容语音转写（POST /audio/transcriptions，multipart：file + model，Authorization: Bearer）。'
+      + '接入地址以钱多多后台给的为准；模型名按后台实际语音模型填（如 whisper-1 / whisper-large-v3）。',
+  },
+  {
     key: 'ars_qianwen', cn: 'ARS千问（阿里语音）', short: 'ARS千问', badge: '新增 · 阿里语音专用',
     applyTo: '语音识别（听客户发的语音，转成文字）—— 阿里通义千问语音专属接口，'
       + '在「专项 AI → 语音识别」里选它即可用 ARS千问 处理声音。',

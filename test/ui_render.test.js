@@ -1254,9 +1254,9 @@ function hasPuppeteer() {
     check('① 接收信息写清是「抓 WhatsApp 新消息入库、不看语种」',
       !!recRow && /抓取客户发来的新消息/.test(recRow.use) && /不判断语种/.test(recRow.use),
       recRow && recRow.use.slice(0, 70));
-    check('列出 14 个 AI 设置区块（12 个服务商卡片 + 气泡翻译模型 + 翻译词典 两张设置卡）：含 DeepSeek / Agnes / 硅基流动 / OpenRouter / TikHub / 阿里百炼 / AstrBot / ChatAnyWhere / API2GPT / 钱多多 / No.1 API-Pro / 智创聚合', aiBox.secCount === 14, `实际 ${aiBox.secCount}：${aiBox.secNames.join('、')}`);
+    check('列出 15 个 AI 设置区块（13 个服务商卡片 + 气泡翻译模型 + 翻译词典 两张设置卡）：含 DeepSeek / Agnes / 硅基流动 / OpenRouter / TikHub / 阿里百炼 / AstrBot / ChatAnyWhere / API2GPT / 钱多多 / No.1 API-Pro / 智创聚合 / 钱多多语音识别 / ARS千问', aiBox.secCount === 15, `实际 ${aiBox.secCount}：${aiBox.secNames.join('、')}`);
     check('每个服务商都给出去哪申请（可点开的地址）',
-      aiBox.applyCount === 12 && aiBox.applyUrls.every((u) => /^https?:\/\//.test(u)),
+      aiBox.applyCount === 13 && aiBox.applyUrls.every((u) => /^https?:\/\//.test(u)),
       JSON.stringify(aiBox.applyUrls));
     check('弹窗里有「保存」按钮', aiBox.hasSave);
 
@@ -1304,8 +1304,8 @@ function hasPuppeteer() {
         btnsSameRow: !!tRect && !!cRect && Math.abs(tRect.top - cRect.top) < 6,
       };
     });
-    check('🔴 12 个服务商卡片都改成「三字段一行」排版（接入地址 / API Key / 模型名 同排）',
-      aiLayout.secCount === 13 && aiLayout.withFields === 12 && aiLayout.fieldsPerCard === 3 && aiLayout.sameRow,
+    check('🔴 13 个服务商卡片都改成「三字段一行」排版（接入地址 / API Key / 模型名 同排）',
+      aiLayout.secCount === 14 && aiLayout.withFields === 13 && aiLayout.fieldsPerCard === 3 && aiLayout.sameRow,
       JSON.stringify(aiLayout));
     check('🔴 服务商卡片里不再有「用来干：…」那行（按目标图撤掉；「通用设置」「抽档案」两块不受影响）',
       aiLayout.useInCard === 0, JSON.stringify(aiLayout));

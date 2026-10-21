@@ -120,8 +120,8 @@ const fakeGateway = http.createServer((req, res) => {
   check('每个 AI 都写清了「干什么用」',
     (cat.tasks || []).every((t) => t.cn && t.use && t.use.length > 8),
     (cat.tasks || []).map((t) => t.key));
-  check('目录里正好 13 个服务商（DeepSeek / Agnes / 硅基流动 / 硅基流动OCR / OpenRouter / TikHub / 阿里百炼 / AstrBot + 5 家 OpenAI 兼容：ChatAnyWhere / API2GPT / 钱多多 / No.1 API-Pro / 智创聚合）',
-    Array.isArray(cat.providers) && cat.providers.length === 13, (cat.providers || []).map((p) => p.key));
+  check('目录里正好 15 个服务商（DeepSeek / Agnes / 硅基流动 / 硅基流动OCR / OpenRouter / TikHub / 阿里百炼 / AstrBot + 5 家 OpenAI 兼容：ChatAnyWhere / API2GPT / 钱多多 / No.1 API-Pro / 智创聚合 + 钱多多语音识别 + ARS千问）',
+    Array.isArray(cat.providers) && cat.providers.length === 15, (cat.providers || []).map((p) => p.key));
   check('每个服务商都给了「去哪申请」的可点开地址 + 用途说明',
     (cat.providers || []).every((p) => /^https?:\/\//.test(p.applyUrl) && p.applyTo && p.sample),
     (cat.providers || []).map((p) => p.applyUrl));

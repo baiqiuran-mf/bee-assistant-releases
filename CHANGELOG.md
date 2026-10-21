@@ -7,6 +7,35 @@
 > **规矩：每次改动都要在这里加一条**，写清「优化了什么」和「修好了什么问题」——  
 > 老版本记录一律保留，不许删。
 
+## 2.6.1189（新增独立服务商「钱多多语音识别」，语音识别下拉精简为 2 项）
+
+> 老板要：① 在既有「钱多多」之外，再独立新增一个**钱多多语音识别**服务商（不动现有钱多多）；② 语音识别下拉菜单删掉 ChatAnyWhere / API2GPT / 钱多多 / No.1 API-Pro / 智创聚合 五项，只保留新增的「钱多多语音识别」+ 已有的 ARS千问。
+
+### 改动（守四模块红线 / 只动 AI 设置相关文件）
+| 位置 | 改前 | 改后 |
+|---|---|---|
+| src/ai.js `PROVIDER_CATALOG` | 无 `qianduoduo_asr` | 新增 `qianduoduo_asr`（钱多多语音识别，OpenAI 兼容语音转写，sample `https://api.aigcbest.top/v1`，modelSample `whisper-1`，badge「新增·语音识别」）；与现有 `qianduoduo` 完全独立、互不共用 |
+| public/settings.js `VOICE_ALLOW` | `['chatanywhere','api2gpt','qianduoduo','no1apipro','zhichuang','ars_qianwen']` | `['qianduoduo_asr','ars_qianwen']`（按老板要求删 5 项，只留新增+ARS千问）|
+| test/ai_config.test.js | 服务商数断言 `=== 13`（已过时） | `=== 15`（目录现 15 家，含新增钱多多语音识别 + ARS千问）|
+| test/ui_render.test.js | 设置区块断言 14 / apply 12 / 卡片排版 13·12 | 15 / 13 / 14·13（新增一家卡片化服务商）|
+
+### 验证
+- `node --check` 全过：src/ai.js / public/settings.js ✅
+- `node -e "require('./src/ai.js').catalog().providers.length"` → 15 家，含 `qianduoduo_asr` ✅
+- `node --experimental-sqlite test/ai_config.test.js` → 36 通过 / 0 失败（含服务商数=15 断言）✅
+- grep 接线：`qianduoduo_asr` 在 src/ai.js:256、public/settings.js:489 ✅
+- 钱多多语音识别走现有 OpenAI 兼容 `transcribe()` 通路（/audio/transcriptions，Bearer 鉴权），无需专属转写代码。
+
+### 能力边界（如实写，防误会）
+- 选「钱多多语音识别」：OpenAI 兼容语音转写，立即生效（需老板在 UI 填钱多多语音接口的 API Key + 接入地址 + 模型名）。
+- 选 ARS千问（阿里语音）：仍是「仅注册 + 进菜单」，阿里专属 DashScope 转写调用代码尚未写，选它暂回退默认 asr。
+- 现有「钱多多」(qianduoduo) 完全未动，仍可用于翻译 / 抽档案等其它 AI 任务。
+
+### 未动清单（本次没碰的文件）
+- 四模块红线：WA①②③④⑤ / Telegram / Signal / 外置 WA 各自代码均未改动。
+- 扫描图片下拉（SCAN_ALLOW）未动；语音识别下拉仅改 VOICE_ALLOW。
+- 翻译、建议、抽档案、气泡翻译、翻译词典、Word 文档、视频占位等既有功能文件均未动。
+
 ## 2.6.1188（AI 设置「专项 AI」新增「语音识别」选择器；扫描图片下拉加 Agnes）
 
 > 老板要：① 扫描图片下拉菜单加入 **Agnes**（agnes-3.0-flash 自带视觉，零风险）；② 在「扫描图片」下方新增 **「语音识别」** 选择器，下拉含 ChatAnyWhere / API2GPT / 钱多多 / No.1 API-Pro / 智创聚合 / ARS千问（阿里语音）。ARS千问 走阿里专属 DashScope 接口、非 OpenAI 格式，本轮仅注册进服务商目录 + 进菜单，专用转写调用后续再接。新选择器严格镜像既有「扫描图片」机制（独立 `voiceConfig.js` + `scan.voiceModel` 字段），架构与之前加的扫描图片完全一致。
