@@ -156,6 +156,24 @@ function displayJidOf(key) {
   return `tg:${stripTgPrefix(key)}`;
 }
 
+/**
+ * 🔴 v2.6.1194 老板拍板：「T 抓取客户数据的时候抓到这个 `tg:ganmeng` 这种编码是错误的，
+ *   抓到这种不要生成客户编号档案。正确的客户编码是 tg+数字的」。
+ *
+ * 这个 wa_jid 是不是「tg+纯数字」的唯一编号（**可建档的形态**）。
+ * 判据与 numericPeer 完全一致（剥掉 `tg:` 前缀后必须整串都是数字、允许负号：
+ * Telegram 群组/频道是 -100xxxxxxxxxx）—— 单一口径，绝不两处各写一套。
+ *
+ * ⚠️ 名键（tg:ganmeng / tg:Eileen Lin / tg:Telegram）一律返回 false：
+ *   显示名不是身份（Telegram 允许重名），拿它建档必然产生重名垃圾档案。
+ *
+ * @param {string} waJid 形如 `tg:7207229390` / `tg:ganmeng`
+ * @returns {boolean}
+ */
+function isNumericTgJid(waJid) {
+  return !!numericPeer(waJid);
+}
+
 /* ==========================================================================
  * 三之二、身份判定（🔴 甲方案：合并只认「同一个数字身份」，名字相同一律不合并）
  * --------------------------------------------------------------------------
@@ -254,6 +272,95 @@ function sameTelegramIdentity(mine, other) {
     same: false,
     reason: '只有显示名相同、拿不到 peerId 与 @username 任何一个身份证据 → 绝不合并',
   };
+}
+
+/* ==========================================================================
+ * 三之三、正文体检：日期条 / 乱码串（🔴 v2.6.1194 老板拍板的两条）
+ * --------------------------------------------------------------------------
+ * 这两个判定**只服务 Telegram**，与 WA / Signal 一个字节都不相干，
+ * 绝不写进 src/lang.js 或 src/translator.js（那两个是四模块共用）。
+ *
+ * ① isDateOnlyMessage —— Telegram 网页版的**日期分隔条**
+ *   根因：<div class="date">October 15</div> 落进了 telegramRead.js 的
+ *   SEL.bubbles 候选选择器（.Message / .message），被当成一条 direction:'in'
+ *   的客户消息上报 → 进了「对话信息」栏。生产库实证（只读统计）：
+ *   telegram 107 条里有 16 条是日期条（October 9×5 / Today×3 / October 16×2 …），
+ *   **其它渠道 0 条**。只要不入库，界面上那一对就一起消失。
+ *
+ * ② isGarbledText —— 客户发来的**机器串**（代理通知串 / 密钥 / 随机 id）
+ *   老板原话：「像这种无法翻译的就不要翻译了，直接在气泡上写『乱码无法翻译』」。
+ *   🔴 字符集**故意不含** `/` `+` `=` —— 那三个是 base64 的字母表，
+ *   放进来会把 WA 的图片字节（生产库 whatsapp-web 侧有 22 条）整片误伤。
+ *   全库只读实测：telegram 命中 12 条、whatsapp-web / whatsapp / signal **各 0 条**。
+ * ======================================================================== */
+
+/** 英文月份全称 + 缩写（大小写不敏感，由调用时的 i 标志与 normLabel 兜住） */
+const MONTH_WORD =
+  '(january|february|march|april|may|june|july|august|september|october|november|december' +
+  '|jan|feb|mar|apr|jun|jul|aug|sept|sep|oct|nov|dec)';
+
+/**
+ * 日期分隔条判定。**整串匹配**（前后都锚死），所以长句子里恰好含日期不会被误伤。
+ *
+ * 拦下来的形态：
+ *   · 英文月 + 数字   `October 15` / `Oct 15` / `December 25` / `Oct 15, 2026`
+ *   · 数字 + 英文月   `15 October` / `15 Oct`
+ *   · 中文月日        `10月15号` / `10月13日` / `11月3日`
+ *   · 相对日期        `Today` / `Yesterday` / `今天` / `昨天`
+ *     （Telegram 网页上「Today」同样是日期分隔条的一种渲染，不是客户说的话）
+ *
+ * 🔴 故意**不拦**的（真人真会这么说，拦了就是误伤）：
+ *   · 裸月份词  `October` / `May`
+ *   · 裸星期词  `Monday` / `Friday`
+ *   · 任何长句  `I will meet you on October 15`
+ *   月份词必须**搭配数字**才算日期 —— 这是老板「英文+数字的日期格式」原话。
+ *
+ * @param {string} text 消息正文
+ * @returns {boolean} 是纯日期就返回 true（调用方应当整条丢弃，不入库）
+ */
+function isDateOnlyMessage(text) {
+  const t = String(text == null ? '' : text).trim();
+  if (!t) return false;
+  // 长度闸：日期条都很短；超过 20 字符一定是句子里带了日期，绝不拦
+  if (t.length > 20) return false;
+
+  // ① 英文月份 + 数字（两种语序都收）
+  const enDate = new RegExp(
+    `^(?:${MONTH_WORD}\\.?\\s+\\d{1,2}(?:st|nd|rd|th)?(?:,?\\s*\\d{4})?` +
+    `|\\d{1,2}(?:st|nd|rd|th)?\\s+${MONTH_WORD}\\.?)$`,
+    'i',
+  );
+  if (enDate.test(t)) return true;
+
+  // ② 中文月日：`10月15号` / `10月13日`（日、号 都收）
+  if (/^\d{1,2}\s*月\s*\d{1,2}\s*[日号]$/.test(t)) return true;
+
+  // ③ 相对日期（Telegram 的日期分隔条渲染）
+  if (/^(today|yesterday|tomorrow|今天|昨天|明天)$/i.test(t)) return true;
+
+  return false;
+}
+
+/**
+ * 这条正文是不是「不是人话、没法翻译」的机器串。
+ *
+ * 判据（三条同时成立才算）：
+ *   ① 整条只由 `[A-Za-z0-9._:-]` 组成 —— 🔴 故意排除 `/` `+` `=`
+ *      （base64 字母表，含它们就会把 WA 的图片字节整片误伤）
+ *   ② 一个空白都没有（真人打字一定会有空格或标点）
+ *   ③ 长度 ≥ 16（短词如 `Hi` / `OK` 绝不能当成乱码）
+ *
+ * 全库只读实测（生产库 477 条消息）：telegram 命中 12 条，
+ * whatsapp-web / whatsapp / signal **各 0 条** —— 不误伤其它三个渠道。
+ *
+ * @param {string} text 消息正文
+ * @returns {boolean}
+ */
+function isGarbledText(text) {
+  const t = String(text == null ? '' : text).trim();
+  if (t.length < 16) return false;                                  // ③ 太短的一定是人话
+  if (/^[A-Za-z0-9._:-]+$/.test(t)) return true;                    // ① + ②（正则里没有空白）
+  return false;
 }
 
 /* ==========================================================================
@@ -858,10 +965,14 @@ module.exports = {
   /* ② 时间剥离 */
   stripTrailingTime,
   stripInvisible,
+  /* ③之三 正文体检（日期条 / 乱码串） */
+  isDateOnlyMessage,
+  isGarbledText,
   /* ③ 键归一（增量防裂） */
   numericPeer,
   numericMsgIdOf,
   displayJidOf,
+  isNumericTgJid,
   /* ③之二 身份判定（甲方案：只认数字身份，名字相同一律不合并） */
   normUsername,
   rowIdentity,

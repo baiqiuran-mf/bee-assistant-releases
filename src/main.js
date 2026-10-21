@@ -2363,7 +2363,26 @@ function autoFetchTelegramPhone(customerCode, accountId, m) {
         tgPhoneFetched.delete(m.customerKey);
         return;
       }
-      const phone = String(info.phone || '').trim();
+      /* 🔴 v2.6.1194 老板原话：「带数字的是正确的，这里缺少个 + 号，一定要加入到数字的前面，
+       *   如果好友的电话隐藏，这个位置空白没事」。
+       *
+       * 根因：Telegram MTProto 返回的是**纯数字**（85256188141），原来直接 String().trim()
+       *   就写库了，从没走过补 `+` 的那道工序（pickPhoneWithPlus 之前只在 mergePair 路径用过）。
+       *   生产库实证：7A00006 的 phone = `85256188141`（无 +），与老板截图一致。
+       *
+       * 为什么用 pickPhoneWithPlus 而不是手写 '+'：它内部先 `replace(/\D/g,'')` 归一，
+       *   所以「已经带 + 的」「带空格/横杠的」都不会变成 `++852…`；没有数字时返回 ''，
+       *   正好满足老板「好友隐藏电话就留空」的要求 —— 绝不用自己拼一个占位号。
+       *
+       * 下游兼容性（已逐处核实，本次**不改 db.js**）：
+       *   · db.phoneOwnerOf（db.js:642）比对前 `replace(/\D/g,'')` → 带 + 安全
+       *   · numberLibrary.normalizePhone（:45）`replace(/[^\d]/g,'')` → 安全
+       *   · db.applyRegrab（:767）两边都 `replace(/\D/g,'')` 后再比 → 安全
+       * ⚠️ 唯一代价：phoneOwnerOf 的**索引快查**传的是纯数字、库里存 `+852…` 时索引不命中，
+       *   会退化成它自带的全表扫兜底（db.js:651 之后那段 `replace(/\D/g,'')` 逐行比较）。
+       *   → **查重结果仍然完全正确**（兜底那段做的就是归一比较），只是慢一点；
+\t\t *     customers 表量级很小（生产库 8 条 telegram + 少量 WA），可接受。 */
+      const phone = telegramMerge.pickPhoneWithPlus(info.phone || '', '');
       const name = String(info.name || '').trim();
       if (!phone && !name) { tgPhoneFetched.delete(m.customerKey); return; }
       const username = String(info.username || '').replace(/^@/, '');
@@ -2484,6 +2503,39 @@ function handleTelegramMessage(m, outcome) {
     );
   }
 
+  /* 🔴 v2.6.1194 老板拍板：「T 抓取客户数据的时候抓到这个 `tg:ganmeng` 这种编码是错误的，
+   *   抓到这种不要生成客户编号档案。正确的客户编码是 tg+数字的」。
+   *
+   * 根因：resolveIncoming 找不到能证明同一人的数字键档案时会**保持名键**返回；
+   *   下面 getOrCreateCustomer 拿这个名键一调，就建出一条 `tg:ganmeng` 的垃圾档案
+   *   （生产库实证：7A00007 = tg:ganmeng、7A00008 = tg:Telegram）。
+   *
+   * 🔴 闸门口径（**只拦新建，绝不拦已存在**）：
+   *   · 本次 displayJid 是数字编号 → 放行（唯一可建档的形态）
+   *   · 是名键、但库里**已经有**这条名键档案 → **放行**（老板原话「已有名键档案留着继续用」：
+   *     那 5 条不删、不作废、照常收消息显示，这条路径一个字都不改）
+   *   · 是名键、库里**没有** → **不建档**（老板原话「抓到这种不要生成客户编号档案」）
+   *
+   * 关于「不建档的那条消息要不要存」—— 选了**候选甲（不入库）**，理由与代价：
+   *   db.saveMessage({customerCode}) 必须有一个真实编号，不建档就没有 code 可填。
+   *   候选乙（造占位编号）会**又造出新编号**，与老板「不要浪费编号」的初衷直接冲突，
+   *   且占位档会污染左栏客户列表 —— 所以不采用。
+   *   代价：这条消息在库里不落地（界面上看不到）。但它**随时会回来** ——
+   *   网页抓取下一轮仍会读到同一个对话；那时若已拿到数字 peerId，就走数字键正常建档，
+   *   这条消息也就跟着补上了。若一直没拿到数字 peerId，那这个人本来就不该建档。
+   *   → 这条路径**绝不弹提醒、不广播、不写库**，与「Saved Messages」那道闸同一口径。 */
+  if (!telegramMerge.isNumericTgJid(m.displayJid)) {
+    // findCustomerByTgPeer 的口径是 (account_id, wa_jid, channel)；wa_jid 直接传 displayJid 即可
+    const existingNamed = db.findCustomerByTgPeer.get(accountId, m.displayJid, 'telegram');
+    if (!existingNamed) {
+      console.log(
+        `[telegram] 名键不建档（v2.6.1194）：「${m.displayJid}」不是 tg+数字编号、库里也没有这条档案` +
+        `→ 本次不新建客户档案、也不入库（等拿到数字 peerId 后会自动补上）`,
+      );
+      return null;
+    }
+  }
+
   const { customer, isNew } = db.getOrCreateCustomer(
     accountId,
     m.displayJid,
@@ -2565,8 +2617,24 @@ function handleTelegramMessage(m, outcome) {
   const fresh = db.getCustomer.get(customer.code);
 
   // 两个方向都翻（2026-10-15 v2.6.1121：自己发出去的也要有中文），本来就是中文的不翻
+  /* 🔴 v2.6.1194 老板原话：「像这种无法翻译的就不要翻译了。这种乱码，直接在气泡上
+   *   写上『乱码无法翻译』就可以了」。
+   * 根因：lang.js 的 looksLikeBase64Garbage **只在 >200 字符时才判**，所以 51 字符的
+   *   `sk-jq0q…` 判不出来 → 照发 AI → 额度白花，而且模型会把乱码原样吐回 body_zh
+   *   （生产库 id 1835），或回一句「抱歉，这是一条密钥…」被当译文持久化（id 1883）。
+   *
+   * 🔴 为什么判据放在这里、而不是改 src/lang.js 的 needsTranslation：
+   *   lang.js 是**四模块共用**文件（WA/Signal 也走它），在那里加 Telegram 专属规则
+   *   会波及 WA —— 违反老板铁律。所以规则只写在 Telegram 专属的 telegramMerge.js，
+   *   这里加一个 && 就够了。全库只读实测：该规则 telegram 命中 12 条，
+   *   whatsapp-web / whatsapp / signal **各 0 条**，绝不误伤其它渠道。
+   *
+   * ⚠️ 只跳**翻译**，消息本身照常入库、照常显示 —— 客户确实发了这个内容，
+   *   界面气泡上会显示「译 乱码无法翻译」（前端读后端下的 tgGarbled 标记）。
+   *   🔴 绝不在采集侧丢弃。 */
   const needsTr = !!m.body
     && translator.needsTranslation(m.body)
+    && !telegramMerge.isGarbledText(m.body)
     && ai.isReady('translate');
 
   if (m.direction === 'in') {

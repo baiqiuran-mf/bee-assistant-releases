@@ -534,6 +534,42 @@ function safeName(s) {
 }
 
 /**
+ * 🔴 v2.6.1194 老板拍板：Telegram 的 Word 档命名**与 WA 系列不一样** ——
+ *   「客户的档案 md 数据命名为 编号 + ID + 电话 + 名称，找不到ID和电话可以 编号 + 名称。
+ *    这个也要建立 word 档案。也是一个小时一次，关闭时候也会自动建 word 档。」
+ *
+ *   ID 段取 customers.tg_username（= 档案弹窗里那个 Username 字段，如 EileenLin09），
+ *   **去掉 @ 前缀**（与 src/customerDoc.js 的 docFileName 保持一致，两边同一个口径）。
+ *
+ * 🔴 WA / Signal 分支**一个字都没改**（仍是 `{code}_{name}`）—— 那个渠道共用同一套命名。
+ *
+ * ⚠️ 本文件的 safeName 是把非法字符**换成 `_`**（customerDoc.js 是删除），
+ *   两边风格本来就不同；所以这里逐段各自过一遍 safeName，
+ *   绝不把整串拼好再过一次（那样段与段之间的分隔符也会被影响）。
+ *
+ * 「每小时一次 + 关闭时补建」沿用现有机制（startHourly / electron/main.js runCloseSequence），
+ * 本次**不新建任何定时器**。
+ */
+function wordBaseName(customer) {
+  const code = safeName(customer.code);
+  const name = safeName(customer.name || '客户');
+
+  // ---- 🔴 Telegram 专属分支（新增）----
+  if (String(customer.channel || '') === 'telegram') {
+    // ⚠️ 先在**原始值**上判空，再过 safeName —— safeName 对空串会返回 '未命名'，
+    //   要是拿它的返回值去判空，就永远判不出「没有」，四段格式会退化成占位符版本。
+    const rawId = String(customer.tg_username || '').replace(/^@/, '').trim();
+    const rawPhone = String(customer.phone || '').replace(/[^\d+]/g, '');
+    // ID 与电话都没有 → 退成「编号_名称」（与 md 那边的规则一致）
+    if (!rawId && !rawPhone) return `${code}_${name}`;
+    return `${code}_${rawId ? safeName(rawId) : '无ID'}_${rawPhone ? safeName(rawPhone) : '未知电话'}_${name}`;
+  }
+
+  // ---- WA / Signal：以下为改动前原样，一行未动 ----
+  return `${customer.code}_${customer.name || '客户'}`;
+}
+
+/**
  * 给一个客户生成 Word 文档。
  *
  * @param {object} customer customers 一行
@@ -575,7 +611,7 @@ async function buildCustomerWord(customer, messages, opt = {}) {
 
   const title = `${customer.name || '未命名'} · ${customer.code}`;
   const docx = buildDocx({ title, blocks, mediaFiles });
-  const name = safeName(opt.name || `${customer.code}_${customer.name || '客户'}`);
+  const name = safeName(opt.name || wordBaseName(customer));
   const file = path.join(dir, `${name}.docx`);
   fs.mkdirSync(dir, { recursive: true });
   // 先写临时文件再改名：Word 正在打开时不会读到写了一半的文档
@@ -666,7 +702,7 @@ function stopHourly() {
 
 module.exports = {
   // 生成
-  buildCustomerWord, rebuildAll, blocksOf, safeName, wordDir,
+  buildCustomerWord, rebuildAll, blocksOf, safeName, wordDir, wordBaseName,
   // 定时
   startHourly, stopHourly, DEFAULT_INTERVAL_MS,
   get lastRun() { return lastRun; },

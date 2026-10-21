@@ -53,6 +53,7 @@ const ai = require('./ai');                  // v2.6.1164：地区→时区 用 
 const aiVault = require('./aiVault');        // v2.6.115x：集中托管 API key（本地密钥库 + 云端密文）
 const regions = require('./regions');        // 回落用静态时区表
 const telegramMtproto = require('./telegramMtproto'); // v2.5.1087：Tele① 回复框真发送（sendToPeer）
+const telegramMerge = require('./telegramMerge');   // v2.6.1194：Telegram 专属判定（乱码标记；绝不供 WA/Signal 复用）
 /* 🔴 安全 require（保留，理由变了）
  * 起因：A/B 双版物理隔离期间，另一版专属模块不在安装包内，直接 require 会
  * 抛 Cannot find module 整个软件起不来。双版本已取消、两个模块都会打进包，
@@ -354,6 +355,23 @@ function createServer(deps, port = 8787) {
       mediaFetchState: m.media_fetch_state || '',
       mediaWaiting: mediaWaiting && !media.isProcessing(m.id),
       mediaWorking: mediaWaiting && media.isProcessing(m.id),
+      /* 🔴 v2.6.1194 老板原话：「像这种无法翻译的就不要翻译了。这种乱码，
+       *   直接在气泡上写上『乱码无法翻译』就可以了」。
+       *
+       * 为什么要后端下标记、而不是让 public/app.js 自己判 ——
+       *   规则必须**前后端只有一份**。前端是复制粘贴的独立副本（public/ 不能 require src/），
+       *   两边各判一次迟早会漂移；下发标记后，public/app.js 只读这个布尔值，
+       *   判据仍然只有 telegramMerge.isGarbledText 这**一个**实现。
+       *
+       * 为什么还要覆盖「已经有 body_zh 的老数据」：
+       *   生产库 id 1883 那条，模型回了句「抱歉，这条消息看起来是一串密钥或代码…」，
+       *   已经被当成正常译文持久化进 body_zh 了。前端只要看到 tgGarbled=true 就
+       *   **优先显示「乱码无法翻译」**，那条无用译文自然被盖掉 —— 不必写迁移脚本。
+       *
+       * 🔴 判定本身对 WA/Signal 一律返回 false（全库只读实测：telegram 12 条，
+       *   whatsapp-web / whatsapp / signal 各 0 条），所以这个字段对其它渠道
+       *   恒为 false，**不改变任何现有行为**。 */
+      tgGarbled: telegramMerge.isGarbledText(m.body),
     };
   }
 
@@ -1673,7 +1691,15 @@ function createServer(deps, port = 8787) {
       if (p === '/api/telegram/messages') {
         const code = url.searchParams.get('customer') || '';
         const rows = code && typeof db.tgMessages === 'function' ? db.tgMessages(code, 200) : [];
-        return json(res, 200, { ok: true, customer: code, messages: rows });
+        /* 🔴 v2.6.1194：这条路由**不走** withTranslationState（它只捞 telegram 消息），
+         *   但前端重载版 renderTgChat(rows) 正是读它 → 乱码标记必须在这里也补上，
+         *   否则两处 renderTgChat 会对同一条消息给出不一致的显示。
+         *   判据与 withTranslationState 里那行**同一个函数**，规则仍然只有一份。 */
+        return json(res, 200, {
+          ok: true,
+          customer: code,
+          messages: rows.map((m) => ({ ...m, tgGarbled: telegramMerge.isGarbledText(m.body) })),
+        });
       }
 
       // ---- v2.5.1087：Tele① 回复框「真正发送」（方案B）----

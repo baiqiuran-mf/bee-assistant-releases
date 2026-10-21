@@ -148,6 +148,13 @@ async function toContract(msg, acc, client, cache) {
   const msgTime = stripped.msgTime || '';
   // 空文本且无附件的（系统事件/撤回提示/表情回应）不造客户、不入库
   if (!body && !hasAttachment) return null;
+  /* 🔴 v2.6.1194：日期条不入「对话信息」（与 telegramRead.toMessage 同款口径）。
+   * MTProto 走服务端消息、理论上不会产生日期分隔条，但**接上更保险**：
+   * 万一某条正文恰好就是 `October 15` 这种形态（比如客户真的发了日期），
+   * 这一层只会多拦一条极罕见的短消息；反过来漏接的代价是日期条又进了对话栏。
+   * ⚠️ 拦的只有「整串就是日期」，长句子（`I will meet you on October 15`）一律放行，
+   *   所以不存在「客户真的聊到日期被误吞」的风险。 */
+  if (tgMerge.isDateOnlyMessage(body)) return null;
 
   const msgId = String(msg.id);
   const ts = (msg.date ? new Date(msg.date * 1000).toISOString() : new Date().toISOString());

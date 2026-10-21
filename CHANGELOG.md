@@ -7,6 +7,79 @@
 > **规矩：每次改动都要在这里加一条**，写清「优化了什么」和「修好了什么问题」——  
 > 老版本记录一律保留，不许删。
 
+## 2.6.1194（Telegram 六项修复：客户编码只认 tg+数字 / 电话补 + / 档案按 ID 命名 / 日期不入对话信息 / 乱码不翻译）
+
+> 老板实机截图 6 张，6 条需求。🔴 **本版只改 Telegram 一个模块，WA 系列（外置一号~五号 + 内置 WA①~⑤）、Signal 一行代码都没动**（18 个受保护文件逐一比对，全部 unchanged）。
+
+### 需求 1 · 客户编码：抓到 `tg:显示名` 不再生成客户编号档案
+| 位置 | 改动 |
+|---|---|
+| src/telegramMerge.js:155 | 新增纯函数 `isNumericTgJid()` — 判断 wa_jid 是不是 `tg+纯数字`（频道负号也认） |
+| src/main.js:2496 | 建档前加闸门：不是数字编号 → **不新建客户档案** |
+
+**根因（已坐实）**：`src/telegramMerge.js:386` `resolveIncoming()` 的名键分支，只有**身份能证明同一人**（peerId 相同 或 @username 相同）才会在 :450 改写成数字键；证明不了就保持名键 → `getOrCreateCustomer` 就建出 `tg:ganmeng` 这种垃圾档案（生产库实证 `7A00008 = tg:Telegram`，连对话名都没读到）。
+
+**闸门口径**：数字编号 → 放行；名键但**库里已有** → 放行（老板拍板「已有名键档案留着继续用」，那 5 条不删不作废）；名键且库里没有 → 不建档。实跑生产库 8 条 Telegram 档案：**全部放行，零条被打断**。
+
+### 需求 2 · 电话号码补 `+` 号
+| 位置 | 改动 |
+|---|---|
+| src/main.js:2385 | `autoFetchTelegramPhone` 写入前走 `telegramMerge.pickPhoneWithPlus`（Telegram 专属函数体内，**未动 db.js**） |
+| public/app.js:1658 | 新增 `tgPhoneShow()` — 档案弹窗显示层兜底，**严格判 `channel==='telegram'`** |
+
+`85256188141` → `+85256188141`。好友隐藏电话时留空（不填占位）。旧档案显示层兜底补 `+`，用户点一次「保存档案」即写回库，顺带修好存量。
+
+⚠️ 已知副作用：`db.phoneOwnerOf` 索引快查传纯数字、库里存 `+852…` 时索引不命中 → 退化全表扫，**查重结果完全正确**，只是慢一点（表量极小，可接受）。
+
+### 需求 3 · Telegram 档案命名 = 编号 + ID + 电话 + 名称（Word 档同规则）
+| 位置 | 改动 |
+|---|---|
+| src/customerDoc.js:138 | `docFileName()` 新增 telegram 分支：`编号_ID_电话_名称.md`（ID 取 `tg_username` 去掉 @）；ID 与电话都没有 → `编号_名称.md` |
+| src/customerDoc.js:173 | `parseDocFileName()` 改为**三格式兼容**（新四段 / 老三段 / legacy 名称_地区_编号） |
+| src/wordDoc.js:530 | 新增 `wordBaseName()` — Telegram 四段、**WA 仍是两段 `编号_名称.docx`** |
+
+红框那个「好友 ID」= 档案弹窗 `Username` 字段（`@EileenLin09`），库里独立列 `tg_username`。Word 档沿用现有机制：**每小时重建一次 + 关闭软件时补建一次**（`src/wordDoc.js:630` / `electron/main.js:1036` 已是现成的，未新建定时器）。
+
+### 需求 4 · 日期消息不进「对话信息」
+Telegram 网页的**日期分隔条**（`<div class="date">October 15</div>`）落进了消息选择器，被当成一条消息上报。
+
+- `src/telegramMerge.js:278` 新增纯函数 `isDateOnlyMessage()`
+- 接入全部 4 个采集入口：`src/telegramRead.js:144` / `src/telegramMtproto.js:157` / `src/telegramOfficialChannel.js:220`（`telegramWebView.js` 复用 `toMessage`，自动覆盖）
+
+**拦**：英文月+数字（两种语序）、中文月日、`Today/Yesterday/今天/昨天`。
+**不拦**：裸月份词（`October`）、裸星期（`Monday`）、任何长句（整串锚定 + 长度 ≤20）—— 避免误伤真人对话。
+
+生产库只读实测：**telegram 命中 16 条，其它渠道 0 条**。
+
+### 需求 5 · 乱码不翻译，气泡上写「乱码无法翻译」
+| 位置 | 改动 |
+|---|---|
+| src/telegramMerge.js:364 | 新增纯函数 `isGarbledText()` — 字符集 `^[A-Za-z0-9._:-]+$` + 无空格 + 长串（**必须排除 `/` `+` `=`**，否则误伤 WA 的 base64 图片消息） |
+| src/main.js:2637 | `needsTr` 判定排除乱码 → **不发 AI**，省一次翻译额度（消息照常入库、照常显示） |
+| src/server.js:374 | 下发 `tgGarbled` 标记 |
+| public/app.js:5144 / :5575 | 两处 `renderTgChat` 读标记 → 气泡写「乱码无法翻译」 |
+
+判据全项目**只写一份**（后端算、前端读标记），两边不会漂移。分支排在译文判断**之前** → 已被当成正常译文存进 `body_zh` 的垃圾译文（生产库 id 1883「抱歉，这是一条密钥…」）自然被盖住。
+
+生产库只读实测：**telegram 12 条（2 条 `sk-` 密钥 + 10 条代理通知串），whatsapp-web 0 / whatsapp 0 / signal 0**。
+
+### 验证（可核对）
+- `node --check` 改过的 10 个文件全部 OK ✅
+- 新增专项 `test/tg_fix_1194.test.js` → **150 通过 / 0 失败** ✅
+- 全量 `test/run_all.js`：干净 HEAD 基线 **338 通过 / 13 失败** → 本版 **339 通过 / 13 失败**，**失败清单逐条完全一致、零新增失败**（13 项全是改动前就存在的长期红）✅
+- WA 侧 9 个测试文件全 exit=0（wa_chain 61/0、waweb 12/0、identity 111/0、phone_fill 42/0、profile_scan 24/0、doc 46/0、regrab_regress 0、signal_jump 13/0）；Telegram 侧 5 个全 exit=0 ✅
+- 生产目录 **29 个真实 .md 全部能被新解析器认回，0 失败** ✅
+- 生产库全程 `{ readonly: true }`，**零写入** ✅
+
+### 未动清单（本次没碰的文件）
+- 🔴 **WA 系列全部**：`whatsappRead.js` / `waBubble.js` / `waChain.js` / `waWebMedia.js` / `whatsappWebView.js` —— 一行未动。
+- **Signal**：`signalRead.js` / `signalStatus.js` / `signalJump.js` —— 一行未动。
+- **四模块共用**：`db.js` / `lang.js` / `translator.js` / `ai.js` / `ids.js` / `identity.js` / `numberLibrary.js` / `phoneScan.js` / `profileScan.js` / `phoneFill.js` —— 一行未动。
+- 共用文件 `customerDoc.js` / `wordDoc.js` / `server.js` / `public/app.js` 里 **WA 分支 diff 为空**（逐字符断言已进测试）。
+
+### 已知取舍（如实写）
+名键不建档时，那条消息**也跟着不入库**（消息必须挂在某个客户编号下，没有编号就没地方存；造占位编号与「不浪费编号」冲突，故未采用）。老板原话只说「不要生成客户编号档案」。好消息：MTProto 那条路拿不到数字 ID 是整条丢弃、从不退回名字，所以数字编号最终会建起来、那条消息也会自动补上。
+
 ## 2.6.1193（修复 ARS千问「测试链接」按钮 HTTP 400：语音模型不发文本测试，改为连通性检测）
 
 > 老板实测：ARS千问（阿里语音 qwen3-asr-flash）真实语音转写已成功，但 AI 设置里点「测试链接」仍报 **HTTP 400**。定位为软件 bug，非模型限制。

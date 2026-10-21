@@ -1640,6 +1640,28 @@ function dayIndex(c) {
   return n === null ? 0 : n;
 }
 
+/* ---------------- 档案弹窗里的「电话号码」显示（🔴 v2.6.1194） ----------------
+ * 老板原话：「抓取客户档案的电话号码，带数字的是正确的，这里缺少个 + 号，
+ *   一定要加入到数字的前面，如果好友的电话隐藏，这个位置空白没事。」
+ *
+ * 🔴 为什么必须判 channel：renderProfile 是**四模块共用**组件（WA①~⑤ / Telegram / Signal
+ *   都用它）。WA 那边号码的带 + 展示由各自模块负责，这里**只补 Telegram**，
+ *   绝不给所有客户无条件加 +（那会波及 WA 的既有显示）。
+ *
+ * 为什么需要这一层（旧数据也要显示对）：写入层已改成 pickPhoneWithPlus，
+ *   但**存量库里已经存着不带 + 的号**（生产库 7A00006 = `85256188141`）。
+ *   这里补一层显示，用户点「保存档案」就会把带 + 的值写回库（public/app.js → server.js 原样入库）
+ *   —— 顺带把存量数据修好，不需要额外写迁移脚本。
+ *
+ * 空白处理：好友隐藏电话时 c.phone 为空 → 返回 ''，输入框留空（符合老板要求）。
+ */
+function tgPhoneShow(c) {
+  const raw = String((c && c.phone) || '').trim();
+  if (!raw) return '';
+  if (String((c && c.channel) || '') !== 'telegram') return raw;   // 非 Telegram：原样，不碰
+  return raw.startsWith('+') ? raw : '+' + raw;
+}
+
 function renderProfile(data) {
   const c = data.customer;
   const dup = (data.duplicates || []).length
@@ -1683,7 +1705,7 @@ function renderProfile(data) {
       <span class="joined-sub">${days ? `认识第 ${days} 天` : '未填'} · ${esc(src)}</span>
     </div>
     <div class="field"><label>姓名</label><input id="pf-name" value="${esc(c.name || '')}"></div>
-    <div class="field"><label>电话号码</label><input id="pf-phone" value="${esc(c.phone || '')}" placeholder="抓不到就手动填，如 +44 7726 795080"></div>
+    <div class="field"><label>电话号码</label><input id="pf-phone" value="${esc(tgPhoneShow(c))}" placeholder="抓不到就手动填，如 +44 7726 795080"></div>
     <div class="field"><label>地区（填了自动补时区）</label><input id="pf-region" value="${esc(c.region || '')}"></div>
     <div class="field pf-tzfield"><label>时区</label>
       <div class="pf-tz-row">
@@ -5112,7 +5134,15 @@ function renderTgChat(rows) {
     const text = body || (m.hasMedia ? '(图片/媒体)' : '');
     let zhHtml = '';
     if (!isOut) {
-      if (zh) zhHtml = `<div class="tg-zh"><span class="tg-zh-tag">译</span>${esc(zh)}</div>`;
+      /* 🔴 v2.6.1194：乱码气泡写「译 乱码无法翻译」。
+       *   判据读的是**后端下的 tgGarbled 标记**（src/server.js 用 telegramMerge.isGarbledText 算），
+       *   前端不自己判 —— 规则全项目只有一份，两边不会漂移。
+       *   放在「有没有译文」这一层**最前面**：所以 id 1883 那种已经被当成正常译文
+       *   持久化进 body_zh 的垃圾译文（模型回的那句「抱歉，这是一条密钥…」）也会被盖掉。
+       *   样式复用本函数现有的 tg-zh / tg-zh-tag 结构，不自创样式。
+       *   与下面 renderTgChat(code, mp) 那处**必须一致**（两处原有注释也这么写）。 */
+      if (m.tgGarbled) zhHtml = '<div class="tg-zh"><span class="tg-zh-tag">译</span>乱码无法翻译</div>';
+      else if (zh) zhHtml = `<div class="tg-zh"><span class="tg-zh-tag">译</span>${esc(zh)}</div>`;
       else if (body && !/[\u4e00-\u9fa5]/.test(body)) zhHtml = '<div class="tg-zh wait">待翻译</div>';
     }
     const mid = m.id != null ? m.id : '';
@@ -5536,10 +5566,17 @@ function renderTgChat(code, mp) {
         // 🔴 字段名兼容：后端返回 body_zh，老数据有 bodyZh，两个都读（2026-10-13 修过的坑）
         //    译文里也绝不能带时间 —— 老的译文可能翻成了「你好 14:03」，这里再剥一次
         const zh = tgSplitTime(String((m && (m.body_zh || m.bodyZh)) || '').trim()).text;
-        // 🔴 翻译铁律：中文不出译气泡；非中文且有译文才出
-        const zhHtml = (zh && !tgMsgIsChinese(body))
-          ? `<div class="tg-zh"><span class="tg-zh-tag">译</span>${esc(zh)}</div>`
-          : '';
+        /* 🔴 翻译铁律：中文不出译气泡；非中文且有译文才出
+         * 🔴 v2.6.1194：乱码统一写「译 乱码无法翻译」，且**排在译文判断之前** ——
+         *   1) 判据读后端下的 tgGarbled 标记（规则只有一份，见 src/server.js withTranslationState）
+         *   2) 排在前面才能盖掉「已经被当成译文存进 body_zh 的垃圾译文」（生产库 id 1883）
+         *   3) 样式复用本函数现有的 tg-zh / tg-zh-tag，不自创样式
+         *   与上面 renderTgChat(rows) 那处**必须一致**（两处原有注释也这么写）。 */
+        const zhHtml = m.tgGarbled
+          ? '<div class="tg-zh"><span class="tg-zh-tag">译</span>乱码无法翻译</div>'
+          : ((zh && !tgMsgIsChinese(body))
+            ? `<div class="tg-zh"><span class="tg-zh-tag">译</span>${esc(zh)}</div>`
+            : '');
         // 🔴 v2.6.1138：正文剥空 = 「只有时间」的状态行（生产库 #1010 通话时长行），
         //   不造假的「(图片/媒体)」空泡，只显示时间；整条没内容就连行都不出。
         //   与 renderTgChat 同款处理，两处必须一致。

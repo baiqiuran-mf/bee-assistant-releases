@@ -214,6 +214,11 @@ async function connectAccount(acc, cfg, hooks, dataDir) {
     // 剥完只剩时间、又没有附件 = 系统提示行，不是真人消息 → 不建档、不提醒
     if (stripped.onlyTime && !hasAttachment) return;
 
+    /* 🔴 v2.6.1194：日期条不入「对话信息」（与 telegramRead / telegramMtproto 同款口径）。
+     * 与上面那句同位置、同理由：日期分隔条不是客户说的话，不该占「对话信息」一栏。
+     * 裸月份词（October）、裸星期（Monday）不拦；长句子里含日期也不拦。 */
+    if (tgMerge.isDateOnlyMessage(body)) return;
+
     // 取真实客户名（取不到就退回空串，**绝不因取名失败而丢消息**）
     let name = '';
     try {

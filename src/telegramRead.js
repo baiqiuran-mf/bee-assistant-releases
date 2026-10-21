@@ -131,6 +131,17 @@ function toMessage(raw, accountId) {
   const msgTime = stripped.msgTime || '';
   if (!body) return null;   // 空消息 / 只剩时间 —— 一律不入库（与 WA / Signal 同铁律）
   if (!chatKey) return null;
+  /* 🔴 v2.6.1194 老板拍板：「红框中的对话信息抓到的是时间，这个不用抓到对话信息里面。
+   *   这个日期的格式都是单纯的 英文+数字 的日期格式，所以抓到这个就不要加入到『对话信息』栏里面。」
+   * 根因：Telegram 网页版的日期分隔条 `<div class="date">October 15</div>` 落进了
+   *   上面 SEL.bubbles 的候选选择器（.Message / .message），被当成一条 direction:'in'
+   *   的客户消息上报 → 进了「对话信息」栏。生产库实证：telegram 107 条里 16 条是日期条，
+   *   **其它渠道 0 条**。
+   * 这里**整条丢弃（return null）** → 不入库、不翻译、不显示，三样一起消失。
+   * ⚠️ 本函数是 4 个 Telegram 采集入口之一；telegramWebView.js 复用本函数（:901/:922），
+   *   所以它自动被覆盖（本次已核实）。另两处入口在 telegramMtproto / telegramOfficialChannel。
+   * 裸月份词（October）、裸星期（Monday）**不拦** —— 真人可能说这些词，拦了是误伤。 */
+  if (tgMerge.isDateOnlyMessage(body)) return null;
   // 系统消息 / 状态行 / 通知串 / Saved Messages 一律不入库（见上方 isSystemMessage 的事故记录）
   if (isSystemMessage(chatKey, body, raw.direction, rawName)) return null;
 

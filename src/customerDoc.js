@@ -134,20 +134,99 @@ function safePhone(s) {
  * 编号打头（唯一、永不回收，排序好看），电话收尾（用来查重：同一号码的档案
  * 文件名里会出现同一串数字，一眼能揪出来重复建档）。
  * 例：`3A00050_Mike_1534685245.md`
+ *
+ * 🔴 v2.6.1194 老板拍板：Telegram 的档案命名**与 WA 系列不一样** ——
+ *   「客户的档案 md 数据命名为 编号 + ID + 电话 + 名称，找不到ID和电话可以 编号 + 名称」。
+ *   红框那个「好友 ID」= 档案弹窗里的 `Username` 字段（@EileenLin09），
+ *   在 customers 表里的独立列是 **tg_username**（db.js:283 建列、:606 saveTgUsername 写入）。
+ *   （另一条路 MTProto 拿到的数字 peerId 藏在 wa_jid=tg:7207229390 里，没有独立列；
+ *     老板红框指的是 Username，所以 ID 段取 tg_username。）
+ *
+ *   ID 段**去掉 @ 前缀**：@ 在文件名里虽合法，但部分工具/脚本会当特殊字符，
+ *   而 `EileenLin09` 本身已经足够可识别，且与界面 Username 字段能对上（界面会补回 @ 显示）。
+ *   例：`7A00006_EileenLin09_85256188141_Eileen Lin.md`
+ *
+ *   ID 与电话**都**没有时 → 退成 `{编号}_{名称}.md`（与老板「编号 + 名称」一致）。
+ *
+ * 🔴 WA / Signal 分支**一个字都没改**（仍是 `{code}_{name}_{phone}.md`）——
+ *   那个渠道共用同一套命名，绝不能被 Telegram 带走。channel 为空的老数据也走老分支。
  */
 function docFileName(customer) {
   const code = safeName(customer.code) || '未知编号';
   const name = safeName(customer.name) || '未命名';
   const phone = safePhone(customer.phone) || '未知电话';
+
+  // ---- 🔴 Telegram 专属分支（新增；WA/Signal 走下面那个分支，行为完全不变）----
+  if (String(customer.channel || '') === 'telegram') {
+    // ID = tg_username，去掉 @ 前缀；只填空不覆盖，所以这里拿到就是最终值
+    const tgId = safeName(String(customer.tg_username || '').replace(/^@/, '').trim());
+    // ID 与电话都没有 → 退成「编号_名称」
+    if (!tgId && !safePhone(customer.phone)) return `${code}_${name}.md`;
+    // 否则四段：编号_ID_电话_名称（缺的段落用占位，段数固定，解析才不会被歧义）
+    return `${code}_${tgId || '无ID'}_${phone}_${name}.md`;
+  }
+
+  // ---- WA / Signal：以下为改动前原样，一行未动 ----
   return `${code}_${name}_${phone}.md`;
 }
 
+/* --------------------------------------------------------------------------
+ * 🔴 v2.6.1194（老板拍板 Telegram 用「编号+ID+电话+名称」四段命名）配套的解析器。
+ * 下面的 parseDocFileName 必须**同时**认得三种格式，且老文件一个都不能认错。
+ * -------------------------------------------------------------------------- */
+
+/** 电话占位符（docFileName 在取不到号码时写的就是这两个字面量） */
+const PHONE_PLACEHOLDERS = new Set(['未知电话']);
+/** Telegram ID 段在拿不到 @username 时写的占位符 */
+const TGID_PLACEHOLDER = '无ID';
+
 /**
- * 从文件名反解出 {code, name, phone, legacy}。
- * 兼容两种格式：
- *   新 3A00050_Mike_1534685245.md  → code 在第一段
- *   旧 Mike_旧金山_3A00050.md      → code 在最后一段（第二段是地区）
+ * 这一段是不是「电话段」。
+ * safePhone() 的产物只含数字与开头的 `+`（见本文件 :129），所以纯数字/带+ 就是电话；
+ * 取不到号码时是占位符 `未知电话`。
+ */
+function isPhoneSegment(seg) {
+  const s = String(seg == null ? '' : seg).trim();
+  if (!s) return false;
+  if (PHONE_PLACEHOLDERS.has(s)) return true;
+  return /^\+?\d+$/.test(s);
+}
+
+/**
+ * 这一段是不是「Telegram ID 段」。
+ * Telegram 的 @username 是 ASCII（字母/数字/下划线，官方规则 5~32 位），不含空白；
+ * 取不到时是占位符 `无ID`。
+ * ⚠️ 顺带把「带空白的名字段」排除掉 —— 老格式 `7A00006_Eileen Lin_852…` 的第二段
+ *   有空格，据此不会被误判成 Telegram 四段格式。
+ */
+function isTgIdSegment(seg) {
+  const s = String(seg == null ? '' : seg).trim();
+  if (!s) return false;
+  if (s === TGID_PLACEHOLDER) return true;
+  return /^[A-Za-z0-9_.]+$/.test(s);
+}
+
+/**
+ * 从文件名反解出 {code, name, phone, tgId, legacy}。
+ * 兼容三种格式：
+ *   ① Telegram 四段 7A00006_EileenLin09_85256188141_Eileen Lin.md → code 在第一段
+ *   ② WA/Signal 三段 3A00050_Mike_1534685245.md                  → code 在第一段
+ *   ③ 旧格式    Mike_旧金山_3A00050.md                            → code 在最后一段（第二段是地区）
  * 解不出来就返回 null（不认识的 .md 一律跳过，不去碰）。
+ *
+ * 🔴 ①②的判别口径（**必须讲清楚，这是最容易写错的地方**）：
+ *   两个格式的**第 3 段都是电话**（②是 编号_名称_电话，①是 编号_ID_电话_名称），
+ *   所以「第 3 段像不像电话」是唯一可靠的信号；而 ① 比 ② 多一段名字在后面。
+ *   两个条件同时成立才判 ①：段数 ≥ 4，且第 3 段是电话段、第 2 段是 ID 段。
+ *   → 历史文件（`7A00002_wanyu lee_未知电话.md`、`7A00006_Eileen Lin_85256188141.md`）
+ *     都只有 3 段，稳稳走 ②，解析结果与改动前**一字不差**。
+ *   → 名字里含下划线的老文件 `CODE_Mike_Jr_1534685245.md` 第 3 段是 `Jr`、不是电话段，
+ *     仍然走 ②（name=Mike、phone=Jr_1534685245），与改动前一致。
+ *
+ * ⚠️ 残留歧义（如实说明）：若某个老文件的第 2 段恰好是 ASCII 名字、第 3 段恰好是纯数字
+ *   （例如客户名就叫 `Mike_2`），它会被判成四段格式。这种文件名在生产库里不存在，
+ *   且 findExistingDoc 是按 `编号_` 前缀找文件的（见 :196），改名前后都能找得到同一个档案，
+ *   不会因此出现「同一客户两个 md」。真出现了也只需人工改一次名，不影响任何数据。
  */
 function parseDocFileName(fileName) {
   const base = String(fileName || '').replace(/\.md$/i, '');
@@ -156,6 +235,17 @@ function parseDocFileName(fileName) {
   const CODE_RE = /^[A-Z0-9]{4,}$/;
   // 新格式：第一段就是编号
   if (CODE_RE.test(parts[0])) {
+    // ① Telegram 四段：编号_ID_电话_名称（名字里可以有下划线，所以用 slice(3).join('_')）
+    if (parts.length >= 4 && isPhoneSegment(parts[2]) && isTgIdSegment(parts[1])) {
+      return {
+        code: parts[0],
+        tgId: parts[1] === TGID_PLACEHOLDER ? '' : parts[1],
+        phone: parts[2],
+        name: parts.slice(3).join('_'),
+        legacy: false,
+      };
+    }
+    // ② WA/Signal 三段（**以下两行是改动前的原样，一行未动**）
     return {
       code: parts[0],
       name: parts.length > 1 ? parts[1] : '',
