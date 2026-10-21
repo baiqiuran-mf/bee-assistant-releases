@@ -7,6 +7,36 @@
 > **规矩：每次改动都要在这里加一条**，写清「优化了什么」和「修好了什么问题」——  
 > 老版本记录一律保留，不许删。
 
+## 2.6.1193（修复 ARS千问「测试链接」按钮 HTTP 400：语音模型不发文本测试，改为连通性检测）
+
+> 老板实测：ARS千问（阿里语音 qwen3-asr-flash）真实语音转写已成功，但 AI 设置里点「测试链接」仍报 **HTTP 400**。定位为软件 bug，非模型限制。
+
+### 根因（已坐实，file:line）
+- `src/ai.js` `testProvider()`（:1854）对大多数服务商走「发一条文本对话请求 `你只需要回一个字` → 收正文」来验证连通。
+- 但 ARS千问 的 `type === 'aliyun_asr'`，其 `qwen3-asr-flash` 是**音频识别模型**，只接受 `input_audio`，**拒绝纯文本消息** → 返回 400。即「测试链接」用错了请求格式。
+- 文本分支用的 `model` 默认还会兜到 `deepseek-v4-flash`（:1867，`aliyun_asr` 无专属默认），发到阿里端点更必然 400。
+
+### 改动（守四模块红线 / 只动 AI 设置测试逻辑）
+| 位置 | 改前 | 改后 |
+|---|---|---|
+| src/ai.js:1867 `model` 默认 | `aliyun_asr` 兜到 `deepseek-v4-flash` | `aliyun_asr` 默认 `qwen3-asr-flash`（与 `transcribeAliyun` 锁定的模型一致） |
+| src/ai.js `testProvider` 分支判断 | `if (p.type === 'openai_audio')` | `if (p.type === 'openai_audio' \|\| p.type === 'aliyun_asr')`（语音类统一走模型列表连通性检测） |
+| 阿里分支返回文案 | 无（走文本分支直接 400） | `连通（列出 N 个模型，Key 和地址有效）`；**不做模型名比对**（因 qwen3-asr-flash 实际可用却不在阿里模型列表里，比对会误报警） |
+
+### 验证（可核对）
+- `node --check src/ai.js` ✅
+- `node --experimental-sqlite test/ai_config.test.js` → **36 通过 / 0 失败**（既有 `openai_audio` 测试链路行为不变，新增 `aliyun_asr` 走同分支）✅
+- 用老板真实 Key 模拟修复后路径：请求 `https://dashscope.aliyuncs.com/compatible-mode/v1/models` → **HTTP 200，列出 178 个模型** → 测试链接将返回 `ok=true / 连通（列出 178 个模型，Key 和地址有效）` ✅（之前这条文本请求必 400）
+
+### 能力边界（如实写，防误会）
+- 「测试链接」对 ARS千问 现在**只验证 Key + 地址能否连通**（拉模型列表），不会真的发一段语音去转写——因为测试按钮职责是「链路通不通」，转写本身在真实收语音时才会跑（已用你那段 WhatsApp OGG 实测成功）。
+- 装新版后：接入地址填 `https://dashscope.aliyuncs.com/compatible-mode/v1`、Key 用 `sk-` 开头，点「测试链接」即应显示绿色「连通」。
+
+### 未动清单（本次没碰的文件）
+- 四模块红线：WA①②③④⑤ / Telegram / Signal / 外置 WA 各自代码均未改动。
+- `transcribeAliyun()`（真实转写路径）未动 —— 它在 v2.6.1192 已锁定 `qwen3-asr-flash`，本次只修「测试链接」按钮的请求格式。
+- 翻译、建议、抽档案、气泡翻译、扫描图片、Word/视频等既有功能文件均未动。
+
 ## 2.6.1192（ARS千问 模型名代码层强制锁定：彻底杜绝填错导致 400）
 
 > 老板装 2.6.1191 后仍报新 400：`InternalError.Algo.InvalidParameter: The dedicated task 'asr' corresponding to the current service does not support this input.`（此时请求地址已正确为 `.../compatible-mode/v1/chat/completions`，说明路径与大小写已修好）。用老板给的真实 Key 穷举复现：MP3/WAV/OGG(opus)/M4A/WEBM/静音/甚至 MIME 标错的音频，`qwen3-asr-flash` 全部 200 成功（格式不是原因）；复现过的其他明确报错均**不是**这条。唯一能解释该 400 的是老板设置里「模型名」一栏**填的不是 `qwen3-asr-flash`**（填了 fun-asr / qwen-audio-3.x / realtime 这类走异步或 WebSocket 的模型，用 input_audio 直传会被算法层拒）。本轮在代码层**强制锁定模型名**，用户再怎么填都不会触发该 400。

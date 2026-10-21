@@ -1864,10 +1864,12 @@ async function testProvider(providerName, modelName, override) {
   // 这个服务商被哪个任务用着？用它那栏的模型名当默认值
   const taskUsingIt = Object.keys(loadAiConfig().tasks || {}).find((k) => getTask(k)?.provider === providerName);
   const taskModel = taskUsingIt ? getTask(taskUsingIt)?.model : '';
-  const model = modelName || p.model || taskModel || (p.type === 'anthropic' ? 'claude-sonnet-4-5' : 'deepseek-v4-flash');
+  const model = modelName || p.model || taskModel
+    || (p.type === 'anthropic' ? 'claude-sonnet-4-5' : p.type === 'aliyun_asr' ? 'qwen3-asr-flash' : 'deepseek-v4-flash');
 
-  // 语音转写这类服务商没有便宜的对话测试，就拉一次模型列表来判断 key/地址通不通
-  if (p.type === 'openai_audio') {
+  // 语音转写类服务商（OpenAI 音频 / 阿里 ASR）：没有便宜的对话测试，
+  // 拉一次模型列表判断 key/地址通不通。
+  if (p.type === 'openai_audio' || p.type === 'aliyun_asr') {
     const url = modelsUrl(p);
     const t0 = Date.now();
     try {
@@ -1876,12 +1878,16 @@ async function testProvider(providerName, modelName, override) {
       if (!res.ok) return { ok: false, ms: Date.now() - t0, model, url, error: httpError('模型列表', res, url, txt) };
       let names = [];
       try { names = (JSON.parse(txt)?.data || []).map((m) => m.id); } catch (e) { /* 有的网关不回 JSON */ }
-      const hit = names.length ? names.some((n) => String(n).toLowerCase() === String(model).toLowerCase()) : null;
-      return {
-        ok: true, ms: Date.now() - t0, model, url,
-        reply: hit === null ? `通了（列出 ${names.length} 个模型）`
-          : hit ? `通了，模型列表里有 ${model}` : `通了，但模型列表里没找到「${model}」，确认一下模型名的写法`,
-      };
+      // 阿里 Qwen-ASR 的 qwen3-asr-flash 实际可用却不在模型列表里（分页/过滤所致），
+      // 所以阿里分支只报连通即可，不做模型名比对（比对会误报警）。
+      const reply = p.type === 'aliyun_asr'
+        ? `连通（列出 ${names.length} 个模型，Key 和地址有效）`
+        : (names.length
+          ? (names.some((n) => String(n).toLowerCase() === String(model).toLowerCase())
+              ? `通了，模型列表里有 ${model}`
+              : `通了，但模型列表里没找到「${model}」，确认一下模型名的写法`)
+          : `通了（列出 ${names.length} 个模型）`);
+      return { ok: true, ms: Date.now() - t0, model, url, reply };
     } catch (e) {
       return { ok: false, ms: Date.now() - t0, model, url, error: e.message };
     }
