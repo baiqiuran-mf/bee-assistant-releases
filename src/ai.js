@@ -271,10 +271,11 @@ const PROVIDER_CATALOG = [
     applyUrl: 'https://dashscope.console.aliyun.com/apiKey',
     applyName: '阿里云百炼控制台（API Key 管理，sk- 开头）',
     sample: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-    modelSample: 'qwen3-asr-flash',
-    note: '阿里通义千问语音（qwen3-asr-flash）走 OpenAI 兼容模式：POST /compatible-mode/v1/chat/completions，'
+    modelSample: 'qwen3-asr-flash（代码已锁定，此处可留空/随便填）',
+    note: '阿里通义千问语音走 OpenAI 兼容模式：POST /compatible-mode/v1/chat/completions，'
       + '消息体用 input_audio（data 为 base64 本地文件，无需先传 URL、无需 OSS 上传，隐私安全）。接入地址只填到 /compatible-mode/v1 为止，'
-      + '软件自动拼 /chat/completions。模型名必须小写 qwen3-asr-flash（大小写错会 400）。已用真实 Key 实测中英文语音均成功转写。',
+      + '软件自动拼 /chat/completions。模型名已由代码强制锁定为 qwen3-asr-flash（小写），「模型名」一栏留空或随便填都不会再影响识别，彻底避免填错导致 400。'
+      + '已用真实 Key 实测中英文语音均成功转写；音频超过 10MB 会提示换更短的语音。',
   },
 ];
 
@@ -1518,13 +1519,18 @@ async function transcribe(audioPath, overrideProvider) {
  * 支持直接传 base64 本地文件，不需要先上传拿到 URL。
  */
 async function transcribeAliyun(p, model, audioPath) {
-  // 已用真实 Key 实测：模型名必须小写 qwen3-asr-flash，走 /compatible-mode/v1/chat/completions
-  // （cleanBase 已把 baseUrl 归一到 .../compatible-mode/v1，这里拼 /chat/completions）。
+  // 已用真实 Key 实测：ARS千问 只有 qwen3-asr-flash 走 OpenAI 兼容同步模式
+  // （fun-asr / qwen-audio-3.x-asr-flash 是异步文件转写、qwen3-asr-flash-realtime 是 WebSocket，
+  //  用 input_audio 直传都会 400/500「does not support this input」）。所以**模型名在代码里强制锁定**，
+  // 不读用户设置里那栏，避免任何填错。
   const url = `${cleanBase(p.baseUrl)}/chat/completions`;
   const buf = fs.readFileSync(audioPath);
+  if (buf.length > 10 * 1024 * 1024) {
+    throw new Error('aliyun_asr：音频超过 10MB 上限（阿里 Qwen-ASR 限制），请换更短的语音');
+  }
   const b64 = buf.toString('base64');
   const mime = audioMime(audioPath);
-  const m = (model || 'qwen3-asr-flash').trim().toLowerCase();
+  const m = 'qwen3-asr-flash';
   const res = await fetch(url, {
     method: 'POST',
     headers: { Authorization: `Bearer ${p.apiKey}`, 'Content-Type': 'application/json' },

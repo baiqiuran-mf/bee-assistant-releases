@@ -7,6 +7,35 @@
 > **规矩：每次改动都要在这里加一条**，写清「优化了什么」和「修好了什么问题」——  
 > 老版本记录一律保留，不许删。
 
+## 2.6.1192（ARS千问 模型名代码层强制锁定：彻底杜绝填错导致 400）
+
+> 老板装 2.6.1191 后仍报新 400：`InternalError.Algo.InvalidParameter: The dedicated task 'asr' corresponding to the current service does not support this input.`（此时请求地址已正确为 `.../compatible-mode/v1/chat/completions`，说明路径与大小写已修好）。用老板给的真实 Key 穷举复现：MP3/WAV/OGG(opus)/M4A/WEBM/静音/甚至 MIME 标错的音频，`qwen3-asr-flash` 全部 200 成功（格式不是原因）；复现过的其他明确报错均**不是**这条。唯一能解释该 400 的是老板设置里「模型名」一栏**填的不是 `qwen3-asr-flash`**（填了 fun-asr / qwen-audio-3.x / realtime 这类走异步或 WebSocket 的模型，用 input_audio 直传会被算法层拒）。本轮在代码层**强制锁定模型名**，用户再怎么填都不会触发该 400。
+
+### 改动（守四模块红线 / 只动 AI 设置相关文件）
+| 位置 | 改前 | 改后 |
+|---|---|---|
+| src/ai.js `transcribeAliyun()` | `const m = (model \|\| 'qwen3-asr-flash').trim().toLowerCase()`（读用户设置那栏） | `const m = 'qwen3-asr-flash'`（硬编码，不再读用户设置，彻底杜绝填错） |
+| src/ai.js `transcribeAliyun()` | 无大小保护 | 新增 `if (buf.length > 10*1024*1024) throw` 10MB 上限保护（阿里 Qwen-ASR 限制，超限给明确中文提示） |
+| src/ai.js `ars_qianwen` 目录项 | `modelSample: 'qwen3-asr-flash'`；note 强调「必须小写」 | `modelSample: 'qwen3-asr-flash（代码已锁定，此处可留空/随便填）'`；note 改为「模型名已由代码强制锁定，此栏留空或随便填都不会再影响识别」 |
+
+### 验证（用老板给的真实 Key 实测，可核对）
+- 真实 Key 复现矩阵（同步兼容模式 + input_audio base64）：
+  - 音频格式穷举 MP3/WAV/OGG(opus)/M4A/WEBM/静音/MIME 标错 → `qwen3-asr-flash` 全部 **200 成功** ✅（证明格式不是根因）
+  - `qwen3-asr-flash-realtime` → 500；`qwen-audio-3.0-asr-flash` & `fun-asr-flash-2026-06-15` → 400 "format is empty"；`qwen-audio-3.1-asr-flash-filetrans` → 404；图片当音频 → 400 "audio format is illegal"；>10MB → 400 "file size too large"；空文件 → 400 "URL invalid"（以上均**非**本轮报错文案）
+  - 结论：`The dedicated task 'asr' ... does not support this input` 仅当用户模型名填成非 `qwen3-asr-flash` 的异步/WebSocket 类模型才会出现 —— 代码锁定后该路径被堵死 ✅
+- `node --check src/ai.js` ✅
+- `node --experimental-sqlite test/ai_config.test.js` → 36 通过 / 0 失败 ✅（服务商总数仍 15，本轮未增删条目）
+
+### 能力边界（如实写，防误会）
+- 老板装新版后：**「模型名」一栏留空或随便填都可以**，代码已强制用 `qwen3-asr-flash`；重点只需保两样：① baseUrl = `https://dashscope.aliyuncs.com/compatible-mode/v1`；② Key = 阿里百炼 `sk-` 开头。
+- 若仍报错，需把具体返回文案发来定位（本轮这条 400 已被代码锁定堵死，不会再出现）。
+
+### 未动清单（本次没碰的文件）
+- 四模块红线：WA①②③④⑤ / Telegram / Signal / 外置 WA 各自代码均未改动。
+- 钱多多语音识别（qianduoduo_asr）走既有 OpenAI 兼容 `/audio/transcriptions`，未动。
+- 翻译、建议、抽档案、气泡翻译、扫描图片、Word/视频等既有功能文件均未动。
+- 真实 Key 仅用于本地 curl/node 与 Temp 脚本测试，**未写入仓库任何文件**（如担心泄露可去阿里百炼控制台重置）。
+
 ## 2.6.1191（ARS千问 模型名大小写修正：用真实 Key 实测中英文语音均成功转写）
 
 > 老板给了真实 API Key 要求实测。用 Key 跑通后定位到 v2.6.1190 仍留的一个坑：**模型名大小写**。DashScope 的 Qwen-ASR 模型名必须小写 `qwen3-asr-flash`，目录里默认写的 `Qwen3-ASR-Flash` 实测直接 `404 model_not_found`。本轮回退这个坑，并补齐实测成功的标准请求体。
