@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>AI 设置 · 桌面端预览</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+         background: #e9edf2; color: #1f2329; font-size: 14px; }
+  .win { max-width: 1000px; margin: 20px auto; background: #fff; border-radius: 10px;
+         box-shadow: 0 4px 18px rgba(0,0,0,.12); overflow: hidden; }
+  .titlebar { background: #2f6fed; color: #fff; padding: 12px 18px; font-weight: 600; font-size: 15px; }
+  .body { display: flex; min-height: 560px; }
+  .nav { width: 180px; background: #f6f8fa; border-right: 1px solid #e6e9ed; padding: 14px 0; }
+  .nav .item { padding: 10px 18px; font-size: 13.5px; color: #4b5563; }
+  .nav .item.on { background: #fff; color: #2f6fed; font-weight: 600; border-left: 3px solid #2f6fed; }
+  .content { flex: 1; padding: 22px 26px; }
+  h2 { font-size: 16px; margin: 0 0 12px; }
+  .head { font-weight: 700; color: #2f6fed; margin: 18px 0 10px; font-size: 14px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid #eef0f3; }
+  th { color: #6b7280; font-weight: 600; }
+  select { padding: 4px 8px; border: 1px solid #d0d5dd; border-radius: 5px; font-size: 12.5px; min-width: 150px; }
+  .frame { border: 2px solid #ef4444; border-radius: 8px; padding: 14px 16px; margin: 8px 0; background: #fffafa; }
+  .frame .head { color: #ef4444; margin-top: 0; }
+  .card { border: 1px solid #e6e9ed; border-radius: 8px; padding: 12px 14px; margin-bottom: 10px; }
+  .card:last-child { margin-bottom: 0; }
+  .card .t { font-weight: 600; margin-bottom: 6px; }
+  .card .u { color: #6b7280; font-size: 12.5px; margin-bottom: 8px; line-height: 1.5; }
+  .adminonly { border: 1px dashed #d0d5dd; border-radius: 8px; padding: 12px 14px; color: #9ca3af; font-size: 12.5px; }
+  .pill { background:#e6f0ff; color:#2f6fed; font-size:11px; padding:1px 6px; border-radius:4px; }
+</style>
+</head>
+<body>
+<div class="win">
+  <div class="titlebar">蜜蜂信息采集 · 设置</div>
+  <div class="body">
+    <nav class="nav">
+      <div class="item">通用</div>
+      <div class="item on">AI 设置</div>
+      <div class="item">云端</div>
+      <div class="item">代理</div>
+      <div class="item">账号</div>
+    </nav>
+    <div class="content">
+      <h2>AI 设置</h2>
+
+      <div class="head">一、N 个 AI 分别干什么 · 现在用哪家</div>
+      <table>
+        <thead><tr><th>AI 任务</th><th>用哪家</th></tr></thead>
+        <tbody>
+          <tr><td>① 接收信息（抓取新消息）</td><td><span class="pill">无需 AI</span></td></tr>
+          <tr><td>② 翻译收到的消息</td><td><select><option>DeepSeek</option><option>ChatAnyWhere</option><option>API2GPT</option><option>钱多多</option><option>No.1 API-Pro</option><option>智创聚合</option></select></td></tr>
+          <tr><td>回复建议</td><td><select><option>DeepSeek</option><option>Agnes</option><option>硅基流动</option><option>OpenRouter</option><option>TikHub</option><option>阿里百炼</option><option>AstrBot</option></select> <span style="color:#9ca3af;font-size:12px">（③ 不加新家）</span></td></tr>
+          <tr><td>④ 采纳后翻成英文</td><td><select><option>DeepSeek</option><option>ChatAnyWhere</option><option>API2GPT</option><option>钱多多</option><option>No.1 API-Pro</option><option>智创聚合</option></select></td></tr>
+          <tr><td>手动自由翻译</td><td><select><option>TikHub</option><option>DeepSeek</option><option>ChatAnyWhere</option><option>智创聚合</option></select></td></tr>
+          <tr><td>时差计算</td><td><select><option>DeepSeek</option><option>ChatAnyWhere</option><option>钱多多</option></select></td></tr>
+        </tbody>
+      </table>
+
+      <!-- 红框：三块，三行竖排（各自单独选模型，不跟默认） -->
+      <div class="frame">
+        <div class="head">专项 AI · 3 个（抽档案 / 气泡翻译 / 翻译词典：单独选，不跟着「默认用哪家」变）</div>
+
+        <div class="card">
+          <div class="t">③' 从对话里提取档案</div>
+          <div class="u">点「从对话里提取档案」时，读整段对话交下面这家 AI 抽成档案字段。</div>
+          <select><option>DeepSeek</option><option>Agnes</option><option>TikHub</option><option>ChatAnyWhere</option><option>API2GPT</option><option>钱多多</option><option>No.1 API-Pro</option><option>智创聚合</option></select>
+        </div>
+
+        <div class="card">
+          <div class="t">气泡翻译模型</div>
+          <div class="u">对话下方中文译文气泡用哪家翻，全部渠道通用。</div>
+          <select><option>DeepSeek</option><option>硅基流动</option><option>OpenRouter</option><option>TikHub</option><option>阿里百炼</option><option>ChatAnyWhere</option><option>API2GPT</option><option>钱多多</option><option>No.1 API-Pro</option><option>智创聚合</option></select>
+        </div>
+
+        <div class="card">
+          <div class="t">翻译词典用哪个 AI</div>
+          <div class="u">客户英文进词典前，先过这家 AI 复核是不是真人正常英文。</div>
+          <select><option>DeepSeek</option><option>硅基流动</option><option>TikHub</option><option>阿里百炼</option><option>ChatAnyWhere</option><option>API2GPT</option><option>钱多多</option><option>No.1 API-Pro</option><option>智创聚合</option></select>
+        </div>
+      </div>
+
+      <div class="head">通用设置</div>
+      <div class="card">
+        <div class="t">消息提取间隔</div>
+        <div class="u">实时监听的兜底重扫间隔，默认 5 秒。</div>
+        <select><option>2 秒</option><option>5 秒</option><option>10 秒</option><option>15 秒</option></select>
+      </div>
+      <div class="card">
+        <div class="t">跨消息翻译记忆</div>
+        <div class="u">同一句原文翻过一次就记进字典，下次复用、不再烧 AI。</div>
+      </div>
+
+      <div class="head">二、12 个服务商：填地址和 key（仅管理员可见）</div>
+      <div class="adminonly">这部分<b>仅管理员可见</b> —— 你当前以会员身份登录，密钥填写区不显示。请用管理员编号登录后再来配置。</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

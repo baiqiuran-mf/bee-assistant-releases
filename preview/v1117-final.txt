@@ -1,0 +1,8 @@
+T② 标签页 = 1 张 → https://web.telegram.org/k/
+  空白页残留 = 0 [OK]
+WA 关空白页前 = 3 张
+WA 关空白页后 = 2 张 → https://web.whatsapp.com/ | https://example.com/
+  空白页残留 = 0 (OK)
+  WhatsApp 页= 1 (OK没误关)
+  用户自己开的页 = 1 (OK 没误关)
+DONE

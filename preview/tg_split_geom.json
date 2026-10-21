@@ -1,0 +1,318 @@
+{
+  "before": {
+    "errors": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "pageerror: Unexpected token 'o', \"not found\" is not valid JSON",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "tele1": {
+      "pane": {
+        "w": 833,
+        "h": 853.81,
+        "x": 266,
+        "y": 146.19
+      },
+      "wrap": {
+        "w": 833,
+        "h": 853.81,
+        "x": 266,
+        "y": 146.19
+      },
+      "aside": {
+        "w": 296.61,
+        "h": 853.81,
+        "x": 802.39,
+        "y": 146.19
+      },
+      "card": {
+        "w": 276.61,
+        "h": 239.52,
+        "x": 812.39,
+        "y": 156.19
+      },
+      "cardBody": {
+        "w": 250.61,
+        "h": 180.52,
+        "x": 825.39,
+        "y": 167.19
+      },
+      "actions": {
+        "w": 250.61,
+        "h": 27,
+        "x": 825.39,
+        "y": 357.7
+      },
+      "log": {
+        "w": 276.61,
+        "h": 584.3,
+        "x": 812.39,
+        "y": 405.7
+      },
+      "chat": {
+        "w": 296.39,
+        "h": 853.81,
+        "x": 506,
+        "y": 146.19
+      },
+      "friends": {
+        "w": 240,
+        "h": 853.81,
+        "x": 266,
+        "y": 146.19
+      },
+      "browser": null,
+      "status": {
+        "w": 0,
+        "h": 0,
+        "x": 0,
+        "y": 0
+      },
+      "cardFont": "13px/700/rgb(29, 33, 41)",
+      "asidePad": "10px|10px|0px|rgb(255, 255, 255)",
+      "logFont": "13px/600",
+      "btnRects": [
+        "客户档案:70x27",
+        "对话提档:70x27"
+      ]
+    },
+    "wa1": {
+      "pane": {
+        "w": 833,
+        "h": 853.81,
+        "x": 266,
+        "y": 146.19
+      },
+      "wrap": {
+        "w": 833,
+        "h": 853.81,
+        "x": 266,
+        "y": 146.19
+      },
+      "aside": {
+        "w": 383.17,
+        "h": 853.81,
+        "x": 715.83,
+        "y": 146.19
+      },
+      "card": {
+        "w": 362.17,
+        "h": 239.52,
+        "x": 726.83,
+        "y": 156.19
+      },
+      "cardBody": {
+        "w": 336.17,
+        "h": 180.52,
+        "x": 739.83,
+        "y": 167.19
+      },
+      "actions": {
+        "w": 336.17,
+        "h": 27,
+        "x": 739.83,
+        "y": 357.7
+      },
+      "log": null,
+      "chat": null,
+      "friends": null,
+      "browser": {
+        "w": 449.83,
+        "h": 853.81,
+        "x": 266,
+        "y": 146.19
+      },
+      "status": {
+        "w": 0,
+        "h": 0,
+        "x": 0,
+        "y": 0
+      },
+      "cardFont": "13px/700/rgb(29, 33, 41)",
+      "asidePad": "10px|10px|1px|rgb(255, 255, 255)",
+      "logFont": null,
+      "btnRects": [
+        "客户档案:70x27",
+        "对话提档:70x27"
+      ]
+    }
+  },
+  "after": {
+    "errors": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "pageerror: Unexpected token 'o', \"not found\" is not valid JSON",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "tele1": {
+      "pane": {
+        "w": 833,
+        "h": 853.81,
+        "x": 266,
+        "y": 146.19
+      },
+      "wrap": {
+        "w": 833,
+        "h": 853.81,
+        "x": 266,
+        "y": 146.19
+      },
+      "aside": {
+        "w": 296.61,
+        "h": 853.81,
+        "x": 802.39,
+        "y": 146.19
+      },
+      "card": {
+        "w": 276.61,
+        "h": 485.86,
+        "x": 812.39,
+        "y": 198.98
+      },
+      "cardBody": {
+        "w": 250.61,
+        "h": 180.52,
+        "x": 825.39,
+        "y": 209.98
+      },
+      "actions": {
+        "w": 250.61,
+        "h": 27,
+        "x": 825.39,
+        "y": 516.27
+      },
+      "log": {
+        "w": 276.61,
+        "h": 129.7,
+        "x": 812.39,
+        "y": 860.3
+      },
+      "chat": {
+        "w": 296.39,
+        "h": 853.81,
+        "x": 506,
+        "y": 146.19
+      },
+      "friends": {
+        "w": 240,
+        "h": 853.81,
+        "x": 266,
+        "y": 146.19
+      },
+      "browser": null,
+      "status": {
+        "w": 0,
+        "h": 0,
+        "x": 0,
+        "y": 0
+      },
+      "cardFont": "13px/700/rgb(29, 33, 41)",
+      "asidePad": "10px|10px|0px|rgb(255, 255, 255)",
+      "logFont": "13px/600",
+      "btnRects": [
+        "客户档案:70x27",
+        "对话提档:70x27"
+      ]
+    },
+    "wa1": {
+      "pane": {
+        "w": 833,
+        "h": 853.81,
+        "x": 266,
+        "y": 146.19
+      },
+      "wrap": {
+        "w": 833,
+        "h": 853.81,
+        "x": 266,
+        "y": 146.19
+      },
+      "aside": {
+        "w": 383.17,
+        "h": 853.81,
+        "x": 715.83,
+        "y": 146.19
+      },
+      "card": {
+        "w": 362.17,
+        "h": 239.52,
+        "x": 726.83,
+        "y": 156.19
+      },
+      "cardBody": {
+        "w": 336.17,
+        "h": 180.52,
+        "x": 739.83,
+        "y": 167.19
+      },
+      "actions": {
+        "w": 336.17,
+        "h": 27,
+        "x": 739.83,
+        "y": 357.7
+      },
+      "log": null,
+      "chat": null,
+      "friends": null,
+      "browser": {
+        "w": 449.83,
+        "h": 853.81,
+        "x": 266,
+        "y": 146.19
+      },
+      "status": {
+        "w": 0,
+        "h": 0,
+        "x": 0,
+        "y": 0
+      },
+      "cardFont": "13px/700/rgb(29, 33, 41)",
+      "asidePad": "10px|10px|1px|rgb(255, 255, 255)",
+      "logFont": null,
+      "btnRects": [
+        "客户档案:70x27",
+        "对话提档:70x27"
+      ]
+    }
+  },
+  "shots": {
+    "before_tele1": "E:\\WorkBuddy-Projects\\wa-assistant\\preview\\tg_split_before_tele1.png",
+    "before_wa1": "E:\\WorkBuddy-Projects\\wa-assistant\\preview\\tg_split_before_wa1.png",
+    "after_tele1": "E:\\WorkBuddy-Projects\\wa-assistant\\preview\\tg_split_after_tele1.png",
+    "after_wa1": "E:\\WorkBuddy-Projects\\wa-assistant\\preview\\tg_split_after_wa1.png"
+  }
+}

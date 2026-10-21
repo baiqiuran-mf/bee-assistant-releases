@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>建议</title>
+  <!-- 独立浮窗：由 Electron 的 suggest 窗口加载（suggest.html）。
+       复用主界面的 style.css（.sgroup / .opt / .adopt 等样式都在里面）。
+       body.float-window + .float-head 让整条标题栏可拖动，且窗口可移出主窗口。 -->
+  <link rel="stylesheet" href="/style.css?v=__BUILD__">
+</head>
+<body class="float-window">
+  <div class="float-head">
+    <div class="float-title">回复建议</div>
+    <div class="float-btns">
+      <button id="win-max" class="wbtn" title="最大化 / 还原">□</button>
+      <button id="suggest-close" class="x" title="关闭">×</button>
+    </div>
+  </div>
+  <div class="float-body sug-split">
+    <div class="sug-left">
+      <div id="suggest-src" class="src-msg"></div>
+      <div id="suggest-groups" class="suggest-groups"></div>
+      <div id="suggest-tail" class="hint">建议是中文的，你翻成自己的英文再发 —— 发出去的语感是你自己的。</div>
+    </div>
+    <aside id="tr-pane" class="tr-pane" hidden></aside>
+  </div>
+  <script src="/suggest.js?v=__BUILD__"></script>
+</body>
+</html>

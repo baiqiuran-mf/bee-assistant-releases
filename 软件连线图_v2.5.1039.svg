@@ -1,0 +1,215 @@
+<svg viewBox="0 0 680 1820" width="100%" role="img">
+  <title>蜜蜂信息采集 全窗口/按钮/功能连线图 v2.5.1039</title>
+  <desc>启动登录浮层进入主窗口；主窗口顶部按钮分别打开编排台独立窗口、设置窗口、建议浮窗、翻译浮窗、电话窗口；底部为后端功能层与各按钮的来源映射；并标注 5 个可优化点。</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+
+  <text class="th" x="340" y="34" text-anchor="middle" font-size="15" font-weight="500" fill="#0C447C">蜜蜂信息采集 · 全链接图 v2.5.1039</text>
+  <text class="ts" x="340" y="56" text-anchor="middle" font-size="12" fill="#5F5E5A">蓝=主窗口 · 绿=独立窗口/浮窗 · 珊瑚=弹窗 · 紫=后端功能 · 琥珀=可优化点</text>
+
+  <rect x="0" y="0" width="680" height="1820" fill="#FFFFFF"/>
+
+  <!-- 启动登录浮层 -->
+  <g>
+    <rect x="210" y="74" width="260" height="56" rx="10" fill="#FAECE7" stroke="#993C1D" stroke-width="0.5"/>
+    <text x="340" y="96" text-anchor="middle" font-size="13" font-weight="500" fill="#712B13">启动登录浮层 boot-login</text>
+    <text x="340" y="116" text-anchor="middle" font-size="11" fill="#791F1F">编号 + 密码 → 登录并加载 → 进入主窗口</text>
+  </g>
+  <line x1="340" y1="130" x2="340" y2="148" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- 主窗口 -->
+  <g>
+    <rect x="40" y="150" width="600" height="332" rx="12" fill="#E6F1FB" stroke="#185FA5" stroke-width="1"/>
+    <text x="56" y="174" font-size="14" font-weight="500" fill="#0C447C">主窗口 · index.html / app.js</text>
+
+    <text x="56" y="200" font-size="11" fill="#5F5E5A">顶栏</text>
+    <rect x="100" y="186" width="120" height="26" rx="6" fill="#FFFFFF" stroke="#888780" stroke-width="0.5"/>
+    <text x="160" y="203" text-anchor="middle" font-size="11" fill="#2C2C2A">手动录入</text>
+    <rect x="228" y="186" width="120" height="26" rx="6" fill="#FFFFFF" stroke="#888780" stroke-width="0.5"/>
+    <text x="288" y="203" text-anchor="middle" font-size="11" fill="#2C2C2A">话术编排台</text>
+    <rect x="356" y="186" width="86" height="26" rx="6" fill="#FFFFFF" stroke="#888780" stroke-width="0.5"/>
+    <text x="399" y="203" text-anchor="middle" font-size="11" fill="#2C2C2A">设置</text>
+    <rect x="450" y="186" width="178" height="26" rx="6" fill="#FFFFFF" stroke="#888780" stroke-width="0.5"/>
+    <text x="539" y="203" text-anchor="middle" font-size="11" fill="#2C2C2A">账号条 ①~⑤(开浏览器)</text>
+    <rect x="100" y="216" width="120" height="20" rx="4" fill="#F1EFE8" stroke="#B4B2A9" stroke-width="0.5"/>
+    <text x="160" y="230" text-anchor="middle" font-size="10" fill="#444441">AI 状态灯(显示)</text>
+    <rect x="228" y="214" width="400" height="24" rx="6" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.5"/>
+    <text x="428" y="230" text-anchor="middle" font-size="10" fill="#633806">Signal 启动器条 #launcher-bar(2026-10-11 要求去掉,DOM 仍在) ②</text>
+
+    <text x="56" y="266" font-size="11" fill="#5F5E5A">中栏</text>
+    <rect x="100" y="252" width="120" height="26" rx="6" fill="#FFFFFF" stroke="#888780" stroke-width="0.5"/>
+    <text x="160" y="269" text-anchor="middle" font-size="11" fill="#2C2C2A">客户档案</text>
+    <rect x="228" y="252" width="120" height="26" rx="6" fill="#FFFFFF" stroke="#888780" stroke-width="0.5"/>
+    <text x="288" y="269" text-anchor="middle" font-size="11" fill="#2C2C2A">提取档案</text>
+    <rect x="356" y="252" width="120" height="26" rx="6" fill="#FFFFFF" stroke="#888780" stroke-width="0.5"/>
+    <text x="416" y="269" text-anchor="middle" font-size="11" fill="#2C2C2A">生成建议</text>
+    <rect x="100" y="286" width="130" height="26" rx="6" fill="#FFFFFF" stroke="#888780" stroke-width="0.5"/>
+    <text x="165" y="303" text-anchor="middle" font-size="11" fill="#2C2C2A">标记已回复</text>
+    <rect x="238" y="286" width="110" height="26" rx="6" fill="#FFFFFF" stroke="#888780" stroke-width="0.5"/>
+    <text x="293" y="303" text-anchor="middle" font-size="11" fill="#2C2C2A">跳过消息</text>
+    <rect x="356" y="286" width="200" height="26" rx="6" fill="#FFFFFF" stroke="#888780" stroke-width="0.5"/>
+    <text x="456" y="303" text-anchor="middle" font-size="11" fill="#2C2C2A">此条建议[换一批]</text>
+
+    <text x="56" y="332" font-size="11" fill="#5F5E5A">右栏</text>
+    <rect x="100" y="318" width="200" height="26" rx="6" fill="#FFFFFF" stroke="#888780" stroke-width="0.5"/>
+    <text x="200" y="335" text-anchor="middle" font-size="11" fill="#2C2C2A">话术库[＋场景/刷新]</text>
+    <rect x="308" y="318" width="180" height="26" rx="6" fill="#FFFFFF" stroke="#888780" stroke-width="0.5"/>
+    <text x="398" y="335" text-anchor="middle" font-size="11" fill="#2C2C2A">自由翻译[翻译]</text>
+
+    <text x="56" y="378" font-size="11" fill="#5F5E5A">弹窗</text>
+    <rect x="100" y="362" width="240" height="26" rx="6" fill="#FAECE7" stroke="#993C1D" stroke-width="0.5"/>
+    <text x="220" y="379" text-anchor="middle" font-size="11" fill="#712B13">档案弹窗[保存/抓取/路径]</text>
+    <rect x="348" y="362" width="240" height="26" rx="6" fill="#FAECE7" stroke="#993C1D" stroke-width="0.5"/>
+    <text x="468" y="379" text-anchor="middle" font-size="11" fill="#712B13">翻译弹窗[翻译/版本/方式] ③</text>
+    <text x="100" y="412" font-size="11" fill="#444441">左栏:今日消息 + 客户列表(行→点开客户)</text>
+  </g>
+
+  <!-- 主窗口 → 卫星窗口 箭头 -->
+  <path d="M288 212 C 240 360, 185 420, 185 518" fill="none" stroke="#16a34a" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M399 212 C 440 360, 495 420, 495 518" fill="none" stroke="#16a34a" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M416 278 C 416 460, 495 620, 495 838" fill="none" stroke="#16a34a" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M468 388 C 540 560, 520 760, 500 968" fill="none" stroke="#16a34a" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M220 388 C 220 620, 495 900, 495 1108" fill="none" stroke="#16a34a" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="495" y1="950" x2="495" y2="968" stroke="#16a34a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- 编排台独立窗口 -->
+  <g>
+    <rect x="40" y="520" width="290" height="150" rx="10" fill="#EAF3DE" stroke="#3B6D11" stroke-width="1"/>
+    <text x="56" y="542" font-size="13" font-weight="500" fill="#27500A">编排台独立窗口 board.html ①</text>
+    <rect x="56" y="552" width="258" height="24" rx="6" fill="#FFFFFF" stroke="#888780" stroke-width="0.5"/>
+    <text x="185" y="568" text-anchor="middle" font-size="11" fill="#2C2C2A">添加/改/删/补全新话术</text>
+    <rect x="56" y="582" width="120" height="24" rx="6" fill="#FFFFFF" stroke="#888780" stroke-width="0.5"/>
+    <text x="116" y="598" text-anchor="middle" font-size="11" fill="#2C2C2A">全部已发</text>
+    <rect x="184" y="582" width="130" height="24" rx="6" fill="#FFFFFF" stroke="#888780" stroke-width="0.5"/>
+    <text x="249" y="598" text-anchor="middle" font-size="11" fill="#2C2C2A">+ 添加对话</text>
+    <rect x="56" y="612" width="258" height="24" rx="6" fill="#FFFFFF" stroke="#888780" stroke-width="0.5"/>
+    <text x="185" y="628" text-anchor="middle" font-size="11" fill="#2C2C2A">分页 上一页/下一页</text>
+    <text x="56" y="658" font-size="10" fill="#444441">弹窗:改碎片/加对话/删碎片(密码)/删对话</text>
+  </g>
+
+  <!-- 设置窗口 -->
+  <g>
+    <rect x="350" y="520" width="290" height="300" rx="10" fill="#EAF3DE" stroke="#3B6D11" stroke-width="1"/>
+    <text x="366" y="542" font-size="13" font-weight="500" fill="#27500A">全局设置 settings.html ⑤</text>
+    <rect x="366" y="552" width="258" height="24" rx="6" fill="#FFFFFF" stroke="#888780" stroke-width="0.5"/>
+    <text x="495" y="568" text-anchor="middle" font-size="11" fill="#2C2C2A">AI 设置[保存]</text>
+    <rect x="366" y="582" width="258" height="24" rx="6" fill="#FFFFFF" stroke="#888780" stroke-width="0.5"/>
+    <text x="495" y="598" text-anchor="middle" font-size="11" fill="#2C2C2A">AI 提示词</text>
+    <rect x="366" y="612" width="258" height="24" rx="6" fill="#FFFFFF" stroke="#888780" stroke-width="0.5"/>
+    <text x="495" y="628" text-anchor="middle" font-size="11" fill="#2C2C2A">云端[登录/同步话题]</text>
+    <rect x="366" y="642" width="258" height="24" rx="6" fill="#FFFFFF" stroke="#888780" stroke-width="0.5"/>
+    <text x="495" y="658" text-anchor="middle" font-size="11" fill="#2C2C2A">模拟新消息</text>
+    <rect x="366" y="672" width="258" height="24" rx="6" fill="#FFFFFF" stroke="#888780" stroke-width="0.5"/>
+    <text x="495" y="688" text-anchor="middle" font-size="11" fill="#2C2C2A">软件更新[检查/安装]</text>
+    <rect x="366" y="702" width="258" height="24" rx="6" fill="#FFFFFF" stroke="#888780" stroke-width="0.5"/>
+    <text x="495" y="718" text-anchor="middle" font-size="11" fill="#2C2C2A">代理[保存]</text>
+    <text x="366" y="754" font-size="10" fill="#444441">6 个页签,代理/更新等较深</text>
+  </g>
+
+  <!-- 建议浮窗 -->
+  <g>
+    <rect x="350" y="840" width="290" height="110" rx="10" fill="#EAF3DE" stroke="#3B6D11" stroke-width="1"/>
+    <text x="366" y="862" font-size="13" font-weight="500" fill="#27500A">建议浮窗 suggest.html ④</text>
+    <rect x="366" y="872" width="120" height="24" rx="6" fill="#FFFFFF" stroke="#888780" stroke-width="0.5"/>
+    <text x="426" y="888" text-anchor="middle" font-size="11" fill="#2C2C2A">关闭</text>
+    <rect x="366" y="902" width="258" height="24" rx="6" fill="#FFFFFF" stroke="#888780" stroke-width="0.5"/>
+    <text x="495" y="918" text-anchor="middle" font-size="11" fill="#2C2C2A">卡片:采纳/翻译/换一批</text>
+    <text x="366" y="940" font-size="10" fill="#444441">出 3 条中文建议(人设+7天节奏)</text>
+  </g>
+
+  <!-- 翻译浮窗 -->
+  <g>
+    <rect x="350" y="970" width="290" height="118" rx="10" fill="#EAF3DE" stroke="#3B6D11" stroke-width="1"/>
+    <text x="366" y="992" font-size="13" font-weight="500" fill="#27500A">翻译浮窗 translate.html</text>
+    <rect x="366" y="1002" width="120" height="24" rx="6" fill="#FFFFFF" stroke="#888780" stroke-width="0.5"/>
+    <text x="426" y="1018" text-anchor="middle" font-size="11" fill="#2C2C2A">翻译</text>
+    <rect x="494" y="1002" width="130" height="24" rx="6" fill="#FFFFFF" stroke="#888780" stroke-width="0.5"/>
+    <text x="559" y="1018" text-anchor="middle" font-size="11" fill="#2C2C2A">版本数/方式</text>
+    <rect x="366" y="1032" width="120" height="24" rx="6" fill="#FFFFFF" stroke="#888780" stroke-width="0.5"/>
+    <text x="426" y="1048" text-anchor="middle" font-size="11" fill="#2C2C2A">关闭</text>
+  </g>
+
+  <!-- 电话窗口 -->
+  <g>
+    <rect x="350" y="1110" width="290" height="118" rx="10" fill="#EAF3DE" stroke="#3B6D11" stroke-width="1"/>
+    <text x="366" y="1132" font-size="13" font-weight="500" fill="#27500A">电话窗口 phone.html(只读)</text>
+    <rect x="366" y="1142" width="130" height="24" rx="6" fill="#FFFFFF" stroke="#888780" stroke-width="0.5"/>
+    <text x="431" y="1158" text-anchor="middle" font-size="11" fill="#2C2C2A">重新抓取</text>
+    <rect x="504" y="1142" width="120" height="24" rx="6" fill="#FFFFFF" stroke="#888780" stroke-width="0.5"/>
+    <text x="564" y="1158" text-anchor="middle" font-size="11" fill="#2C2C2A">关闭</text>
+    <text x="366" y="1186" font-size="10" fill="#444441">列疑似电话,不改数据,不发送</text>
+  </g>
+
+  <!-- 功能层标题 -->
+  <text x="340" y="1262" text-anchor="middle" font-size="14" font-weight="500" fill="#26215C">后端功能层 · 按钮→功能 映射(看各卡『来源』)</text>
+
+  <!-- 功能卡 左列 -->
+  <g>
+    <rect x="40" y="1276" width="290" height="64" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+    <text x="56" y="1296" font-size="12" font-weight="500" fill="#26215C">1 客户建档/入库</text>
+    <text x="56" y="1314" font-size="10" fill="#3C3489">来源:手动录入, 档案弹窗[保存]</text>
+    <text x="56" y="1330" font-size="10" fill="#3C3489">落 data 目录(wa-assistant)</text>
+
+    <rect x="40" y="1348" width="290" height="64" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+    <text x="56" y="1368" font-size="12" font-weight="500" fill="#26215C">2 采集 WA/Signal/Telegram</text>
+    <text x="56" y="1386" font-size="10" fill="#3C3489">来源:账号条①~⑤(开浏览器)</text>
+    <text x="56" y="1402" font-size="10" fill="#3C3489">三循环: loops.js 预热/采集/扫描</text>
+
+    <rect x="40" y="1420" width="290" height="64" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+    <text x="56" y="1440" font-size="12" font-weight="500" fill="#26215C">3 AI 建议</text>
+    <text x="56" y="1458" font-size="10" fill="#3C3489">来源:生成建议, 此条建议[换一批]</text>
+    <text x="56" y="1474" font-size="10" fill="#3C3489">模型:混元 Hy3, 仅中文</text>
+
+    <rect x="40" y="1492" width="290" height="64" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+    <text x="56" y="1512" font-size="12" font-weight="500" fill="#26215C">4 翻译</text>
+    <text x="56" y="1530" font-size="10" fill="#3C3489">来源:翻译弹窗, 建议浮窗, 自由翻译 ③</text>
+    <text x="56" y="1546" font-size="10" fill="#3C3489">3 处入口,可统一</text>
+
+    <rect x="40" y="1564" width="290" height="64" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+    <text x="56" y="1584" font-size="12" font-weight="500" fill="#26215C">5 提取档案</text>
+    <text x="56" y="1602" font-size="10" fill="#3C3489">来源:中栏[提取档案]</text>
+    <text x="56" y="1618" font-size="10" fill="#3C3489">AI 抽人设/宠物/阶段</text>
+  </g>
+
+  <!-- 功能卡 右列 -->
+  <g>
+    <rect x="350" y="1276" width="290" height="64" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+    <text x="366" y="1296" font-size="12" font-weight="500" fill="#26215C">6 话术库</text>
+    <text x="366" y="1314" font-size="10" fill="#3C3489">来源:右栏话术库, 编排台[增/改/删]</text>
+    <text x="366" y="1330" font-size="10" fill="#3C3489">场景→3 情绪版本</text>
+
+    <rect x="350" y="1348" width="290" height="64" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+    <text x="366" y="1368" font-size="12" font-weight="500" fill="#26215C">7 云端同步</text>
+    <text x="366" y="1386" font-size="10" fill="#3C3489">来源:设置[云端登录/同步话题]</text>
+    <text x="366" y="1402" font-size="10" fill="#3C3489">编号仓库隔离,主数据只读</text>
+
+    <rect x="350" y="1420" width="290" height="64" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+    <text x="366" y="1440" font-size="12" font-weight="500" fill="#26215C">8 软件更新</text>
+    <text x="366" y="1458" font-size="10" fill="#3C3489">来源:设置[检查更新/安装]</text>
+    <text x="366" y="1474" font-size="10" fill="#3C3489">仅 NSIS 安装包可用</text>
+
+    <rect x="350" y="1492" width="290" height="64" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+    <text x="366" y="1512" font-size="12" font-weight="500" fill="#26215C">9 代理</text>
+    <text x="366" y="1530" font-size="10" fill="#3C3489">来源:设置[代理保存]</text>
+    <text x="366" y="1546" font-size="10" fill="#3C3489">proxies.json 各实例独立</text>
+
+    <rect x="350" y="1564" width="290" height="64" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+    <text x="366" y="1584" font-size="12" font-weight="500" fill="#26215C">10 已处理归档</text>
+    <text x="366" y="1602" font-size="10" fill="#3C3489">来源:标记已回复, 跳过消息</text>
+    <text x="366" y="1618" font-size="10" fill="#3C3489">收进左栏「已处理」</text>
+  </g>
+
+  <!-- 可优化点面板 -->
+  <g>
+    <rect x="40" y="1644" width="600" height="156" rx="10" fill="#FAEEDA" stroke="#854F0B" stroke-width="1"/>
+    <text x="56" y="1666" font-size="13" font-weight="500" fill="#633806">可优化点 ①~⑤（图中琥珀标记）</text>
+    <text x="56" y="1688" font-size="11" fill="#412402">① 主窗口内 board-panel 与「编排台独立窗口」功能重复 → 评估合并/二选一</text>
+    <text x="56" y="1708" font-size="11" fill="#412402">② 顶栏 #launcher-bar(Signal S1~S3) 2026-10-11 要求去掉,但 DOM 仍在 → 确认清理</text>
+    <text x="56" y="1728" font-size="11" fill="#412402">③ 翻译入口有 3 处(右栏自由翻译 / 翻译弹窗 / 建议浮窗) → 可统一收口</text>
+    <text x="56" y="1748" font-size="11" fill="#412402">④ 两个建议弹窗(建议浮窗 与 此条建议弹窗)功能重叠 → 可合并为一套</text>
+    <text x="56" y="1768" font-size="11" fill="#412402">⑤ 设置 6 页签(代理/更新等较深) → 评估常用度/折叠</text>
+  </g>
+</svg>

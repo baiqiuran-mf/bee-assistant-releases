@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "蜜蜂采集 · 网页版 WhatsApp 抓图",
+  "version": "1.0.0",
+  "description": "把网页版 WhatsApp 里客户发来的图片自动发回「蜜蜂信息采集」软件（仅客户发来的，自己发的不会抓）。数据不出本机。",
+  "permissions": ["storage"],
+  "host_permissions": [
+    "http://127.0.0.1:8787/*",
+    "https://web.whatsapp.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://web.whatsapp.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "蜜蜂采集 · 网页版 WhatsApp 抓图"
+  }
+}

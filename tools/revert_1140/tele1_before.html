@@ -1,0 +1,122 @@
+      <div class="mid-pane hidden" data-mp="tele1">
+        <div class="tele-wrap">
+          <!-- v2.6.1107 软件版「好友对话选择」：Tele① 页签左端一列，由 MTProto 官方通道喂数据。
+               没登录 / 没建档时显示占位提示；点一个好友 → 右侧资料卡 + 对话信息跟着切换。
+               主窗口最左栏的 Telegram 客户已不再出现（见 app.js paintCustomers），改由这里统一选择。 -->
+          <div class="tg-friends" id="tg-friends">
+            <div class="tgf-head">
+              <span>Telegram · 好友对话</span>
+              <!-- 🔴 v2.6.1112 老板拍板：「对话信息」列改成**可缩到 0 的弹性列**（QQ20261014-140415 红框）。
+                   窗口够宽自动占满剩余、主窗口收窄自动压到 0；这个按钮是**手动**开关，
+                   老板想主动收起 ③ 时点它，再点一次展开（与窗口宽度互不干扰）。 -->
+              <button class="tgf-toggle on" id="tg-chat-toggle"
+                      title="收起 / 展开「对话信息」列（快捷键 Alt+D）">对话 ▤</button>
+            </div>
+            <div class="tgf-list" id="tgf-list">
+              <div class="tv-empty">登录后这里列出你的 Telegram 对话</div>
+            </div>
+            <div class="tgf-foot">点一个好友 → 右边出他的资料卡和对话</div>
+          </div>
+          <!-- 🔴 v2.6.1108 老板看图拍板（QQ20261014-030311.png 红框 + 预览图确认）：
+               「对话信息」从资料卡底部**搬出来独立成列**，插在好友对话列和客户资料卡之间。
+               · 客户说的在左（灰气泡）、我自己的在右（蓝气泡）
+               · 双方消息只要不是中文，下面都跟一个「译」气泡（浅蓝底 + 深蓝 #1f6aa5 中文）
+               · 🔴 翻译铁律：中文不出「译」气泡；任何非中文（英/西/法/俄…）都译成中文
+               · 数据走 /api/customer/<code>（和旧 renderTgConvInfo 同一条路），实时新消息由
+                 onTelegramMessageLive 直接往 #tg-chat-body 追加
+               下面资料卡底部那块旧「对话信息」（.tv-conv / #tg-convinfo-body）已删除，不重复。 -->
+          <div class="tg-chat" id="tg-chat">
+            <div class="tgc-head">
+              <span class="tgc-title">对话信息</span>
+              <span class="tgc-sub" id="tg-chat-sub">点一个好友，这里列他这段对话</span>
+            </div>
+            <div class="tgc-body" id="tg-chat-body">
+              <div class="tv-empty">点一个好友，这里列他这段对话的原话 + 中文</div>
+            </div>
+          </div>
+          <!-- 🔴 v2.6.1093 老板拍板：Tele① 改回**真正的内置浏览器**（扫码登录）。
+               原生会话列表 / 原生气泡 / 回复框三块**全部删除**（读库那套在 v2.5.1085 换上的，
+               但它只是把库里已有的数据再画一遍，并不产生新数据 → 老板反馈"收不到信息"）。
+               现在左半 = 真的 Telegram 网页，你在网页里自己看、自己发、自己登录。
+
+               · partition="persist:tg-tele-7" = 独立 Cookie 分区，登录态存本机，关软件再开还在
+               · src 故意留空，第一次点这个页签时才由 app.js 的 switchMidTab() 填上（懒加载，启动不拖慢）
+               · 回复/发图/发视频都在网页里自己操作 —— 本软件**绝不自动发送**（铁律不变）
+
+               老板已确认删掉的三件：
+                 ① tele-left 读库会话列表   ② tg-conv 读库气泡区
+                 ③ tg-composer 回复框（发消息/图片/视频 —— 就是"unnamed、对方收不到"那个问题源）
+               保留的只有最右 .tg-conv-aside（客户资料卡 + 采集状态 + 日志），**一个字节不动**。 -->
+          <!-- 🔴 v2.6.1106 老板拍板（2026-10-14）：Tele① 改成「软件版」，**网页版内核整体删除**。
+               原来这一整块 .tele-browser（网址框 #tgb-url +「前往」#tgb-go + <webview id="tg-webview"
+               partition="persist:tg-tele-7">）已经整块拿掉 —— 软件里不再塞一个浏览器内核。
+
+               改由 MTProto 官方直连承担，只做四件事：
+                 ① 实时收新消息（startWatching + onMessages，官方推送，比网页版轮询快）
+                 ② 取客户档案：真实手机号 / username / 头像 / 在线状态（getUserProfile —— 网页版永远拿不到真实手机号）
+                 ③ 私聊 · 群组 · 频道都能读（getEntity 解析三种 Peer）
+                 ④ 登录一次长期复用（saveSession / loadSession，凭证落盘）
+               下面右侧的客户资料卡 + 对话信息原地保留，数据改由官方通道喂。 -->
+
+          <!-- 🔴 v2.6.1094 老板看图定稿（QQ20261013-150420.png）：
+               第三栏 = ① 客户资料卡（方案一·竖排单列，颜色全沿用「通用」那一套）
+                        ② 三个按钮（跳到聊天 / 客户档案 / 从对话里提取档案）
+                        ③ 对话信息（原「Telegram 日志」那块换掉的）
+               铁律：资料卡**只显示基本信息**；「客户档案」是**按钮**，点了才弹那个 16 项窗口。 -->
+          <div class="tg-conv-aside">
+            <!-- ① 客户资料卡：基本信息，竖排单列（方案一）。
+                 颜色沿用通用那边：加入时间红 / 认识第N天蓝 / Day紫 / 地区紫 / 当地时间绿 / 星黄。 -->
+            <div class="tv-card" id="tg-profile">
+              <div class="tv-body" id="tg-profile-body">
+                <div class="tv-empty">点左栏带 ∮ 的客户看资料</div>
+              </div>
+              <div class="tv-actions">
+                <!-- v2.6.1106：原「↗ 跳到聊天」（#tg-jump）随网页版一起删除 ——
+                     网页内核都没了，压根没有聊天窗口可跳。剩下两个按钮照旧。 -->
+                <button class="tv-btn tv-btn-blue" id="tg-profile-full" title="弹出这个客户的完整档案窗口（16 项）">客户档案</button>
+                <button class="tv-btn tv-btn-blue" id="tg-profile-extract" title="读整段对话，把能确认的档案字段抽出来补进档案">对话提档</button>
+              </div>
+            </div>
+
+            <!-- 采集状态提示：贴着资料卡下方（原来在日志上方，日志已换掉） -->
+            <div id="tg-status" class="tg-status hidden"></div>
+
+            <!-- 🔴 v2.6.1113 指令①：Tele①「Telegram 采集数据」日志（老板 2026-10-14 17:31 看图 QQ20261014-172911.png 指名）
+                 位置 = 老板图里那个**红框**（④ 资料卡下方、⑤ 右栏左边的空白区，撑满剩余高度）。
+                 内容要求（老板原话）：「展示放置 Telegram 采集数据，采集了哪些数据客户资料客户的信息，
+                 **哪怕没有采集到都需要展示在这里，当成日志**」→ 所以：
+                   · 每行一条：时间 + 账号(T①/T②) + 采到什么（手机号/用户名/在线/消息）
+                   · 采到了 →绿色；采不到 → 灰色写「未获取到」；失败 → 红色写原因
+                   · **一条都没有也要显示占位行**，绝不出现空白框（老板明确要求）
+                 复用历史遗留的 .tg-log 样式（CSS 一直都在，只是 HTML 被删过），不新发明排版。 -->
+            <div class="tg-log" id="tg-collect-log-tele1">
+              <div class="tg-log-head">Telegram 采集数据
+                <button class="mini tg-log-clear" id="tg-log-clear-tele1" title="清空这份日志">清空</button>
+              </div>
+              <div class="tg-log-body" id="tg-log-body-tele1">
+                <!-- 启动时由 app.js 灌入占位行：没采到也照样显示，不留白 -->
+                <div class="tg-log-line muted">等待采集…（每采到一条就往下记一条，没采到也会写明原因）</div>
+              </div>
+            </div>
+
+            <!-- 🔴 v2.6.1108：「对话信息」搬去中间独立列（见上面 .tg-chat），
+                 这块旧 .tv-conv / #tg-convinfo-body 已删除，不留第二份。 -->
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════ 页签3「WA①」：WhatsApp 内置浏览器（v2.6.1094 老板拍板） ══════════════
+           🔴 形态与 Tele① 完全对称（老板原话「功能界面可以模仿 Tele① 标签」）：
+              左半 = 真 WhatsApp 网页（地址栏 + webview，扫码登录，能看能发）
+              右半 = 客户资料卡（.tv-card）+ 三个按钮 + 对话信息（.tv-conv）——**直接复用 Tele① 的类**，
+                     不另发明排版、不另挑颜色，样式一个字节都没为 WA 新写。
+           🔴 partition 三条都互相独立，互不影响、互不踢：
+              persist:wa6       ← WA① 本页（**内置浏览器版，六号**）
+              persist:tg-tele-7 ← Tele①（Telegram）
+              外部 Chrome       ← 一号~五号（走 sessions\chrome-acc-N，不走 partition）
+           🔴 老板 v2.6.1095 定调：「WA① 不要跟一号一样，这个可以是另一个数据文件夹，
+              或者当成六号」→ 采纳**六号**：账号号 6、客户编号段 6A、数据夹 persist:wa6。
+              **WA① 是软件内置浏览器内核（webview），一号~五号是软件外独立 Chrome 进程，
+              两者不是同类**，顶栏账号条仍只显示一号~五号，六号不上去。
+           🔴 铁律不变：内置浏览器只是「看 + 手动预填」，**绝不自动发送**。
+           ⚠️ 「通用」和 Tele① 两块一个字节都没动。 -->

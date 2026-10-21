@@ -1,0 +1,183 @@
+=== Bee Assistant · Telegram page probe ===
+time: 2026-10-13T05:15:31.891Z
+target: http://127.0.0.1:8787
+
+前提：软件已运行，且中栏已点开「Tele①」页签、Telegram 网页已加载。
+
+=== 1. 内嵌页面清单 /api/telegram/webview/pages ===
+{
+  "ok": true,
+  "electron": true,
+  "count": 3,
+  "pages": [
+    {
+      "i": 0,
+      "url": "http://127.0.0.1:8787/settings.html",
+      "title": "全局设置",
+      "type": "window",
+      "destroyed": false,
+      "isTG": false
+    },
+    {
+      "i": 1,
+      "url": "https://web.telegram.org/k/",
+      "title": "Telegram Web",
+      "type": "webview",
+      "destroyed": false,
+      "isTG": true
+    },
+    {
+      "i": 2,
+      "url": "http://127.0.0.1:8787/",
+      "title": "蜜蜂信息采集",
+      "type": "window",
+      "destroyed": false,
+      "isTG": false
+    }
+  ],
+  "found": true,
+  "hint": "找到 Telegram 页面（第 1 个：https://web.telegram.org/k/）",
+  "foundIndex": 1
+}
+
+=== 2. 页面扫描结果 /api/telegram/webview/probe ===
+（先等 6 秒，让它自己扫两轮）
+{
+  "ok": true,
+  "found": true,
+  "url": "https://web.telegram.org/k/",
+  "loginPage": false,
+  "chatTitle": "Telegram",
+  "chats": 4,
+  "unread": 4,
+  "bubbles": 0,
+  "hit": {
+    "chatList": "#column-left .chatlist",
+    "chatTitle": ".peer-title",
+    "chatItem": "#column-left a.chatlist-chat",
+    "bubbles": ""
+  },
+  "openFallback": false,
+  "dom": {
+    "ids": [
+      "manifest",
+      "svg-defs",
+      "tooltip-notch-clip",
+      "message-tail-clip",
+      "story-item-clip",
+      "message-tail",
+      "logo",
+      "poll-line",
+      "check",
+      "checkbox-cross",
+      "verified-icon-background",
+      "verified-icon-check",
+      "topic-icon",
+      "message-tail-filled",
+      "corner-fill",
+      "star-sparkle",
+      "paint0_linear_6651_5783",
+      "paint1_linear_6651_5783",
+      "paint2_linear_6651_5783",
+      "page-chats",
+      "main-columns",
+      "folders-sidebar",
+      "column-left",
+      "chatlist-container",
+      "folders-tabs",
+      "folders-container",
+      "search-container",
+      "new-menu",
+      "column-center",
+      "topbar-call-status",
+      "column-right",
+      "stories-viewer",
+      "audio-asset-player",
+      "scrollbar-width"
+    ],
+    "probes": {
+      "#column-left": 1,
+      ".column-left": 0,
+      ".chatlist": 2,
+      "ul.chatlist": 2,
+      "a.chatlist-chat": 4,
+      "a[data-peer-id]": 4,
+      "[data-peer-id]": 12,
+      "#LeftColumn": 0,
+      ".ListItem-button": 0,
+      ".chat-list": 0,
+      ".chats-container": 1,
+      ".sidebar": 2,
+      ".dialog": 0,
+      ".chat-badge": 0,
+      "[data-mid]": 0,
+      ".bubbles": 0,
+      ".bubble": 0
+    },
+    "links": [
+      {
+        "href": "#777000",
+        "pid": "777000",
+        "cls": "rp row no-wrap row-with-padding row-clickable hover-effect chatlist-ch",
+        "txt": "Telegram12:27Login code: ⠰⣘⢄⢾⣍"
+      },
+      {
+        "href": "#7207229390",
+        "pid": "7207229390",
+        "cls": "rp row no-wrap row-with-padding row-clickable hover-effect chatlist-ch",
+        "txt": "Eileen Lin04:25helloEL"
+      },
+      {
+        "href": "#8937920881",
+        "pid": "8937920881",
+        "cls": "rp row no-wrap row-with-padding row-clickable hover-effect chatlist-ch",
+        "txt": "XueOct 11Photo"
+      },
+      {
+        "href": "#6041069068",
+        "pid": "6041069068",
+        "cls": "rp row no-wrap row-with-padding row-clickable hover-effect chatlist-ch",
+        "txt": "Richard Bennettlast seen 1 hou"
+      }
+    ]
+  },
+  "sample": [
+    {
+      "peerId": "777000",
+      "title": "Telegram",
+      "preview": "Login code: ⠰⣘⢄⢾⣍. Do not give this code to anyone, even if they say they are from Telegram!\n\nThis...",
+      "count": 1
+    },
+    {
+      "peerId": "7207229390",
+      "title": "Eileen Lin",
+      "preview": "hello",
+      "count": 1
+    },
+    {
+      "peerId": "8937920881",
+      "title": "Xue",
+      "preview": "Photo",
+      "count": 1
+    },
+    {
+      "peerId": "6041069068",
+      "title": "Richard Bennett",
+      "preview": "last seen 1 hour ago",
+      "count": 1
+    }
+  ],
+  "sampleMsgs": [],
+  "at": "2026-10-13T05:15:37.917Z"
+}
+
+=== 3. 只看气泡 mid（贴译文靠它定位）===
+⚠ 没拿到气泡。原因看上面 probe.found / probe.reason / probe.reasonCode。
+
+=== 4. 命中了哪些选择器 probe.hit ===
+{
+  "chatList": "#column-left .chatlist",
+  "chatTitle": ".peer-title",
+  "chatItem": "#column-left a.chatlist-chat",
+  "bubbles": ""
+}

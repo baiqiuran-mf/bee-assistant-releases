@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Signal 抓取实测报告 · 2026-10-08</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --card:#ffffff; --line:#e3e6ea; --ink:#1b1f24; --sub:#5b6470;
+    --ok:#0a7d3f; --okbg:#e7f6ed; --bad:#b3261e; --badbg:#fdecea;
+    --warn:#8a5a00; --warnbg:#fff5e0; --blue:#1257c4; --bluebg:#e9f1fd;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.65 -apple-system,"Segoe UI","Microsoft YaHei",sans-serif}
+  .wrap{max-width:1080px;margin:0 auto;padding:32px 20px 64px}
+  h1{font-size:26px;margin:0 0 6px}
+  .sub{color:var(--sub);font-size:14px;margin-bottom:24px}
+  h2{font-size:19px;margin:34px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--line)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-bottom:14px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:8px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+  .stat .n{font-size:28px;font-weight:700;line-height:1.2}
+  .stat .l{font-size:13px;color:var(--sub);margin-top:2px}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+  th{background:#f0f2f5;font-weight:600;font-size:13px;color:#3c454f}
+  tbody tr:last-child td{border-bottom:none}
+  code{background:#eef0f3;padding:1px 6px;border-radius:4px;font-size:13px;
+    font-family:ui-monospace,Consolas,monospace}
+  .tag{display:inline-block;padding:2px 9px;border-radius:20px;font-size:12px;font-weight:600}
+  .t-ok{background:var(--okbg);color:var(--ok)}
+  .t-bad{background:var(--badbg);color:var(--bad)}
+  .t-warn{background:var(--warnbg);color:var(--warn)}
+  .t-blue{background:var(--bluebg);color:var(--blue)}
+  pre{background:#22262b;color:#e6e9ed;padding:14px 16px;border-radius:10px;
+    overflow-x:auto;font-size:13px;line-height:1.6;
+    font-family:ui-monospace,Consolas,monospace}
+  .imgs{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-top:6px}
+  .imgbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px;text-align:center}
+  .imgbox img{max-width:100%;border-radius:6px;display:block;margin:0 auto 8px}
+  .cap{font-size:12px;color:var(--sub)}
+  ul{margin:8px 0;padding-left:22px}
+  li{margin:4px 0}
+  .kv{display:grid;grid-template-columns:150px 1fr;gap:4px 12px;font-size:14px}
+  .kv dt{color:var(--sub)}
+  .kv dd{margin:0;font-weight:500}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Signal 实时抓取实测报告</h1>
+  <div class="sub">2026-10-08 14:09 · Signal Desktop 保持登录 · 全程只读，未写 Signal 任何文件，未写入 assistant.db</div>
+
+  <div class="grid">
+    <div class="stat"><div class="n">3</div><div class="l">会话总数</div></div>
+    <div class="stat"><div class="n">2</div><div class="l">真实好友（已排除官方号）</div></div>
+    <div class="stat"><div class="n">6</div><div class="l">有效消息</div></div>
+    <div class="stat"><div class="n">5</div><div class="l">已解密图片</div></div>
+    <div class="stat"><div class="n">6/6</div><div class="l">过滤系统事件</div></div>
+  </div>
+
+  <h2>一、消息抓取：6 条全部拿到</h2>
+  <div class="card">
+    <p style="margin-top:0">走软件内置的 <code>signalRead.readNew(0)</code> 增量链路，从水位 0 全量捞，<span class="tag t-ok">成功 6 条</span></p>
+    <table>
+      <thead><tr><th style="width:150px">时间</th><th style="width:60px">方向</th><th style="width:130px">客户</th><th>正文</th><th style="width:90px">电话状态</th></tr></thead>
+      <tbody>
+        <tr><td>09:37:01</td><td>发出</td><td>Sherry Lin</td><td>I'm</td><td><code>pending</code></td></tr>
+        <tr><td>09:37:17</td><td>收到</td><td>Sherry Lin</td><td>h l lo</td><td><code>pending</code></td></tr>
+        <tr><td>12:26:13</td><td>收到</td><td>Sherry Lin</td><td>here</td><td><code>pending</code></td></tr>
+        <tr><td>13:26:00</td><td>发出</td><td>Sherry Lin</td><td>🙂‍↔️</td><td><code>pending</code></td></tr>
+        <tr><td>13:26:09</td><td>收到</td><td>Sherry Lin</td><td>hello</td><td><code>pending</code></td></tr>
+        <tr><td>13:26:54</td><td>收到</td><td>Sherry Lin</td><td>t</td><td><code>pending</code></td></tr>
+      </tbody>
+    </table>
+    <p style="margin-bottom:0"><strong>过滤掉的 6 条</strong>（不该变成客户消息）：5 条 <code>type=story</code>（Signal 官方号的朋友圈引导图）+ 1 条 <code>message-request-response-event</code>（系统回执）。官方号 <code>11111111-1111-4111-8111-111111111111</code> 已被正确排除。</p>
+  </div>
+
+  <h2>二、好友资料：拿到了，比预期多</h2>
+  <div class="card">
+    <p style="margin-top:0">Signal <b>没有 contacts 通讯录表</b> —— 所有好友资料都存在 <code>conversations</code> 表里，一个会话一行。<code>json</code> 列还额外带了 50 多个字段（头像密钥、颜色、已读数、草稿、验证状态等）。</p>
+    <table>
+      <thead><tr><th style="width:150px">资料</th><th>Sherry Lin</th><th>wanqiu Lin</th></tr></thead>
+      <tbody>
+        <tr><td>ACI（唯一标识）</td><td><code>e70af58b-…b912e</code></td><td><code>62fdba09-…bcea5</code></td></tr>
+        <tr><td>全名</td><td>Sherry Lin</td><td>wanqiu Lin</td></tr>
+        <tr><td>名 / 姓</td><td>Sherry / Lin</td><td>wanqiu / Lin</td></tr>
+        <tr><td><b>电话号码</b></td><td><span class="tag t-warn">null</span> 对方开了隐私隐藏</td><td><span class="tag t-ok">+16058384634</span></td></tr>
+        <tr><td>头像</td><td>1024×1024 · 259KB</td><td>512×512 · 48KB</td></tr>
+        <tr><td>消息数 / 未读</td><td>7 条 / <b>1 条未读</b></td><td>0 条 / 0</td></tr>
+        <tr><td>已验证</td><td>否</td><td><span class="tag t-ok">是</span>（safety number 已核对）</td></tr>
+        <tr><td>共享手机号</td><td>否</td><td>否</td></tr>
+        <tr><td>最后活跃</td><td>13:26</td><td>无消息</td></tr>
+        <tr><td>草稿</td><td>空</td><td>空</td></tr>
+        <tr><td>加密会话设备</td><td>2 台</td><td>3 台</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;font-size:16px">🔴 一个必须先讲清楚的发现</h3>
+    <p><strong>Sherry Lin 的电话号码在 Signal 库里是 <code>null</code>，而且抓不出来。</strong>这不是我们没读对 —— <code>sharingPhoneNumber = false</code>，是对方在 Signal 设置里关掉了「共享手机号」。软件现在的处理是对的：电话留空、状态标 <code>pending</code>、<b>不因此跳过采集</b>（6 条消息全部正常入库就是证明）。</p>
+    <p style="margin-bottom:0">对比之下 wanqiu Lin 拿到了完整号码 <code>+16058384634</code>，且已验证 —— 说明「有号/没号」取决于对方设置，不是我们能力问题。Signal 和 WhatsApp 的 <code>@lid</code> 隐藏号码是同一类问题，但 Signal 这边连 <code>username</code> 都没暴露。</p>
+  </div>
+
+  <h2>三、图片：Signal 附件可以解密，已拿到明文</h2>
+  <div class="card">
+    <p style="margin-top:0">这一项是今天最大的收获。<b>Signal 的图片附件是能解的</b>，不用再等「以后再说」。我实测走通了完整链路：</p>
+    <pre>文件布局：  [ 16 字节 IV ][ AES-256-CBC 密文 ][ 32 字节 MAC ]
+密钥拆分：  localKey = base64(64 字节)
+            AES key = localKey[0:32]      ← 注意是前 32 字节
+            MAC  key = localKey[32:64]
+解密后：    不要去 padding，按 DB 的 size 字段截断（尾标记 ffd9 位置和 size 完全一致）</pre>
+    <p>我第一版按「<code>[32B MAC][密文]</code>」和「<code>mac=前32</code>」两种猜法都试过，MAC 全部校验失败、图片头部乱码。最后改用穷举 7 种布局 × 2 种 key 顺序，用「解出来必须是 JPEG 文件头」当唯一判据，才锁定真实布局。macLen=32 恒定，autoPad=false 是对的。</p>
+    <p style="margin-bottom:0"><strong>4 张全部通过 sharp 双重验证</strong>：既能读元数据，也能真实缩略解码（说明没有截断错）。</p>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;font-size:16px">解密出来的真实图片</h3>
+    <div class="imgs">
+      <div class="imgbox">
+        <img src="signal_decrypt/头像Sherry Lin_1024x1024.jpg" alt="Sherry Lin 头像">
+        <div class="cap"><b>Sherry Lin 头像</b><br>1024×1024 · 259,243 B<br>客户 profile 资料里的头像</div>
+      </div>
+      <div class="imgbox">
+        <img src="signal_decrypt/头像wanqiu Lin_512x512.jpg" alt="wanqiu Lin 头像">
+        <div class="cap"><b>wanqiu Lin 头像</b><br>512×512 · 48,060 B<br>客户 profile 资料里的头像</div>
+      </div>
+      <div class="imgbox">
+        <img src="signal_decrypt/故事图99850_1125x1998.jpg" alt="故事图" style="max-height:300px;object-fit:contain">
+        <div class="cap"><b>附件图片 ①</b><br>1125×1998 · 99,850 B<br>message_attachments 表</div>
+      </div>
+      <div class="imgbox">
+        <img src="signal_decrypt/故事图99862_1125x1998.jpg" alt="故事图" style="max-height:300px;object-fit:contain">
+        <div class="cap"><b>附件图片 ②</b><br>1125×1998 · 99,862 B<br>message_attachments 表</div>
+      </div>
+    </div>
+    <p style="margin-bottom:0;margin-top:14px">两张 1125×1998 的是 Signal 官方号的朋友圈引导图（已确认内容为「Ready when you are ✌️」Story 教程页），<b>属于要过滤的系统内容</b>，但它证明了附件解密链路完全正确 —— 换成客户发来的真图片，流程一样走通。</p>
+  </div>
+
+  <h2>四、现在能做什么（三个方案）</h2>
+  <div class="card">
+    <h3 style="margin-top:0;font-size:16px">方案 A：只做客户头像 <span class="tag t-blue">改动最小</span></h3>
+    <p><strong>做什么</strong>：采集消息时顺带把 <code>conversations.profileAvatar</code> 存到本地，左栏客户列表显示小头像。</p>
+    <p><strong>优点</strong>：改动集中在 <code>signalRead.js</code> + 客户列表渲染，风险低；头像 512×512 压到 10KB 和 WhatsApp 侧现有 <code>imageShrink.js</code> 逻辑一致，可直接复用。</p>
+    <p><strong>缺点</strong>：不发图片的客户看不到他发过的图，价值有限。</p>
+    <p><strong>推荐度</strong>：★★★ 建议先做这个，快且稳。</p>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;font-size:16px">方案 B：附件图片全链路 <span class="tag t-blue">价值最大</span></h3>
+    <p><strong>做什么</strong>：新建 <code>src/signalMedia.js</code>，按今天验证的布局解密 <code>message_attachments</code>，图片压到约 10KB 后接进现有 <code>mediaRaw.js</code> 链路，<b>和 WhatsApp 图片完全一样</b>显示在中栏、嵌进 Word。</p>
+    <p><strong>优点</strong>：客户发来的油画参考图、家里猫的照片全都能看到 —— 这才是销售真正需要的东西；代码已存在 <code>probe_signal_cipher3.js</code> 里，验证过的直接搬。</p>
+    <p><strong>缺点</strong>：要处理视频/语音/文件（<code>contentType</code> 不止 image）、Signal 未下载的附件（<code>downloadPath</code> 为 null）需要先触发下载；工作量比 A 大 2-3 倍。</p>
+    <p><strong>推荐度</strong>：★★★★★ 这是最该做的，但建议分两步：先只做 <code>image/*</code>，视频语音先跳过。</p>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;font-size:16px">方案 C：顺手补齐客户档案字段 <span class="tag t-warn">锦上添花</span></h3>
+    <p><strong>做什么</strong>：把 <code>verified</code>（安全号码已核对）、<code>unreadCount</code>、<code>messageCount</code>、最后活跃时间存进客户档案。</p>
+    <p><strong>优点</strong>：<code>verified=1</code> 是个很有价值的信号 —— wanqiu Lin 已核对安全号码，可以判断是不是真实本人，对防骗有用。</p>
+    <p><strong>缺点</strong>：要动客户档案表结构（16 字段要加），改动面比 A/B 大。</p>
+    <p><strong>推荐度</strong>：★★ 等 A 或 B 落地后再做，别一起改。</p>
+  </div>
+
+  <h2>五、本次新增的诊断脚本（可重复运行）</h2>
+  <div class="card">
+    <p style="margin-top:0">全部只读，随时可重跑验证：</p>
+    <table>
+      <thead><tr><th style="width:270px">脚本</th><th>作用</th></tr></thead>
+      <tbody>
+        <tr><td><code>scripts/dump_signal_live.js</code></td><td>全量导出：表结构、全部会话、消息、好友名单</td></tr>
+        <tr><td><code>scripts/dump_signal_profile.js</code></td><td>展开 <code>conversations.json</code> 全字段，定位资料真正存放位置</td></tr>
+        <tr><td><code>scripts/dump_signal_attach.js</code></td><td>附件表详情 + 落盘路径定位（含 <code>attachments.noindex</code> 这个坑）</td></tr>
+        <tr><td><code>scripts/test_signal_decrypt.js</code></td><td>解密验证（猜布局版本，记录失败过程）</td></tr>
+        <tr><td><code>scripts/probe_signal_cipher.js</code></td><td>7 种布局 × 2 种 key 顺序穷举，锁定真实布局</td></tr>
+        <tr><td><code>scripts/probe_signal_cipher2.js</code></td><td>精确定位 MAC 长度，sharp 双重验证可解码</td></tr>
+        <tr><td><code>scripts/probe_signal_cipher3.js</code></td><td>确定明文边界规则（EOI 与 DB size 完全一致）</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>六、踩到的三个坑（记下来别再犯）</h2>
+  <div class="card">
+    <ul style="margin-bottom:0">
+      <li><b>目录名不是 <code>attachments</code>，是 <code>attachments.noindex</code>。</b>Signal 8.x 加了 <code>.noindex</code> 后缀，按老名字找会一个都找不到。</li>
+      <li><b>AES key 是 <code>localKey</code> 的<b>前</b> 32 字节</b>，MAC key 是后 32 字节 —— 和直觉相反。我按「前 32 是 MAC」试，MAC 校验 100% 失败。</li>
+      <li><b>布局是 <code>[IV][密文][MAC]</code>，MAC 在<b>尾部</b>。</b>我前两版都把 MAC 当头部，浪费了两轮。穷举比猜快得多 —— 判据要用「解出来必须是合法图片」这种客观事实，不要用「MAC 对不对」。</li>
+    </ul>
+  </div>
+
+  <h2>七、结论</h2>
+  <div class="card">
+    <ul style="margin-bottom:0">
+      <li><span class="tag t-ok">消息</span> Signal 采集链路完全正常，6 条有效消息全部抓到，系统事件过滤正确。</li>
+      <li><span class="tag t-ok">资料</span> 好友名、ACI、头像、验证状态、已读数全部可取。<b>只有电话号码受对方隐私设置限制</b>，取不到就是取不到，不是我们的 bug。</li>
+      <li><span class="tag t-ok">图片</span> 附件和头像<strong>都能解密成明文</strong>，4 张实测通过 —— 这是今天最大的突破，v1.5.0 里「Signal 附件尚未接入」这个遗留项已经可以做了。</li>
+    </ul>
+  </div>
+
+</div>
+</body>
+</html>

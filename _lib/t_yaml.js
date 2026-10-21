@@ -1,0 +1,13 @@
+const fs = require('fs');
+const path = require('path');
+const y = require('../src/yaml-lite');
+const c = y.load(fs.readFileSync(path.join(__dirname, '..', 'config.yaml'), 'utf8'));
+console.log('always =', JSON.stringify(c.knowledge.always));
+console.log('onDemand keys =', Object.keys(c.knowledge.onDemand || {}));
+const prod = c.knowledge.onDemand['products.md'];
+const story = c.knowledge.onDemand['stories.md'];
+console.log('products kw count =', Array.isArray(prod) ? prod.length : 'NOT ARRAY: ' + typeof prod);
+console.log('products first 4 =', JSON.stringify(Array.isArray(prod) ? prod.slice(0, 4) : prod));
+console.log('stories kw count =', Array.isArray(story) ? story.length : 'NOT ARRAY');
+console.log('stories first 4 =', JSON.stringify(Array.isArray(story) ? story.slice(0, 4) : story));
+console.log('accounts[2] =', JSON.stringify(c.accounts[2]));

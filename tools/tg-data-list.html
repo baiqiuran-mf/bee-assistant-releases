@@ -1,0 +1,481 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8">
+<title>Telegram 采集数据清单 · 4 客户 / 44 消息</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin:0; padding:24px; background:#eef1f5; color:#1f2933;
+         font:14px/1.7 "Microsoft YaHei", system-ui, sans-serif; }
+  h1 { margin:0 0 6px; font-size:21px; }
+  .sub { color:#5b6b7c; margin-bottom:18px; font-size:13px; }
+  .sum { background:#fff; border:1px solid #cfd8e3; border-radius:10px; padding:14px 18px; margin-bottom:20px; }
+  .sum b { color:#1f6aa5; }
+  .sum .warn { color:#c0392b; }
+  section.cust { background:#fff; border:1px solid #cfd8e3; border-radius:10px;
+                 padding:16px 18px; margin-bottom:18px; }
+  section.cust.void { opacity:.6; border-style:dashed; }
+  header { display:flex; align-items:center; gap:10px; margin-bottom:10px;
+           padding-bottom:10px; border-bottom:2px solid var(--ln-green,#63bd93); }
+  .code { font-family:Consolas,monospace; font-weight:700; color:#1f6aa5; font-size:15px; }
+  .name { font-size:16px; font-weight:700; }
+  .vbadge { background:#eee; color:#666; font-size:12px; padding:1px 8px; border-radius:10px; }
+  .pbadge { background:#fff3cd; color:#8a6d1f; font-size:12px; padding:1px 8px; border-radius:10px; }
+  .meta { display:flex; flex-wrap:wrap; gap:6px 20px; margin-bottom:10px; }
+  .f .k { color:#7b8794; margin-right:6px; }
+  .f .v { font-weight:600; }
+  .stat { background:#f5f8fb; border-radius:6px; padding:7px 12px; margin-bottom:10px; font-size:13px; }
+  .stat .warn { color:#c0392b; }
+  .stat .ok { color:#2d8a5f; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th { background:#f3f6fa; text-align:left; padding:6px 10px; border-bottom:1px solid #dde4ec;
+       color:#5b6b7c; font-weight:600; white-space:nowrap; }
+  td { padding:6px 10px; border-bottom:1px solid #eef2f6; vertical-align:top; }
+  td.id { font-family:Consolas,monospace; color:#7b8794; white-space:nowrap; }
+  td.dir { white-space:nowrap; font-weight:600; }
+  tr.out td.dir { color:#1f6aa5; }
+  tr.in  td.dir { color:#8a6d1f; }
+  td.body { word-break:break-word; }
+  td.body .zh { color:#1f6aa5; font-weight:600; margin-top:2px; font-size:12px; }
+  td.t, td.ts { font-family:Consolas,monospace; white-space:nowrap; color:#5b6b7c; font-size:12px; }
+  td.flag { white-space:nowrap; font-size:12px; }
+  td.flag b { color:#c0392b; }
+  td.empty { color:#96a2b0; text-align:center; padding:14px; }
+</style></head><body>
+<h1>Telegram 采集数据清单</h1>
+<div class="sub">来源：生产库 <code>D:\蜜蜂采集数据\wa-assistant\data\assistant.db</code>（只读）· 正文列显示的是<b>界面实际渲染的样子</b>（已用2.6.1139 的清洗+剥离逻辑换算）</div>
+<div class="sum">
+  客户档案 <b>4</b> 个（其中作废 1 个）｜消息 <b>44</b> 条
+  ｜客户发 32 · 我方发 12
+  ｜ <b class="warn">5 条正文仍带时间未清洗</b>
+  ｜ <b class="warn">全部客户都没有手机号</b>
+</div>
+<section class="cust void">
+    <header>
+      <span class="code">7A00001</span>
+      <span class="name">wanyu lee</span>
+      <span class="vbadge">已作废</span>
+      
+    </header>
+    <div class="meta">
+      <div class="f"><span class="k">TG 用户名</span><span class="v">—</span></div>
+      <div class="f"><span class="k">手机号</span><span class="v">—</span></div>
+      <div class="f"><span class="k">对话键</span><span class="v">tg:wanyu lee</span></div>
+      <div class="f"><span class="k">地区</span><span class="v">—</span></div>
+      <div class="f"><span class="k">时差</span><span class="v">—</span></div>
+      <div class="f"><span class="k">阶段</span><span class="v">Day 0</span></div>
+      <div class="f"><span class="k">建档</span><span class="v">2026-10-16 03:32:21</span></div>
+      <div class="f"><span class="k">作废原因</span><span class="v">已合并进 7A00002（增量防裂）· 2026-10-16T03:32:22.154Z</span></div>
+    </div>
+    <div class="stat">
+      共 <b>0</b> 条 ｜ 客户发 <b>0</b> · 我方发 <b>0</b>
+      ｜ 未读 0 ｜ 已标记处理 0
+      ｜ <span class="ok">正文全干净</span>
+    </div>
+    <table>
+      <thead><tr><th>ID</th><th>方向</th><th>正文（界面实际显示）</th><th>时间</th><th>入库时刻</th><th>状态</th></tr></thead>
+      <tbody><tr><td colspan="6" class="empty">（没有消息）</td></tr></tbody>
+    </table>
+  </section>
+<section class="cust">
+    <header>
+      <span class="code">7A00002</span>
+      <span class="name">wanyu lee</span>
+      
+      <span class="pbadge">待处理</span>
+    </header>
+    <div class="meta">
+      <div class="f"><span class="k">TG 用户名</span><span class="v">—</span></div>
+      <div class="f"><span class="k">手机号</span><span class="v">—</span></div>
+      <div class="f"><span class="k">对话键</span><span class="v">tg:8696576132</span></div>
+      <div class="f"><span class="k">地区</span><span class="v">—</span></div>
+      <div class="f"><span class="k">时差</span><span class="v">—</span></div>
+      <div class="f"><span class="k">阶段</span><span class="v">Day 0</span></div>
+      <div class="f"><span class="k">建档</span><span class="v">2026-10-16 03:32:22</span></div>
+      
+    </div>
+    <div class="stat">
+      共 <b>6</b> 条 ｜ 客户发 <b>4</b> · 我方发 <b>2</b>
+      ｜ 未读 0 ｜ 已标记处理 0
+      ｜ <span class="ok">正文全干净</span>
+    </div>
+    <table>
+      <thead><tr><th>ID</th><th>方向</th><th>正文（界面实际显示）</th><th>时间</th><th>入库时刻</th><th>状态</th></tr></thead>
+      <tbody><tr class="in">
+      <td class="id">#983</td>
+      <td class="dir">客户</td>
+      <td class="body">October 14</td>
+      <td class="t">—</td>
+      <td class="ts">2026-10-16 03:32:21</td>
+      <td class="flag"></td>
+    </tr><tr class="in">
+      <td class="id">#984</td>
+      <td class="dir">客户</td>
+      <td class="body">Hi</td>
+      <td class="t">18:32</td>
+      <td class="ts">2026-10-16 03:32:22</td>
+      <td class="flag"></td>
+    </tr><tr class="out">
+      <td class="id">#985</td>
+      <td class="dir">我方</td>
+      <td class="body">hi</td>
+      <td class="t">18:32</td>
+      <td class="ts">2026-10-16 03:32:22</td>
+      <td class="flag"></td>
+    </tr><tr class="out">
+      <td class="id">#986</td>
+      <td class="dir">我方</td>
+      <td class="body">hai</td>
+      <td class="t">18:38</td>
+      <td class="ts">2026-10-16 03:32:22</td>
+      <td class="flag"></td>
+    </tr><tr class="in">
+      <td class="id">#987</td>
+      <td class="dir">客户</td>
+      <td class="body">C</td>
+      <td class="t">22:25</td>
+      <td class="ts">2026-10-16 03:32:22</td>
+      <td class="flag"></td>
+    </tr><tr class="in">
+      <td class="id">#988</td>
+      <td class="dir">客户</td>
+      <td class="body">October 9<div class="zh">译：10月9日</div></td>
+      <td class="t">—</td>
+      <td class="ts">2026-10-16 03:35:08</td>
+      <td class="flag"></td>
+    </tr></tbody>
+    </table>
+  </section>
+<section class="cust">
+    <header>
+      <span class="code">7A00003</span>
+      <span class="name">Eileen Lin</span>
+      
+      <span class="pbadge">待处理</span>
+    </header>
+    <div class="meta">
+      <div class="f"><span class="k">TG 用户名</span><span class="v">EileenLin09</span></div>
+      <div class="f"><span class="k">手机号</span><span class="v">—</span></div>
+      <div class="f"><span class="k">对话键</span><span class="v">tg:Eileen Lin</span></div>
+      <div class="f"><span class="k">地区</span><span class="v">—</span></div>
+      <div class="f"><span class="k">时差</span><span class="v">—</span></div>
+      <div class="f"><span class="k">阶段</span><span class="v">Day 0</span></div>
+      <div class="f"><span class="k">建档</span><span class="v">2026-10-16 03:35:09</span></div>
+      
+    </div>
+    <div class="stat">
+      共 <b>16</b> 条 ｜ 客户发 <b>13</b> · 我方发 <b>3</b>
+      ｜ 未读 0 ｜ 已标记处理 0
+      ｜ <span class="ok">正文全干净</span>
+    </div>
+    <table>
+      <thead><tr><th>ID</th><th>方向</th><th>正文（界面实际显示）</th><th>时间</th><th>入库时刻</th><th>状态</th></tr></thead>
+      <tbody><tr class="in">
+      <td class="id">#989</td>
+      <td class="dir">客户</td>
+      <td class="body">198.87.177.142Thu198.87.177.142:8022:szezcdsxxz:oqwmwemoeemoyi
+https://198.87.177.142:8022/1</td>
+      <td class="t">—</td>
+      <td class="ts">2026-10-16 03:35:09</td>
+      <td class="flag"></td>
+    </tr><tr class="in">
+      <td class="id">#990</td>
+      <td class="dir">客户</td>
+      <td class="body">38.110.136.213Thu38.110.136.213:8022:sqeassqqdc:uwmoopmourmiou
+https://38.110.136.213:8022/3</td>
+      <td class="t">—</td>
+      <td class="ts">2026-10-16 03:35:09</td>
+      <td class="flag"></td>
+    </tr><tr class="in">
+      <td class="id">#991</td>
+      <td class="dir">客户</td>
+      <td class="body">206.163.2.100Thu206.163.2.100:8022:aercsezsce:iprmorumimopp
+https://206.163.2.100:8022/2</td>
+      <td class="t">—</td>
+      <td class="ts">2026-10-16 03:35:09</td>
+      <td class="flag"></td>
+    </tr><tr class="in">
+      <td class="id">#992</td>
+      <td class="dir">客户</td>
+      <td class="body">198.65.103.226Thu198.65.103.226:8022:qxdqaqqxze:oqwmrtmopumiir
+https://198.65.103.226:8022/1</td>
+      <td class="t">—</td>
+      <td class="ts">2026-10-16 03:35:09</td>
+      <td class="flag"></td>
+    </tr><tr class="in">
+      <td class="id">#993</td>
+      <td class="dir">客户</td>
+      <td class="body">198.65.67.111Thu198.65.67.111:8022:eewrqdddae:oqwmrtmremooo
+https://198.65.67.111:8022/1</td>
+      <td class="t">—</td>
+      <td class="ts">2026-10-16 03:35:09</td>
+      <td class="flag"></td>
+    </tr><tr class="in">
+      <td class="id">#994</td>
+      <td class="dir">客户</td>
+      <td class="body">platinum-vip.miyavip.vipMonplatinum-vip.miyavip.vip:8001:szezcdsxxz:oqwmwemoeemoyi
+https://platinum-vip.miyavip.vip:8001/p<div class="zh">译：platinum-vip.miyavip.vipMonplatinum-vip.miyavip.vip:8001:szezcdsxxz:oqwmwemoeemoyi
+https://platinum-vip.miyavip.vip:8001/p</div></td>
+      <td class="t">—</td>
+      <td class="ts">2026-10-16 03:35:09</td>
+      <td class="flag"></td>
+    </tr><tr class="in">
+      <td class="id">#995</td>
+      <td class="dir">客户</td>
+      <td class="body">platinum-vip.miyavip.vipMonplatinum-vip.miyavip.vip:8001:sqeassqqdc:uwmoopmourmiou
+https://platinum-vip.miyavip.vip:8001/p<div class="zh">译：platinum-vip.miyavip.vipMonplatinum-vip.miyavip.vip:8001:sqeassqqdc:uwmoopmourmiou
+https://platinum-vip.miyavip.vip:8001/p</div></td>
+      <td class="t">—</td>
+      <td class="ts">2026-10-16 03:35:09</td>
+      <td class="flag"></td>
+    </tr><tr class="in">
+      <td class="id">#996</td>
+      <td class="dir">客户</td>
+      <td class="body">platinum-vip.miyavip.vipMonplatinum-vip.miyavip.vip:8001:aercsezsce:iprmorumimopp
+https://platinum-vip.miyavip.vip:8001/p<div class="zh">译：platinum-vip.miyavip.vipMonplatinum-vip.miyavip.vip:8001:aercsezsce:iprmorumimopp
+https://platinum-vip.miyavip.vip:8001/p</div></td>
+      <td class="t">—</td>
+      <td class="ts">2026-10-16 03:35:09</td>
+      <td class="flag"></td>
+    </tr><tr class="in">
+      <td class="id">#997</td>
+      <td class="dir">客户</td>
+      <td class="body">platinum-vip.miyavip.vipMonplatinum-vip.miyavip.vip:8001:eewrqdddae:oqwmrtmremooo
+https://platinum-vip.miyavip.vip:8001/p<div class="zh">译：platinum-vip.miyavip.vipMonplatinum-vip.miyavip.vip:8001:eewrqdddae:oqwmrtmremooo
+https://platinum-vip.miyavip.vip:8001/p</div></td>
+      <td class="t">—</td>
+      <td class="ts">2026-10-16 03:35:09</td>
+      <td class="flag"></td>
+    </tr><tr class="in">
+      <td class="id">#998</td>
+      <td class="dir">客户</td>
+      <td class="body">platinum-vip.miyavip.vipOct 10platinum-vip.miyavip.vip:8001:qxdqaqqxze:oqwmrtmopumiir
+https://platinum-vip.miyavip.vip:8001/p<div class="zh">译：platinum-vip.miyavip.vipOct 10platinum-vip.miyavip.vip:8001:qxdqaqqxze:oqwmrtmopumiir
+https://platinum-vip.miyavip.vip:8001/p</div></td>
+      <td class="t">—</td>
+      <td class="ts">2026-10-16 03:35:09</td>
+      <td class="flag"></td>
+    </tr><tr class="out">
+      <td class="id">#999</td>
+      <td class="dir">我方</td>
+      <td class="body">He</td>
+      <td class="t">23:00</td>
+      <td class="ts">2026-10-16 03:35:10</td>
+      <td class="flag"></td>
+    </tr><tr class="in">
+      <td class="id">#1000</td>
+      <td class="dir">客户</td>
+      <td class="body">Thx</td>
+      <td class="t">23:00</td>
+      <td class="ts">2026-10-16 03:35:10</td>
+      <td class="flag"></td>
+    </tr><tr class="in">
+      <td class="id">#1001</td>
+      <td class="dir">客户</td>
+      <td class="body">Hi</td>
+      <td class="t">23:03</td>
+      <td class="ts">2026-10-16 03:35:10</td>
+      <td class="flag"></td>
+    </tr><tr class="in">
+      <td class="id">#1002</td>
+      <td class="dir">客户</td>
+      <td class="body">Hi</td>
+      <td class="t">23:03</td>
+      <td class="ts">2026-10-16 03:35:10</td>
+      <td class="flag"></td>
+    </tr><tr class="out">
+      <td class="id">#1003</td>
+      <td class="dir">我方</td>
+      <td class="body">Hi</td>
+      <td class="t">23:04</td>
+      <td class="ts">2026-10-16 03:35:10</td>
+      <td class="flag"></td>
+    </tr><tr class="out">
+      <td class="id">#1004</td>
+      <td class="dir">我方</td>
+      <td class="body">hello</td>
+      <td class="t">04:25</td>
+      <td class="ts">2026-10-16 03:35:10</td>
+      <td class="flag"></td>
+    </tr></tbody>
+    </table>
+  </section>
+<section class="cust">
+    <header>
+      <span class="code">7A00004</span>
+      <span class="name">Xue</span>
+      
+      <span class="pbadge">待处理</span>
+    </header>
+    <div class="meta">
+      <div class="f"><span class="k">TG 用户名</span><span class="v">wanfengzhiqiu</span></div>
+      <div class="f"><span class="k">手机号</span><span class="v">—</span></div>
+      <div class="f"><span class="k">对话键</span><span class="v">tg:Xue</span></div>
+      <div class="f"><span class="k">地区</span><span class="v">—</span></div>
+      <div class="f"><span class="k">时差</span><span class="v">—</span></div>
+      <div class="f"><span class="k">阶段</span><span class="v">Day 0</span></div>
+      <div class="f"><span class="k">建档</span><span class="v">2026-10-16 03:37:15</span></div>
+      
+    </div>
+    <div class="stat">
+      共 <b>22</b> 条 ｜ 客户发 <b>15</b> · 我方发 <b>7</b>
+      ｜ 未读 0 ｜ 已标记处理 0
+      ｜ <b class="warn">5 条正文待清洗</b>
+    </div>
+    <table>
+      <thead><tr><th>ID</th><th>方向</th><th>正文（界面实际显示）</th><th>时间</th><th>入库时刻</th><th>状态</th></tr></thead>
+      <tbody><tr class="in">
+      <td class="id">#1005</td>
+      <td class="dir">客户</td>
+      <td class="body">October 9<div class="zh">译：10月9日</div></td>
+      <td class="t">—</td>
+      <td class="ts">2026-10-16 03:37:15</td>
+      <td class="flag"></td>
+    </tr><tr class="out">
+      <td class="id">#1006</td>
+      <td class="dir">我方</td>
+      <td class="body">Hi</td>
+      <td class="t">22:28</td>
+      <td class="ts">2026-10-16 03:37:16</td>
+      <td class="flag"></td>
+    </tr><tr class="in">
+      <td class="id">#1007</td>
+      <td class="dir">客户</td>
+      <td class="body">你好</td>
+      <td class="t">22:28</td>
+      <td class="ts">2026-10-16 03:37:16</td>
+      <td class="flag"></td>
+    </tr><tr class="out">
+      <td class="id">#1008</td>
+      <td class="dir">我方</td>
+      <td class="body">Outgoing Call23:57, 24 seconds</td>
+      <td class="t">—</td>
+      <td class="ts">2026-10-16 03:37:16</td>
+      <td class="flag"></td>
+    </tr><tr class="in">
+      <td class="id">#1009</td>
+      <td class="dir">客户</td>
+      <td class="body">Hello</td>
+      <td class="t">00:15</td>
+      <td class="ts">2026-10-16 03:37:16</td>
+      <td class="flag"></td>
+    </tr><tr class="in">
+      <td class="id">#1010</td>
+      <td class="dir">客户</td>
+      <td class="body">（空 · 只剩时间）</td>
+      <td class="t">00:16</td>
+      <td class="ts">2026-10-16 03:37:16</td>
+      <td class="flag"><b>需洗</b></td>
+    </tr><tr class="in">
+      <td class="id">#1011</td>
+      <td class="dir">客户</td>
+      <td class="body">Y</td>
+      <td class="t">20:24</td>
+      <td class="ts">2026-10-16 03:37:16</td>
+      <td class="flag"></td>
+    </tr><tr class="in">
+      <td class="id">#1012</td>
+      <td class="dir">客户</td>
+      <td class="body">F</td>
+      <td class="t">20:26</td>
+      <td class="ts">2026-10-16 03:37:16</td>
+      <td class="flag"></td>
+    </tr><tr class="in">
+      <td class="id">#1013</td>
+      <td class="dir">客户</td>
+      <td class="body">Nilai</td>
+      <td class="t">13:37</td>
+      <td class="ts">2026-10-16 03:37:16</td>
+      <td class="flag"></td>
+    </tr><tr class="in">
+      <td class="id">#1014</td>
+      <td class="dir">客户</td>
+      <td class="body">Tf</td>
+      <td class="t">14:01</td>
+      <td class="ts">2026-10-16 03:37:16</td>
+      <td class="flag"></td>
+    </tr><tr class="in">
+      <td class="id">#1015</td>
+      <td class="dir">客户</td>
+      <td class="body">Fff</td>
+      <td class="t">14:02</td>
+      <td class="ts">2026-10-16 03:37:16</td>
+      <td class="flag"></td>
+    </tr><tr class="out">
+      <td class="id">#1016</td>
+      <td class="dir">我方</td>
+      <td class="body">j j j</td>
+      <td class="t">14:02</td>
+      <td class="ts">2026-10-16 03:37:16</td>
+      <td class="flag"></td>
+    </tr><tr class="in">
+      <td class="id">#1017</td>
+      <td class="dir">客户</td>
+      <td class="body">Hi</td>
+      <td class="t">18:30</td>
+      <td class="ts">2026-10-16 03:37:16</td>
+      <td class="flag"></td>
+    </tr><tr class="in">
+      <td class="id">#1018</td>
+      <td class="dir">客户</td>
+      <td class="body">Today<div class="zh">译：今天</div></td>
+      <td class="t">—</td>
+      <td class="ts">2026-10-16 03:38:28</td>
+      <td class="flag"></td>
+    </tr><tr class="in">
+      <td class="id">#1019</td>
+      <td class="dir">客户</td>
+      <td class="body">Hello</td>
+      <td class="t">11:38</td>
+      <td class="ts">2026-10-16 03:38:28</td>
+      <td class="flag"></td>
+    </tr><tr class="in">
+      <td class="id">#1020</td>
+      <td class="dir">客户</td>
+      <td class="body">Hi</td>
+      <td class="t">11:38</td>
+      <td class="ts">2026-10-16 03:42:34</td>
+      <td class="flag"></td>
+    </tr><tr class="out">
+      <td class="id">#1021</td>
+      <td class="dir">我方</td>
+      <td class="body">hi</td>
+      <td class="t">12:10</td>
+      <td class="ts">2026-10-16 04:10:36</td>
+      <td class="flag"></td>
+    </tr><tr class="out">
+      <td class="id">#1022</td>
+      <td class="dir">我方</td>
+      <td class="body">hi</td>
+      <td class="t">12:10</td>
+      <td class="ts">2026-10-16 04:10:38</td>
+      <td class="flag"></td>
+    </tr><tr class="in">
+      <td class="id">#1039</td>
+      <td class="dir">客户</td>
+      <td class="body">Hi</td>
+      <td class="t">14:07</td>
+      <td class="ts">2026-10-16 06:08:12</td>
+      <td class="flag"><b>需洗</b></td>
+    </tr><tr class="in">
+      <td class="id">#1040</td>
+      <td class="dir">客户</td>
+      <td class="body">Hello</td>
+      <td class="t">14:07</td>
+      <td class="ts">2026-10-16 06:08:12</td>
+      <td class="flag"><b>需洗</b></td>
+    </tr><tr class="out">
+      <td class="id">#1041</td>
+      <td class="dir">我方</td>
+      <td class="body">helo</td>
+      <td class="t">14:09</td>
+      <td class="ts">2026-10-16 06:09:02</td>
+      <td class="flag"><b>需洗</b></td>
+    </tr><tr class="out">
+      <td class="id">#1042</td>
+      <td class="dir">我方</td>
+      <td class="body">helo</td>
+      <td class="t">14:09</td>
+      <td class="ts">2026-10-16 06:09:04</td>
+      <td class="flag"><b>需洗</b></td>
+    </tr></tbody>
+    </table>
+  </section>
+</body></html>

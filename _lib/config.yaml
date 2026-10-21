@@ -1,0 +1,136 @@
+# ============================================================
+#  WhatsApp 客户助理 · 配置文件
+#  所有敏感信息（API key、代理密码）都留空，你自己填
+# ============================================================
+
+app:
+  dataDir: ./data
+  # 界面语言、时区按你自己的习惯
+  uiLanguage: zh-CN
+  # 有新消息时是否弹桌面通知
+  desktopNotify: true
+  # 收到消息后自动翻译（false 则只存原文，界面手动点翻译）
+  autoTranslate: true
+
+# ---------------- 浏览器 / 反检测 ----------------
+browser:
+  # 有头模式指纹更接近真人；窗口用坐标挪到屏幕外，眼不见心不烦
+  headless: false
+  windowPosition: "-3000,-3000"
+  # Chrome for Testing 的绝对路径（版本锁死，不自动更新）。留空则用 Puppeteer 自带 Chromium
+  executablePath: ""
+  # 每个账号一个独立 userDataDir，cookie / localStorage 物理隔离
+  sessionDir: ./sessions
+
+# ---------------- 5 个 WhatsApp 账号 ----------------
+# 建议先只开 1 号跑通，再逐个打开其余账号
+accounts:
+  - id: 1
+    label: "一号"
+    enabled: true
+    proxy: ""              # 例 socks5://user:pass@host:1080
+    timezone: "America/Chicago"
+    locale: "en-US"
+
+  - id: 2
+    label: "二号"
+    enabled: false
+    proxy: ""
+    timezone: "America/Los_Angeles"
+    locale: "en-US"
+
+  - id: 3
+    label: "三号"
+    enabled: false
+    proxy: ""
+    timezone: "America/New_York"
+    locale: "en-US"
+
+  - id: 4
+    label: "四号"
+    enabled: false
+    proxy: ""
+    timezone: "America/Chicago"
+    locale: "en-US"
+
+  - id: 5
+    label: "五号"
+    enabled: false
+    proxy: ""
+    timezone: "America/New_York"
+    locale: "en-US"
+
+# ---------------- AI 模型（可插拔） ----------------
+# 想换成 Claude，只改 tasks.suggest 的 provider 和 model 即可，代码不用动
+ai:
+  providers:
+    hunyuan:
+      type: openai_compatible
+      # 填腾讯云控制台给你的接入地址（TokenHub / 混元 API），不要照抄
+      baseUrl: ""
+      apiKey: ""
+
+    anthropic:
+      type: anthropic
+      baseUrl: "https://api.anthropic.com/v1"
+      apiKey: ""
+
+    tikhub:
+      type: openai_compatible
+      baseUrl: "https://ai.tikhub.io/v1"
+      apiKey: ""
+      model: gpt-4o-mini
+
+  # 默认全部走混元（Hy3 / Hy-Vision / Hy-ASR），便宜且中文是主场。
+  # 想对比 Claude 时只改对应 task 的 provider 和 model，代码不用动。
+  tasks:
+    # 英→中翻译。量大后可换 hy-mt2（混元专用翻译模型，更准更便宜）
+    translate:
+      provider: hunyuan
+      model: "hy3"
+
+    # 事实抽取 / 客户档案更新
+    extract:
+      provider: hunyuan
+      model: "hy3"
+
+    # 中文建议生成（会顺带更新客户档案，写进档案文档）
+    #   想试 Claude：provider: anthropic, model: claude-sonnet-5
+    suggest:
+      provider: hunyuan
+      model: "hy3"
+
+    # 看客户发的宠物照片
+    vision:
+      provider: hunyuan
+      model: "hy-vision-2.0"
+
+    # 客户语音消息转文字（可选）
+    asr:
+      provider: hunyuan
+      model: "hy-asr-3.0-preview"
+
+    # 手动自由翻译（右栏面板）：中文→外文 / 其他语言→中文（默认 GPT）
+    freeTranslate:
+      provider: tikhub
+      model: gpt-4o-mini
+
+# ---------------- 知识库（按需加载，不一股脑全塞） ----------------
+knowledge:
+  dir: ./knowledge
+  # 每次请求必加载
+  always:
+    - persona.md      # 人设与说话习惯（写成"遇到情况怎么做"，不是简历）
+    - redlines.md     # 红线清单
+    - templates.md    # 你自己写得好的真实范例
+  # 命中关键词才加载，避免稀释重点。规则宽松一点没关系——多加载比漏加载好
+  onDemand:
+    products.md:
+      ["尺寸", "价格", "多少钱", "报价", "优惠", "便宜", "折扣", "工期", "多久", "运费", "快递", "物流",
+       "size", "price", "cost", "how much", "how many", "quote", "inch", "cm", "large", "big",
+       "ship", "delivery", "discount", "cheap", "expensive"]
+    stories.md:
+      ["过世", "去世", "离开", "想念", "纪念", "猫", "狗", "宠物", "加州", "洛杉矶", "纽约", "美国",
+       "同学", "老师", "画展", "展览", "工作室", "厦门", "油画",
+       "died", "passed", "passed away", "memory", "miss", "rainbow bridge",
+       "california", "studio", "exhibition", "exhibit", "cat", "dog", "pet", "puppy"]

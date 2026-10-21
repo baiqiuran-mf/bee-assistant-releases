@@ -1,0 +1,891 @@
+[内核启动自检] 数据目录：E:\WorkBuddy-Projects\wa-assistant\.tmp-test-data\kernel_port.test
+蜜蜂信息采集 · 启动中（第一版：WhatsApp 新消息采集）
+数据库：E:\WorkBuddy-Projects\wa-assistant\.tmp-test-data\kernel_port.test\assistant.db（驱动：node:sqlite）
+(node:13584) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+界面已启动：http://127.0.0.1:3758
+未自动连接 WhatsApp：需要哪个账号，点界面上它右边的「浏览器」按钮
+  ✓ startCore 返回时 srv 已在监听（调用方不许再 listen）
+  ✓ 返回的 PORT 就是实际监听端口
+  ✓ 对同一个 server 再 listen 会抛 ERR_SERVER_ALREADY_LISTEN
+蜜蜂信息采集 · 启动中（第一版：WhatsApp 新消息采集）
+数据库：E:\WorkBuddy-Projects\wa-assistant\.tmp-test-data\kernel_port.test\assistant.db（驱动：node:sqlite）
+端口 8791 被占用（EADDRINUSE），自动改用空闲端口
+界面已启动：http://127.0.0.1:3759
+未自动连接 WhatsApp：需要哪个账号，点界面上它右边的「浏览器」按钮
+  ✓ 端口被占用时自动改用空闲端口（不再 EADDRINUSE 崩掉）
+  ✓ 首页 HTTP 200
+  ✓ /api/state 返回 5 个账号（红绿灯要用）
+
+[内核启动自检] PASS 6/6
+  [exit=0]
+[桌面入口自检] 数据目录：E:\WorkBuddy-Projects\wa-assistant\.tmp-test-data\desktop_entry.test
+蜜蜂信息采集 · 启动中（第一版：WhatsApp 新消息采集）
+数据库：E:\WorkBuddy-Projects\wa-assistant\.tmp-test-data\desktop_entry.test\assistant.db（驱动：node:sqlite）
+(node:1748) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+界面已启动：http://127.0.0.1:8787
+未自动连接 WhatsApp：需要哪个账号，点界面上它右边的「浏览器」按钮
+蜜蜂信息采集 · 桌面窗口已打开（后端 http://127.0.0.1:8787）
+界面版本 20260930-2024（界面文件：E:\WorkBuddy-Projects\wa-assistant\public）—— 窗口顶栏那行小字应与它一致
+  ✓ 桌面入口没有弹「启动失败」错误框
+  ✓ BrowserWindow 真的被创建了（窗口能打开）
+  ✓ 窗口加载的是本地后端的首页（不是网址/浏览器）
+  ✓ 窗口标题是「蜜蜂信息采集」
+  ✓ 窗口地址真的能打开（HTTP 200）
+  ✓ 首页明确不缓存（no-store）—— 防「改了界面窗口还是旧的」
+  ✓ 首页里没有残留的 __BUILD__ 占位
+  ✓ 开窗口前清过 Electron 的 HTTP 缓存
+  ✓ 窗口注册了按键事件（F5 强制刷新用）
+  ✓ 按 F5 真的触发了「忽略缓存刷新」
+  ✓ 普通按键不会触发刷新
+  ✓ 注册了话术编排台的 IPC 通道
+  ✓ board:open 开出一扇新窗口（不是主界面里的浮层）
+  ✓ 浮窗加载的是 board.html（带客户编号）
+  ✓ 浮窗是无边框窗口（标题栏可拖动到屏幕任意位置）
+  ✓ 浮窗可缩放、且不设父窗口（不受主窗口边界限制）
+  ✓ 浮窗已开着时复用同一扇窗（不重复开）
+  ✓ 复用时会切到新客户
+  ✓ board:sync 让开着的浮窗跟着换客户
+  ✓ 浮窗关掉后 sync 不会自动弹窗
+
+[桌面入口自检] PASS 20/20
+  [exit=0]
+(node:15204) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+=== 界面渲染 · 界面文件不缓存 + 版本号 ===
+  PASS  index.html 带 no-store（不缓存）
+  PASS  index.html 里 __BUILD__ 已换成真实构建戳
+  PASS  app.js 带 no-store（不缓存）
+  PASS  style.css 带 no-store（不缓存）
+  PASS  /api/version 返回构建戳
+  PASS  /api/version 给出界面文件目录
+  PASS  顶栏真的显示出界面版本号
+
+=== 界面渲染 · 主界面必须真的在 ===
+  PASS  主界面（main）真实可见且有尺寸
+  PASS  三栏都在：客户列表 / 对话 / 右侧档案建议
+  PASS  没有任何全屏元素盖住主界面
+
+=== 界面渲染 · 五个账号 + 红绿灯 ===
+  PASS  顶栏排出 5 个账号
+  PASS  账号名本身就是按钮（点名字开浏览器，不再有单独的「浏览器」按钮）
+  PASS  【不应】有"扫码"按钮（已删除）
+  PASS  红绿灯按状态分别是 黄/绿/红/红/红
+  PASS  五个账号排在一行（没折成两行）
+  PASS  顶栏不超过 100px（不挤掉主界面）
+
+=== 界面渲染 · 顶栏第一行的社交平台 LOGO ===
+  PASS  第一行挂了 7 个官网 LOGO
+  PASS  LOGO 顺序/名称正确（WhatsApp/FB/IG/TikTok/LinkedIn/Reddit/YouTube）
+  PASS  每个 LOGO 都是 20×20
+  PASS  LOGO 在顶栏第一行（.head-top）里
+  PASS  LOGO 靠在左边：紧跟品牌名右边
+  PASS  LOGO 在「⚙ 设置」那组按钮左边、同一行
+  PASS  「手动录入 / 话术编排台 / ⚙设置」整体靠右（顶栏最右边就是 ⚙ 设置）
+  PASS  顶栏【不再】有「待处理 N」和那句红/绿数字说明（用户要求删掉）
+  PASS  主界面上不再有「AI 提示词 / AI 设置 / 模拟新消息」三个按钮和它们的弹窗（全搬进「全局设置」窗口了）
+  PASS  账号条（第二行）里【不再】有 LOGO
+
+=== 界面渲染 · 客户行左端的账号圈数字（①②③④⑤）===
+  PASS  左栏只显示"有事要办"的客户（处理完的那个不出现）
+  PASS  有新消息的客户行显示账号圈数字 ① ②
+  PASS  数字默认是红色
+  PASS  数字挂在客户行最左端（原来红点的位置）
+  PASS  处理完的客户不出现在左栏（noneC=false 即那一格没了）
+  PASS  中间的对话信息里【不再】有数字
+  PASS  刚点开的一瞬间还是红色（1 秒后才转绿）
+  PASS  1 秒后转绿，而且不会自己消失
+  PASS  处理完 → 整格从左栏消失（不是留个小圆点占位）
+  PASS  点客户行的动作里带「1 秒后转绿」的时序
+
+=== 界面渲染 · 左栏「今日消息」提示窗 ===
+  PASS  「今日消息」窗口在最左侧栏目里（不是浮层）
+  PASS  窗口在客户列表上方（列表滚动它不动）
+  PASS  日期显示成 09-25
+  PASS  按账号拆出 ① ② ③ ④ ⑤ 五个数字
+  PASS  今天有消息的账号标红（① 和 ③）
+  PASS  【不再】有「收到 / 已处理 / 待处理」三个数字格（用户配图要求删）
+  PASS  【不再】有「①主号 … ⑤五号」图例（用户配图要求删）
+  PASS  后端 /api/stats/today 返回今天几个数（含 byAccount）
+
+=== 界面渲染 · 中栏头部「客户档案 / 从对话里提取档案」+ 档案弹窗 ===
+  PASS  左栏客户行里不再有「客户档案 / 从对话里提取档案」按钮
+  PASS  左栏客户行恢复成「圈数字 + 信息」两块（行尾不留空档）
+  PASS  客户名没被挤成省略号
+  PASS  左栏客户行：编码排在名称左边
+  PASS  左栏客户行【不再】带「名称:」标签（已按用户要求移到中栏头部）
+  PASS  中栏头部：编码 →「名称:」→ 客户名 顺序正确
+  PASS  中栏头部「名称:」是红色 + 14px + 加粗 + 黑体字族
+  PASS  中栏头部最右端有「客户档案」+「从对话里提取档案」两个按钮
+  PASS  两个按钮都是真按钮（<button>），不是一行纯文字
+  PASS  两个按钮**横排一行**（左「客户档案」、右「从对话里提取档案」）
+  PASS  「从对话里提取档案」是蓝色加粗文字
+  PASS  「从对话里提取档案」做成和「客户档案」同款的按钮（1px 蓝边框 + 浅蓝底，不是光秃秃的文字）
+  PASS  客户名加黑加粗（#000 + ≥800）
+  PASS  整栏贴着中栏头部的最右端
+  PASS  这栏在客户名右边的空白处、且在档案条【上方】
+  PASS  档案条固定两行：① 加入时间+认识第 N 天 ② 地区+客户当地时间
+  PASS  「认识第 N 天」前后各一个黄色五角星，包着它
+  PASS  「认识」两个字是黑色
+  PASS  「认识第 N 天」右边有个紫色加粗 14px 的 Day 标记
+  PASS  档案条末尾那个重复的「客户档案 ↗」已经删掉
+  PASS  档案条右列两条信息左右对齐
+  PASS  档案条右列信息从绿框内容区中点开始（放在框中中间位置）
+  PASS  客户没地区时「地区」这一项依然在（不整格消失）
+  PASS  「地区」标题仍是紫色
+  PASS  今天加入：认识第 1 天 + Day 1（Day 从 1 开始）
+  PASS  昨天加入：认识第 2 天 + Day 2（过了零点就翻页）
+  PASS  3 天前加入：认识第 4 天 + Day 4
+  PASS  Day 只按加入时间算，不受 stage_day 影响（stage_day=2 但今天加入 → Day 1）
+  PASS  点头部「客户档案」→ 档案弹窗打开
+  PASS  弹窗标题带上客户名字
+  PASS  弹窗指向头部那个客户
+  PASS  弹窗里是完整档案（含加入时间 + 分组字段）
+  PASS  「保存档案」按钮在弹窗最上面（原来沉在最底下）
+  PASS  「从对话里提取档案」已搬出弹窗（弹窗里不再有）
+  PASS  点客户档案按钮【不会】顺带切换左边的对话
+  PASS  弹窗比原来的窄栏宽（612px 上限）
+  PASS  档案弹窗：6 核心字段之外还有 10 个附加字段（婚姻/生活规律/别名/老家/爱好/职业/家庭经济/父母/宠物/孩子）
+  PASS  「生活规律」单独一行填写（独占整行的 textarea，宽度≈整栏）
+  PASS  「家庭经济情况」单独一行填写（独占整行的 textarea，宽度≈整栏）
+  PASS  其余 8 个附加字段是普通单行输入框
+  PASS  已有的附加字段值会回填进输入框（profile_json 读回来了）
+  PASS  ④ 弹窗标题不再塞长路径（只留「客户档案 · 客户名」）
+  PASS  ④ 标题右边是「文件路径」按钮（点开才看路径）
+  PASS  ④ 「保存档案」旁边是**红字**提醒：电话和姓名需要手动添加，没获取到就空着
+  PASS  档案弹窗「阶段(Day)」是只读展示（不是填框），值形如 Day N
+  PASS  「阶段(Day)」那格只剩 Day + 数字，没有多余的说明文字
+  PASS  档案弹窗「时区」是数字输入框（type=number）
+  PASS  「时区」框只要 60px 宽（用户要求）
+  PASS  「时区」框右边是「填写说明」按钮
+  PASS  存的还是 IANA 时区名（老数据）→ 数字框留空，表示"按地区自动"
+  PASS  「时区」框下面说明当前按什么算（留空 = 按地区自动）
+  PASS  「填写说明」弹层默认收起
+  PASS  「时区」那一行是横排（框 + 按钮）
+  PASS  点「填写说明」→ 时差说明弹出来
+  PASS  说明里写明：比北京时间晚填负数（波士顿 -12）、快填正数（东京 +1）
+  PASS  说明里写明：留空 = 按「地区」自动算，并且报出当前算出来的时差
+  PASS  填了数字 → 说明行立刻改口"已手填"（比北京晚 12 小时）
+  PASS  档案弹窗有只读的「WA对话编号」，显示 wa_jid（不是塞进电话号码）
+  PASS  ④ 点「文件路径」→ 弹出完整路径（含 data\customers 与 .md）
+  PASS  ④ 弹出的路径能一键复制（有复制按钮）
+  PASS  ④ 点别处弹出层自动收起
+  PASS  点 × 能关掉档案弹窗
+  PASS  点「从对话里提取档案」立刻有反馈（按钮变「正在读对话…」）
+  PASS  抽档案【不切换】左边正在看的对话，抽完按钮自己恢复
+  PASS  右栏不再常驻「客户档案」卡片（只剩中文回复建议）
+
+=== 界面渲染 · 顶栏「⚙ 设置」按钮 + 提示条单行且在客户档案上方 ===
+  PASS  顶栏有「⚙ 设置」按钮（AI 设置 / AI 提示词 / 模拟新消息 的入口）
+  PASS  顶栏有 AI 状态灯
+  PASS  状态灯不是一个按钮：无边框、无背景
+  PASS  状态灯只是一个实心圆点「●」，且不可点（cursor:default）
+  PASS  状态灯有颜色（绿=已连上 / 红=没连上）
+  PASS  提示条是单行（nowrap + 省略号/裁剪，不堆叠多条）
+  PASS  提示条在顶栏内
+  PASS  提示条落在「客户档案」右栏的上方
+
+=== 界面渲染 · 新消息累计 + 等待翻译中 ===
+  PASS  同一个客户只占一格（多条新消息累计，不铺成多个格子）
+  PASS  未读数累计成 2（没点开就一直累加）
+  PASS  有未读的客户排到左栏最上面
+  PASS  点开后未读清零
+  PASS  右栏顶部提醒「等待翻译中…」
+  PASS  这条提醒在客户名下方、消息区上方（截图箭头指的位置）
+  PASS  英文那一条气泡里标着「等待翻译中」
+  PASS  客户发的中文【不】翻译、也不标等待
+
+=== 界面渲染 · 中栏档案条 + 生成建议按钮 ===
+  PASS  中栏客户名下方有档案条
+  PASS  档案条是 14px 加粗（黑体，按你的要求）
+  PASS  档案条里有「加入时间」
+  PASS  档案条里有「客户当地时间」
+  PASS  客户当地时间真的算出来了（形如 09-25 03:12）
+  PASS  标题「加入时间」是红色
+  PASS  标题「客户当地时间」是绿色
+  PASS  标题「地区」是紫色
+  PASS  「⚡ 生成建议」按钮在中栏
+  PASS  它在中栏底部（消息区下方、贴着底边）
+  PASS  右栏卡片里【不再】有这个按钮
+  PASS  档案里手填了「-12」→ 中栏时差按手填的算（比北京晚 12 小时）
+  PASS  手填时差时，客户当地时间照样算得出来（不是空）
+  PASS  时区栏留空 → 中栏按「地区」推出来的时区算（波士顿 = 纽约时间）
+
+=== 界面渲染 · 待处理说明 + 按钮位置 ===
+  PASS  对话里的气泡正常画出来了
+  PASS  对话信息里没有红/绿数字（数字只放左栏客户行）
+  PASS  顶栏里的「待处理」胶囊已删掉
+  PASS  顶栏里那句红/绿数字说明已删掉
+  PASS  「标记已回复」挪到了中栏底部
+  PASS  它紧挨着「生成建议」
+  PASS  真实客户的「客户档案」按钮同样能开弹窗，字段来自服务端
+
+=== 界面渲染 · 客户发来的图片 ===
+  PASS  图片那条气泡里标了「正在看图…」（或已经出中文说明）
+  PASS  顶部状态把"看图"也算进等待里
+
+=== 界面渲染 · AI 设置（在「全局设置」独立窗口里） ===
+  PASS  AI 设置页签能打开（窗口里的第一个页签）
+  PASS  弹窗里列出 7 个 AI
+  PASS  7 个 AI 里给「用哪家」下拉的是 6 个（只有 ① 采集不用配，④ 现在也可改）
+  PASS  固定项只剩 ① 接收信息（程序自己做 · 不用配）；④ 不再固定
+  PASS  ① 接收信息标成「不需要 AI」（不是「未配置」）
+  PASS  ① 接收信息不给「用哪家」下拉（它不调 AI）
+  PASS  ④ 采纳后翻英文现在有「用哪家」下拉（可选 DeepSeek / GPT / Agnes）
+  PASS  ① 接收信息写清是「抓 WhatsApp 新消息入库、不看语种」
+  PASS  列出 9 个服务商（含 DeepSeek / Agnes / 硅基流动 / OpenRouter / 视觉 / 听觉）
+  PASS  每个服务商都给出去哪申请（可点开的地址）
+  PASS  弹窗里有「保存」按钮
+  PASS  通用设置里有「提取间隔」下拉
+  PASS  下拉选项是 2~15 秒（共 14 项）
+  PASS  当前提取间隔与 config.yaml 一致（2 秒）
+  PASS  提取间隔落在 2~15 秒的合法区间里
+
+=== 界面渲染 · AI 提示词（「全局设置」窗口的第二个页签） ===
+  PASS  顶栏有「⚙ 设置」图标按钮
+  PASS  「⚙ 设置」在「话术编排台」右边（用户截图红箭头的位置）
+  PASS  AI 提示词页签能打开
+  PASS  左边列出 7 个 AI + 1 个内部任务 + 版本信息
+  PASS  「版本信息」是左栏最后一项
+  PASS  说了"什么时候跑"
+  PASS  说了代码位置（改提示词就去那）
+  PASS  系统提示词真的显示出来了
+  PASS  发了什么内容也显示出来（不是空的）
+  PASS  有复制按钮（系统提示词 / 发出去的内容）
+  PASS  说了它会返回什么
+  PASS  点另一个任务，右边会换成它的提示词
+  PASS  看到的就是真的提示词（"你是翻译器…"）
+  PASS  ① 接收信息在提示词弹窗里标明「采集环节 · 不调用 AI」
+  PASS  ① 接收信息不再显示 yes/no 语种判断那套提示词
+  PASS  ① 接收信息说清是「客户每发来一条新消息就跑」
+  PASS  ① 接收信息写清「中文不会被翻译」
+  PASS  ② 翻译里挂着「语种兜底」那段（中英混着写才用得上）
+  PASS  ② 翻译写明「本来就是中文的直接跳过、不花钱」
+
+=== 界面渲染 · 建议卡「采纳」+ 翻译弹窗 ===
+  PASS  建议卡上每条原来的「翻译」按钮都在（2 条 2 个）
+  PASS  点「采纳」存完后，卡片里的「翻译」按钮【还在】（原来会被抹掉）
+  PASS  点「翻译」能打开翻译弹窗
+  PASS  弹窗里多了「方式」下拉：手动翻译 / 自动翻译
+  PASS  选「手动翻译」时开窗【不】自动翻，等你点「翻译」
+  PASS  模型徽章显示的是 ④ 选的那家「DeepSeek」（不是写死的 GPT）
+  PASS  翻译弹窗里不再出现「（固定）」字样
+  PASS  选「自动翻译」时，打开弹窗就自动开始翻（不用再点按钮）
+  PASS  自动翻译的结果直接渲染出来了（2 个版本）
+  PASS  自动模式下「方式」下拉也显示成「自动翻译」
+  PASS  中文原文用的就是采纳时那版文字
+  PASS  模型徽章在自动模式下同样是 DeepSeek
+
+=== 界面渲染 · 需求③ 逐条「建议」按钮 → 弹窗 ===
+  PASS  需求③：每条客户消息后有「建议」按钮
+  PASS  点「建议」弹出独立小窗（不再占用右栏）
+  PASS  弹窗里针对这条消息给出 3 条建议
+  PASS  弹窗没有把建议塞进右栏（右栏卡片数不变）
+
+=== 界面渲染 · 底部「标记已回复」闸门 + 「跳过消息」+ 左栏分组 ===
+  PASS  底部有「✓ 标记已回复」按钮（在 #chat-foot 里）
+  PASS  底部有「⏭ 跳过消息」按钮（在 #chat-foot 里）
+  PASS  没有任何消息时，「⏭ 跳过消息」**依然可点**（无前置条件）
+  PASS  没有任何消息时，「✓ 标记已回复」灰色不可按
+  PASS  有对话、但没检测到我的回复 → 「✓ 标记已回复」灰色不可按
+  PASS  「⏭ 跳过消息」始终可点（与有没有回复无关）
+  PASS  检测到我已回复（最新一条是 out）→ 「✓ 标记已回复」亮起来可按
+  PASS  检测到我已回复后「⏭ 跳过消息」也仍亮
+  PASS  所有 in 消息都已 processed（left=0）但末尾是 out → 「✓ 标记已回复」仍可点（真实截图场景）
+  PASS  该场景下「⏭ 跳过消息」也可点
+  PASS  我回复后客户又发来未处理新消息 → 「✓ 标记已回复」重新变灰（需再回一次）
+  PASS  后端 repliedLast=true（即使前端末条不是 out）→ 「✓ 标记已回复」仍亮
+  PASS  兜底情形下「⏭ 跳过消息」也亮
+  PASS  「✓ 标记已回复」灰色时，点它不会真的发请求（闸门接线正确）
+  PASS  「⏭ 跳过消息」永远可点，点了真的发请求（无前置条件）
+  PASS  处理完的客户**直接从左栏列表移除**（DOM 里彻底没有它）
+  PASS  不再有「已处理 · N」折叠组标题（那是上一版做错的"折叠置顶"）
+  PASS  待处理的客户仍在左栏
+  PASS  左栏只剩 1 个还在待处理的客户
+  PASS  处理完的客户再来新消息 → 重新冒回左栏（不是永久消失）
+  PASS  所有客户都处理完 → 左栏显示「现在没有待处理的新消息」占位
+
+底部栏截图：
+  - 尚未回复：E:\WorkBuddy-Projects\wa-assistant\preview\底部栏_尚未回复.png
+  - 已回复：E:\WorkBuddy-Projects\wa-assistant\preview\底部栏_已回复.png
+
+=== 界面渲染 · 话术编排台 ===
+  PASS  编排台面板能打开
+  PASS  左栏每个碎片各自有圆角方框（常驻描边）
+  PASS  每个碎片标题前都有时段图标（早/晚/通）
+  PASS  「早餐照片」是绿底「早」
+  PASS  「白天经历」是紫底「晚」
+  PASS  「称呼对换」（通用）是蓝底「通」
+  PASS  图标是看得见的小方块（不是零尺寸）
+  PASS  左栏底部有「＋ 添加」按钮
+  PASS  点「＋ 添加」弹窗标题是「添加碎片」且名称框为空
+  PASS  保存后左栏多出一个碎片并自动选中
+  PASS  点左栏碎片后右侧列出对话卡片（≥2 条）
+  PASS  右上角「删」在右栏表头、左下角「删」在左栏按钮条（是两个不同的按钮）
+  PASS  没点选对话时点右上角「删」不会删任何东西
+  PASS  未静默时按钮是「已发」
+  PASS  点「已发」→ 这条被静默（灰掉+划线）且按钮变「恢复」
+  PASS  点「已发」不会把别的对话也静默掉
+  PASS  点「恢复」→ 取消静默、按钮变回「已发」
+  PASS  点卡片正文即选中（另一条自动取消选中）
+  PASS  选中的卡片有可见高亮
+  PASS  点右上角「删」弹出确认框，且引用了被选中那条的内容
+  PASS  确认后只删掉被点选的那一条对话
+  PASS  编排台左栏默认停在 Day 1（标题/页码都是 Day 1，「上一页」灰着）
+  PASS  点「下一页」→ 翻到 Day 2（Day2 还没碎片时给出空提示，「上一页」变可用）
+  PASS  点「上一页」→ 回到 Day 1（碎片列表原样回来）
+
+=== 界面渲染 · 处理完中栏一起清空 ===
+  PASS  点开客户后中栏有消息内容（清空前的前提）
+  PASS  中栏确实显示了客户发来的那句
+  PASS  「✓ 标记已回复」当时是亮着的（先确认能按）
+  PASS  点完「✓ 标记已回复」→ 中栏消息内容全部消失
+  PASS  中栏给了一句说明（不是一片空白，让人知道去哪了）
+  PASS  中栏头部回到「选择一个客户」
+  PASS  右栏建议也一起清掉
+  PASS  没有选中客户 → 两个动作按钮 + 生成建议都灰着（点了不会没反应）
+  PASS  左栏没有任何一行还是选中态
+  PASS  「⏭ 跳过消息」点完同样把中栏清空
+
+=== 界面渲染 · 底部操作条钉在窗口底部（不跟着聊天记录滚）===
+  PASS  #msgs 自己能滚（消息多了只有这一块滚）
+  PASS  滚到底之后底部操作条位置**纹丝不动**
+  PASS  底部操作条始终贴在中栏底边（没被滚走）
+  PASS  中栏整栏不滚动（滚的只有消息区）
+
+=== 界面渲染 · 版本信息在「AI 提示词」左栏最下面 ===
+  PASS  「AI 提示词」页签打开了
+  PASS  左栏最下面一项就是「版本信息」
+  PASS  点它右侧就显示版本更新内容
+  PASS  更新内容含版本号（v0.1.2 / v0.1.1…）
+  PASS  更新内容描述优化了什么（不是空页）
+
+截图：E:\WorkBuddy-Projects\wa-assistant\preview\界面自检.png
+
+========== 界面自检：262 通过 / 0 失败 ==========
+  [exit=0]
+(node:16664) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+【1】配置文件路径隔离
+  ✓ 测试写的是临时副本，不是真实 config.yaml
+
+【2】GET /api/ai/config
+  ✓ 接口 200
+  ✓ 带回 9 个服务商（混元 / GPT / Claude / DeepSeek / Agnes / 硅基流动 / OpenRouter / 视觉 / 听觉）
+  ✓ apiKey 不以明文回显（只给 hasKey + 掩码）
+  ✓ 带回配置文件绝对路径（说明书要求写绝对路径）
+  ✓ aiReady / aiReason 两个字段都在，且互不矛盾
+
+【2b】7 个 AI 的目录（界面就是照它渲染的）
+  ✓ 目录里正好 7 个 AI
+  ✓ 每个 AI 都写清了「干什么用」
+  ✓ 目录里正好 9 个服务商（含 DeepSeek / Agnes / 硅基流动 / OpenRouter / 视觉 / 听觉）
+  ✓ 每个服务商都给了「去哪申请」的可点开地址 + 用途说明
+  ✓ 每个服务商都有短名 short（翻译弹窗的模型徽章只显示短名，如 DeepSeek / GPT / Agnes）
+  ✓ ④「采纳后翻英文」不再固定 GPT，改为可选 DeepSeek / GPT / Agnes
+  ✓ 每个 AI 都有运行状态（ready / provider / reason）
+
+【3】POST /api/ai/config 保存
+  ✓ 保存返回 ok
+  ✓ 报告了改了哪几项
+  ✓ 值真的写进了配置文件
+  ✓ 中文注释原样保留（没有被重新序列化冲掉）
+  ✓ 改完仍是合法 YAML，且解析出来就是新值
+
+【4】界面回显的掩码不能把真 key 覆盖掉
+  ✓ 带 • 的掩码被忽略，真 key 还在
+
+【5】保存后立即生效（不用重启软件）
+  ✓ hasKey 变 true 且给出掩码尾巴
+  ✓ /api/state 立刻变成 "AI 就绪"
+  ✓ ⑤ 看图没单独填 key 也能用（自动回落到混元那把 key）
+
+【6】POST /api/ai/test 连接测试
+  ✓ 真发了一次请求（假网关收到）
+  ✓ 返回 ok + 耗时 + 模型名
+  ✓ 返回里带上「真实请求的地址」，出问题一眼看得出
+  ✓ 地址带引号 + 多写了 /chat/completions → 自动纠正后照样打得通（404 那个坑）
+  ✓ 地址真写错时，报错里带 404 + 中文排查提示（不是干巴巴的英文）
+  ✓ ⑥ 听语音没填接入地址时，提示去填地址
+  ✓ ⑥ 语音服务商测的是模型列表（能列出模型 = 地址和 key 都对）
+  ✓ 服务商不存在时也不崩
+  ✓ 地址打不通时把原因带回来
+
+【7】切默认服务商
+  ✓ ②③（翻译/抽档案/建议）都切到 gpt（① 接收信息是采集，不参与切换）
+  ✓ ① 接收信息不被「默认用哪家」改动（它是采集环节，不调 AI）
+  ✓ ④ 采纳后翻英文不跟着「默认用哪家」变（保持你单独选的那家）
+  ✓ ⑤ 看图 / ⑥ 听语音 各有专门的服务商槽，不跟着「默认用哪家」变（保持切之前的值）
+  ✓ 把默认切回混元之后，④ 仍然保持你单独选的那家（不被带跑）
+  ✓ ⑦ 看视频槽位也不跟着「默认用哪家」变（保持切之前的值，接口已留、暂未接）
+
+【8】真实 config.yaml 全程没被碰
+  ✓ 真实 config.yaml 内容与测试开始时完全一致
+
+========== AI 设置自检：38 通过 / 0 失败 ==========
+  [exit=0]
+(node:1096) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+=== 新消息 · 未读累计 ===
+  PASS  连发 3 条 → 未读数累计成 3（不是铺成 3 格）
+  PASS  未读总数也跟着涨
+
+=== 语种判断 · 中文不翻 ===
+  PASS  中文消息不排进翻译队列（不花 AI 调用）
+  PASS  此时一次 AI 都没调
+
+=== 先推消息 · 后台翻译 ===
+  PASS  英文消息排进后台翻译队列
+  PASS  队列里查得到这条（界面据此显示「等待翻译中」）
+  PASS  AI 已经被调起来了（后台已开跑）
+  PASS  但还没返回 —— translateLater 是立刻返回的，界面不用等它
+
+=== 翻译中 · 接口回报（界面显示「等待翻译中」）===
+  PASS  英文那条：translating=true
+  PASS  英文那条：还没有译文
+  PASS  中文那条：不标翻译中、也不标没翻
+  PASS  接口回报还有几条没翻（界面决定要不要提示）
+
+=== 翻完 · 写库 + 推事件 ===
+  PASS  回调带回中文
+  PASS  译文写进库了
+  PASS  翻完就不再标"翻译中"
+  PASS  再查接口：已经带译文了
+
+=== 打开客户 · 补翻译没翻的（走 /translate 接口）===
+  PASS  接口排上 1 条（中文那条不算，已经翻过的不重复翻）
+  PASS  只调了一次 AI
+  PASS  补完之后没有未翻译的客户消息了
+  PASS  翻完推出了 translated 事件（界面靠它撤掉「等待翻译中」）
+
+=== 点开客户 · 未读清零 ===
+  PASS  点开前未读还是 3
+  PASS  POST /read 成功
+  PASS  未读清零
+  PASS  “待处理”不动（那是回没回复的事）
+  PASS  列表里也不再有未读徽标
+
+=== 源码回归 · 别把顺序改回去 ===
+  PASS  handleMessage 里没有 await ai.translate（否则界面要干等 AI 几十秒）
+  PASS  先广播 new_message，再把翻译丢后台
+  PASS  翻完会推 translated 事件
+  PASS  手动录入也走后台翻译（不 await）
+  PASS  补翻译接口翻完也推 translated
+
+========== 翻译链路自检：30 通过 / 0 失败 ==========
+  [exit=0]
+(node:14812) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+=== 批量合并：同步涌入多条 → 一次请求 ===
+  PASS  6 条短消息只触发 1 次 translateBatch（不是 6 次往返）
+  PASS  那一次请求里包含了全部 6 条
+  PASS  没有用单条 translate（应是批量走的）
+  PASS  6 条全部翻好写库
+
+=== 长消息切片：超长消息并行翻 ===
+  PASS  长消息走了「切片并行翻」：单条 translate 被调用了多次
+  PASS  长消息没有走 translateBatch（它本来就只有 1 条）
+  PASS  长消息最终有中文译文
+  PASS  长消息译文字数约为原文的 3 字前缀累加（拼接正确）
+
+=== 失败处理：重试一次后仍失败 → 标 failed ===
+  PASS  翻译失败的消息状态写成 failed
+  PASS  失败后不再处于「翻译中」
+  PASS  接口装饰：translateFailed=true（界面据此显示「没翻出来」，而非转圈）
+  PASS  接口装饰：不再标 untranslated/translating（避免假「等待翻译中」）
+
+=== 封顶后：补翻不再自动重试 failed（不烧 token）===
+  PASS  补翻不再把已试满次数的 failed 排上（queued = 0）
+  PASS  「还有几条没翻」也不再算它（界面不会反复发起补翻）
+  PASS  它保持 failed 不动（不偷偷重试）
+
+=== 用户手动点「点这里重翻」才能救回 ===
+  PASS  手动重翻接口把它排上了（queued = 1）
+  PASS  手动重翻把它救回来了（done + 有中文）
+
+========== 翻译提速自检：17 通过 / 0 失败 ==========
+  [exit=0]
+PASS  测试客户建好了
+
+--- ① 翻好的消息，反复打开客户 ---
+(node:13812) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS  三条都翻出了中文
+PASS  反复打开客户 5 次：AI 一次都没被调用
+PASS  上次翻译的中文还在（界面能原样显示）
+PASS  「还有几条没翻」报 0（界面不会再发起补翻）
+
+--- ② 一直翻不出来的消息 ---
+PASS  试满 2 次就放手（不再无限重试）
+PASS  账本记在数据库里（不是内存，重启也记得）
+PASS  状态标记为 failed
+PASS  封顶之后再打开客户：0 次调用
+PASS  「还有几条没翻」也不再把它算进去
+
+--- ③ AI 判定本来就是中文 ---
+PASS  只用一次判定就定性（不重试）
+PASS  状态标记为 skipped
+PASS  skipped 的消息不再允许自动翻
+PASS  skipped 之后反复排队：0 次调用
+
+--- ④ 用户手动点「点这里重翻」 ---
+PASS  手动重翻排上了队
+PASS  手动重翻确实又翻了一次
+PASS  这次翻出来并写了中文
+PASS  翻成功后账本清零
+
+通过 18 / 失败 0
+隔离数据目录: E:\WorkBuddy-Projects\wa-assistant\.tmp-test-data\translate_dedup.test
+  [exit=0]
+(node:3028) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+=== 媒体分类 ===
+  PASS  jpg → 图片
+  PASS  png → 图片
+  PASS  ogg（WhatsApp 语音就是它）→ 语音
+  PASS  m4a → 语音
+  PASS  mp4 → 视频
+  PASS  没有媒体 → null
+  PASS  图片和语音 AI 能处理，视频还不能（接口已留）
+
+=== ⑤ 看图 ===
+  PASS  图片排上了后台队列
+  PASS  排队期间标着「正在处理」
+  PASS  AI 看了一次图
+  PASS  翻完就不再标「正在处理」
+  PASS  回调带回中文说明
+  PASS  中文说明写进库了（media_zh）
+  PASS  这条不再算"还没看"
+
+=== ⑥ 听语音 ===
+  PASS  AI 转写了一次
+  PASS  英文语音 → 又多调了一次翻译
+  PASS  语音说明也进了库，而且是中文
+  PASS  中文语音【不】再调翻译
+  PASS  直接存原话
+
+=== 不该排队的 ===
+  PASS  ⑤ 看图没配好 → 不排队（界面挂"未配置"，不会一直转圈）
+  PASS  文件其实不在 → 不排队
+  PASS  ⑦ 视频暂时不排队（接口留着，还没接）
+
+=== 接口 · 媒体状态 ===
+  PASS  接口说这是图片
+  PASS  接口说"还没看"（界面据此挂「正在看图…」）
+  PASS  客户维度也有"还有几张没看"的计数
+  PASS  打开客户会顺手把没看的图排上队
+  PASS  补看真的调了 AI
+  PASS  推了 translated 事件，里面带着图片的中文说明（界面靠它换掉占位）
+  PASS  再看接口：已经有中文说明了
+  PASS  也不再标"还没看"
+  PASS  客户维度清零
+
+=== 源码回归 · 顺序 ===
+  PASS  先广播 new_message，再把图片/语音丢后台（界面不用等 AI 看图）
+  PASS  看图/听语音没有任何 await（不许卡住消息链路）
+  PASS  地址规范化在（去引号 / 去误拼的 /chat/completions / 补 /v1）
+  PASS  报错里带"请求地址"（404 一眼看出问题）
+
+========== 图片语音自检：35 通过 / 0 失败 ==========
+  [exit=0]
+
+=== 数据层 · 三态时段 ===
+  PASS  Day1 种子 10 个碎片
+  PASS  每个碎片都有 morning/evening 两个布尔
+  PASS  Day1 种子的每个碎片 day 都 = 1（2026-09-30 起碎片按 Day 分页）
+  PASS  「早餐照片（食物）」= 早上
+  PASS  「白天经历」= 晚上
+  PASS  「经历照片」= 晚上
+  PASS  「称呼对换」= 通用（两个都不选）
+  PASS  「生活对换」= 通用
+
+=== 数据层 · 三态互斥 ===
+  PASS  改成「早上」
+  PASS  改「晚上」时自动取消「早上」
+  PASS  两个都不勾 = 通用
+  PASS  两个都送到时仍保持互斥（不会同时为真）
+
+=== 数据层 · 老数据迁移（只有 evening） ===
+  PASS  老「早餐照片」→ 早上
+  PASS  老「称呼对换」→ 通用
+  PASS  老「白天经历」→ 晚上
+  PASS  认不出的自定义碎片 → 通用
+  PASS  迁移结果已回写落盘
+
+=== 数据层 · 新增碎片 ===
+  PASS  新增碎片带 morning
+  PASS  兼容旧式布尔调用（=晚上）
+  PASS  不带 day 的新碎片默认归 Day1
+  PASS  带 day:2 的新碎片落到 Day2
+
+=== 数据层 · Day 迁移（老数据没有 day） ===
+  PASS  老数据缺 day 的碎片被补成 Day1
+
+=== 数据层 · 对话 id 全看板唯一（防「改到别的碎片」） ===
+  PASS  种子数据的对话 id 全看板唯一
+  PASS  老数据里撞车的对话 id 被自动改成唯一
+  PASS  迁移结果已回写落盘
+  PASS  在第二个碎片上标记已发，不会串到第一个碎片
+  PASS  按 id 删对话只删那一条，不会连带删掉别的碎片里的条
+
+=== HTTP · 独立浮窗页面与接口 ===
+(node:7640) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+  PASS  GET /board.html = 200
+  PASS  board.html 含「早上的对话」勾选框
+  PASS  board.html 是独立浮窗形态（body.board-window）
+  PASS  board.html 的 __BUILD__ 占位已替换
+  PASS  录入客户拿到编号
+  PASS  GET /api/board/:code = 200
+  PASS  看板 10 个碎片
+  PASS  接口返回的碎片带 morning/evening 布尔
+  PASS  返回 day 字段
+  PASS  PUT 改碎片时段成功
+  PASS  已存为「早上」
+  PASS  改「晚上」自动取消「早上」
+  PASS  都不勾 = 通用
+  PASS  POST send → ok
+  PASS  发送走的是「预填」通道（不自动发）
+  PASS  prefillChat 收到该客户电话与英文原文
+  PASS  错密码删碎片 → 403
+  PASS  对密码删碎片 → 200 且少一个碎片
+
+=== HTTP · 左栏「＋ 添加」与右上角「删单条对话」 ===
+  PASS  board.html 左栏有「＋ 添加」按钮（加话题碎片）
+  PASS  board.html 的改/添加碎片弹窗标题可切换（id=bp-frag-title）
+  PASS  board.html 有「删除单条对话」确认弹窗
+  PASS  POST 新增碎片 → 200 且多一个
+  PASS  点「已发」→ 该条 sent=true（前端表现为静默、按钮变「恢复」）
+  PASS  点「已发」只改这一条，不会串到其它碎片
+  PASS  点「恢复」→ 该条 sent=false（取消静默）
+  PASS  右上角「删」删掉一条对话、碎片本身还在
+  PASS  删一条后其它碎片的对话数不变
+
+[看板自检] 通过 54 项，失败 0 项
+  [exit=0]
+
+=== 发送 · 有电话时按号码置顶会话并预填（零整页刷新） ===
+(node:7072) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+  PASS  预填成功 ok=true
+  PASS  ★ 全程零整页导航（不再刷新 WhatsApp 网页）
+  PASS  按号码定位到这位客户的会话（E164@c.us）
+  PASS  窗口被拉到最前面（用户回车就能发）
+  PASS  文字进了输入框（不是按回车发出去）
+  PASS  emoji 原样保留（没被转义坏）
+
+=== 发送 · 会话没定位到 → 退回当前对话（并在界面上提示核对） ===
+  PASS  置顶不成也 ok=true（否则用户就完全发不出去了）
+  PASS  但 method 明确标成 typed（前端会提示"确认是这个客户"）
+  PASS  依然零整页导航
+  PASS  真的把那段英文塞进了输入框
+  PASS  emoji 原样保留（没被转义坏）
+
+=== 发送 · 没电话也能塞进当前对话 ===
+  PASS  没电话也 ok=true
+  PASS  没有电话就不去翻会话列表
+  PASS  依然零整页导航
+  PASS  文字照样进了输入框
+
+=== 发送 · 两条路都不成 → 明确失败（前端才会退回剪贴板） ===
+  PASS  没输入框 → ok=false
+  PASS  给出失败原因
+  PASS  连页面都没有 → ok=false
+
+=== 主窗口 · 我在网页版发出的消息进中间栏目 ===
+蜜蜂信息采集 · 启动中（第一版：WhatsApp 新消息采集）
+数据库：E:\WorkBuddy-Projects\wa-assistant\.tmp-test-data\send_flow.test\assistant.db（驱动：node:sqlite）
+界面已启动：http://127.0.0.1:8979
+未自动连接 WhatsApp：需要哪个账号，点界面上它右边的「浏览器」按钮
+  PASS  两个客户都建好了
+[1A00001] 我 → Yes! just finished this painting for you 🎨
+  PASS  看着甲时，我发给甲的消息直接出现在中间栏目
+  PASS  中间栏目还是甲（没有被切走）
+[1A00002] 我 → Sure, sending you two size options now
+  PASS  我发给「没选中的客户」时，中间栏目跟着切过去
+  PASS  切过去后中间栏目里就有我刚发的那条
+[1A00002] 乙客户：thanks! how much?
+
+[通知] 乙客户 · 1A00002：thanks! how much?
+[提示] 新消息 · 乙客户：thanks! how much?
+  PASS  客户发来的消息【不】自动切换中间栏目（沿用既有规则）
+
+[发送链路自检] 通过 24 项，失败 0 项
+  [exit=0]
+
+=== JID → 电话：只认 @c.us，@lid 不是电话 ===
+  PASS  普通手机号 JID 能推出号码
+  PASS  带 + 号的 JID 也能推出
+  PASS  @s.whatsapp.net 也算
+  PASS  LID（@lid）**不能**当电话
+  PASS  群 JID（@g.us）不是电话
+  PASS  广播（status@broadcast）不是电话
+  PASS  太短的数字串不算电话
+
+=== 名字清洗：别把号码当名字 ===
+  PASS  正常名字照收
+  PASS  前后空白去掉
+  PASS  名字和电话一模一样 → 不要（WhatsApp 对没昵称的人会这么给）
+  PASS  格式化过的号码（+1 541 801 0646）也不是名字
+  PASS  空名字 → 空
+
+=== 从 Contact 上取名字 / 号码 ===
+  PASS  Contact.number 优先
+  PASS  number 没有时退到 id（{_serialized}）
+  PASS  LID 联系人的 id 也要挡住
+  PASS  通讯录备注（name）优先
+  PASS  没备注就用公开昵称 pushname
+  PASS  企业号用认证名
+  PASS  什么都没有 → 空
+  PASS  会话标题也能当兜底名字
+
+=== LID 号码必须挡住（用户报的 447726795080 → 243834688639050） ===
+  PASS  识别 LID JID
+  PASS  普通手机号 JID 不是 LID
+  PASS  LID 会话 + number 就是那串 LID → 不要
+  PASS  LID 会话 + number 是 15 位（不管等不等）→ 不要
+  PASS  LID 会话但 number 是真号码（wwjs 换过 id）→ 留下
+  PASS  isLidPhone：等于 LID 那串 → true
+  PASS  isLidPhone：14 位以上 → true
+  PASS  isLidPhone：像真号码 → false
+  PASS  isLidPhone：非 LID 会话一律不判（不动别人的号码）
+
+=== 从消息正文里抠电话（刚加进来的客户会直接把号码发过来） ===
+  PASS  带 + 的国际号码
+  PASS  带 00 前缀
+  PASS  带括号和横线
+  PASS  整条消息就是号码
+  PASS  普通聊天不会被当成号码
+  PASS  15 位裸数字（LID/订单号那种）不认
+  PASS  空消息 → 空
+
+=== 国际区号白名单（2026-09-29 晚加：带 + 的号码必须区号合法） ===
+  PASS  parseIntlPhone +1 北美
+  PASS  parseIntlPhone +44 英国
+  PASS  parseIntlPhone +86 中国（3 位区号回退到 2 位）
+  PASS  parseIntlPhone +81 日本
+  PASS  parseIntlPhone 00 前缀等同 +
+  PASS  parseIntlPhone 区号瞎编（879 未分配）返回 null
+  PASS  parseIntlPhone 太短（<8 位）返回 null
+  PASS  countryOfPhone 反查英国
+  PASS  countryOfPhone 反查北美
+  PASS  countryOfPhone 反查日本
+  PASS  phoneFromText 区号不在白名单的不认（从源头排除瞎编号）
+  PASS  phoneFromText 带合法区号的才认
+  PASS  phoneFromText 区号合法但整体太短也不认
+
+=== resolve()：真问浏览器时拿得到身份 ===
+(node:27008) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+  PASS  Contact 上拿到名字 + 号码（含国家标注）
+  PASS  LID 会话也能问到真号码（含国家标注）
+  PASS  msg 没有 getContact 时退到 client.getContactById（含国家标注）
+  PASS  联系人取不到时用会话标题兜底（无电话则无国家）
+  PASS  联系人接口卡住时按超时返回，不会挂死
+  PASS  超时后至少还有 JID 推出来的号码（含国家标注）
+  PASS  同一个 JID 只问一次浏览器（有缓存）
+
+=== resolve()：LID 会话的真号码（问 WhatsApp / 从消息正文） ===
+  PASS  LID 会话能问出真号码（含国家标注）
+  PASS  问的就是这个 LID
+  PASS  LID 会话从消息正文拿到号码（含国家标注）
+  PASS  LID 假号码绝不入库，改从正文拿真号码（含国家标注）
+  PASS  网页 DOM 兜底能拿到真号码（含国家标注）
+
+=== 空消息：不该被采集出来（撤回提示 / 加密提示 / 通话记录 / 表情回应） ===
+  PASS  有文字 → 用文字
+  PASS  没文字没附件 → 空（不入库）
+  PASS  撤回提示（revoked）→ 空
+  PASS  加密提示（e2e_notification）→ 空
+  PASS  通话记录（call_log）→ 空
+  PASS  表情回应（reaction）→ 空
+  PASS  图片（说明文字为空）→ [图片]
+  PASS  语音 → [语音]
+  PASS  视频 → [视频]
+  PASS  文件 → [文件]
+  PASS  图片带了说明文字 → 用说明文字
+  PASS  位置 → [位置]
+  PASS  名片 → [名片]
+
+=== 数据库：空消息不显示 / 身份只补不覆盖 ===
+  PASS  读的时候空消息被挡住（只剩文字那条 + 带图那条）
+  PASS  带附件的那条没有被误删
+  PASS  purgeEmptyMessages 清掉了历史遗留的空行
+  PASS  清完还是只剩两条真消息
+  PASS  空的姓名/电话会被补上
+  PASS  补录后姓名正确
+  PASS  补录后电话正确
+  PASS  已经有的姓名/电话**不会被覆盖**
+  PASS  姓名还是原来那个
+  PASS  电话还是原来那个
+  PASS  （前置）老数据里确实存着那串 LID 当电话
+  PASS  clearLidPhones 把假号码清掉了
+  PASS  清完电话留空（等登录后补真的）
+  PASS  姓名没被顺手动过
+  PASS  LID 客户建号时电话留空（不能存那串 LID）
+  PASS  后来问到真号码能补上
+  PASS  补上的是真号码
+  PASS  （前置）这条的 JID 是 LID、号码是 15 位假号码
+  PASS  clearLidPhones 也认得 ≥14 位的 LID 假号码
+  PASS  清完电话留空（等补身份填真的）
+  PASS  recentInboundText 含客户来信
+  PASS  recentInboundText 不含自己发出去的（免得把自号码当客户的）
+  PASS  recentInboundText 拿到的正文能抠出号码
+
+[采集链路自检] 通过 97 项，失败 0 项
+  [exit=0]
+[打包自检] 模拟用户目录：E:\WorkBuddy-Projects\wa-assistant\.tmp-test-data\packaging-home
+
+[1] 运行期目录：打包后一律落在用户可写目录
+  ✓ BEE_HOME 指哪就认哪
+  ✓ 认作「打包运行」
+  ✓ 数据基准目录 = 用户目录
+  ✓ 自带资源目录仍是项目根（只读那份）
+  ✓ config.yaml 落在用户目录里
+  ✓ 数据目录落在用户目录里
+  ✓ 客户档案目录也在用户目录里
+  ✓ 媒体目录也在用户目录里
+
+[2] 首次运行：把配置和知识库铺到用户目录
+  ✓ config.yaml 是新建出来的
+  ✓ 建了 data / sessions / knowledge 三个目录
+  ✓ 知识库 25 个文件全部复制到用户目录（含子目录）
+  ✓ 知识库子目录也复制过去了（playbook/day1.md）
+  ✓ 配置里原来的中文注释没丢（不是重新序列化出来的）
+  ✓ dataDir 改成了用户目录下的绝对路径
+  ✓ sessionDir 改成了绝对路径
+  ✓ knowledge.dir 改成了绝对路径
+  ✓ 没动别的配置（extractInterval 原样保留）
+  ✓ 没动账号配置（proxy 行原样保留）
+
+[3] 再启动一次：不能把用户改过的文件冲掉
+  ✓ 第二次：配置保持已存在
+  ✓ 第二次：知识库一个都不用补
+  ✓ 用户改过的知识库没被覆盖
+
+[4] 路径改写函数
+  ✓ 只改 app.dataDir
+  ✓ 只改 browser.sessionDir
+  ✓ 只改 knowledge.dir
+  ✓ 同小节里别的键不动（executablePath 仍为空）
+  ✓ ai 小节里同名的键不会被误改（baseUrl 原样）
+
+[5] 浏览器兜底：Puppeteer 缓存没有时也能找到本机浏览器
+  ✓ 配置里写死了就用写死的那个
+  ✓ 配置里写空字符串时不算写死（继续走自动找）
+  ✓ 能认出 Puppeteer 缓存里的 Chromium
+  ✓ 找不到时返回 null（交给 Puppeteer 默认行为）
+  ✓ firstExisting 全都不存在时返回 null
+
+[6] 数据库在用户目录里能建起来（不碰开发目录）
+  ✓ 在用户目录里建库并写入客户
+  ✓ 数据库文件确实在用户目录下
+
+[打包自检] PASS 33/33
+  [exit=0]

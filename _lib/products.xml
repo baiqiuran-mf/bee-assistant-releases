@@ -1,0 +1,119 @@
+---
+title: products
+---
+
+<Heading id="7VtWt5sE56HcsJPamup6uX" level="1">
+  产品信息（客户问到尺寸/价格/工期时才加载）
+</Heading>
+
+<BlockQuote id="FfvbMImRXFig5CtI8M118n">
+  <Paragraph id="7fJDA0dFMsYEdsFU90J4in">
+    这一节要填准确。填错会直接导致你前后说法矛盾。\
+    客户问到相关词（尺寸、价格、多少钱、工期、运费、size、price、cost、ship）时自动加载。
+  </Paragraph>
+</BlockQuote>
+
+<Heading id="A8RmmGyD9xwLWgAUei7lgN" level="2">
+  常见尺寸与价格
+</Heading>
+
+<Table id="3uQrj8XMW1q8aXbjwEuaDN" readonly rowHeader>
+  <TableRow id="eQZOEKs4v6xcFQJbHES2no">
+    <TableCell id="BGJbKsW6gyHmdF5hILGvaT">
+      <Paragraph id="cFypacUoYruuqgyrjrlEEI">
+        尺寸
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="mIxAGKM8uDcENrYu19Eemp">
+      <Paragraph id="le4LvilgC6dZ5IvcEyFbzE">
+        价格（USD）
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="O06Sxmj3YrmDRFoSWGPqn6">
+      <Paragraph id="JFpWDOy4OwVvbcIljRloZU">
+        说明
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+
+  <TableRow id="YHC3tVeA0izKtzl7CO2HVS">
+    <TableCell id="fnAMMyPMeb0jiBIf09zbXO">
+      <Paragraph id="sR1awRyIbZ5Rn6BqqEDgX0">
+        `[待填]`
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="BXNRlY6Jln62xC3cmZjkOk">
+      <Paragraph id="AFrtsmYvigEjKTbIf9Jll7">
+        `[待填]`
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="kU8rneW0h0IC2BX2u7xKpY" />
+  </TableRow>
+
+  <TableRow id="2pqPPfEpxRsuzI4oeXwqs4">
+    <TableCell id="yC7LS5WNy5kbACfGccSV78">
+      <Paragraph id="33zzlPNvXvnT3OrbPMGL28">
+        `[待填]`
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="06Mql0TCUurZDUJfrT5aHe">
+      <Paragraph id="8tKGYASqlcq3b4nNu6HDmv">
+        `[待填]`
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="doxCuV9nkugKMVmwOhZyS9" />
+  </TableRow>
+</Table>
+
+<Heading id="GovbrCjmvaS0NcCcQvXR1d" level="2">
+  交付周期
+</Heading>
+
+<BulletedList id="abEKAREvEc3ZcSaFsMDRGM">
+  作画周期：`[待填]` 天
+</BulletedList>
+
+<BulletedList id="zhstpTZmICI1o4bMplQjtC">
+  国际物流：`[待填]` 天（发往美国）
+</BulletedList>
+
+<BulletedList id="iz6RGP6xJsshOJ958wcTL1">
+  修改政策：`[待填]`（几次免费修改？）
+</BulletedList>
+
+<Heading id="DfCM6p2skTEdMLWBliiznT" level="2">
+  支付方式
+</Heading>
+
+<Paragraph id="O1UXENh0fIe0pQKkudIIgb">
+  `[待填]`
+</Paragraph>
+
+<Heading id="bbx6nbhj3m7HtkpQbDKrYr" level="2">
+  常见问答
+</Heading>
+
+<BulletedList id="ftmipNiTcANOp58zTAYrdl">
+  客户提供照片有什么要求？`[待填]`
+</BulletedList>
+
+<BulletedList id="cMp7W4oKtru1eJ4bpyAnzt">
+  画框包含吗？`[待填]`
+</BulletedList>
+
+<BulletedList id="40svshdu1LJkoA9604Oqj7">
+  可以画多只宠物吗？`[待填]`
+</BulletedList>
+
+<Divider id="pSBv4BfwjZeoU8vk9ywwdD" />
+
+<Paragraph id="bK6hFbvdEOOfaoJX2DQstH">
+  `[提醒：价格调整后记得同步这里，否则模型会用过时的数字]`
+</Paragraph>
+KS_DOC_REVIEWS	uoNp5ei9ZYrdBSZWGGoJrQ	2976	https://www.workbuddy.cn/space/d/uoNp5ei9ZYrdBSZWGGoJrQ

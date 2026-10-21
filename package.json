@@ -1,0 +1,107 @@
+{
+  "name": "wa-assistant",
+  "version": "2.6.1188",
+  "private": true,
+  "author": "蜜蜂信息采集",
+  "description": "蜜蜂信息采集：客户消息采集 + 中文回复建议教练。第一版只做 WhatsApp。数据全本地，只给建议，发送永远人工。",
+  "type": "commonjs",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron .",
+    "desktop": "electron .",
+    "pack": "node tools/pack.js",
+    "pack:raw": "electron-builder --win --x64",
+    "pack:dir": "electron-builder --win --x64 --dir",
+    "desktop:test": "node test/desktop.test.js",
+    "start:builtin": "node --experimental-sqlite src/main.js",
+    "test": "node --experimental-sqlite test/ids.test.js && node --experimental-sqlite test/db.test.js && node --experimental-sqlite test/doc.test.js && node --experimental-sqlite test/coach.test.js && node --experimental-sqlite test/loop.test.js && node --experimental-sqlite test/manual.test.js && node --experimental-sqlite test/smoke.test.js"
+  },
+  "dependencies": {
+    "better-sqlite3-multiple-ciphers": "^13.0.3",
+    "electron-log": "^5.4.9",
+    "electron-updater": "^6.8.9",
+    "js-yaml": "^4.1.0",
+    "proxy-chain": "^3.0.1",
+    "puppeteer": "^23.0.0",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2",
+    "qrcode": "^1.5.4",
+    "qrcode-terminal": "^0.12.0",
+    "sharp": "^0.35.5",
+    "teleproto": "^1.230.0",
+    "undici": "^8.11.2",
+    "whatsapp-web.js": "^1.23.0"
+  },
+  "_comment_sqlite": "数据库用 Electron/Node 内置的 node:sqlite（src/db.js 会自动选用）。better-sqlite3 已移除：它是原生模块，Electron 44 的 ABI(149) 与它的预编译包对不上，装上去也加载不了，还会把安装包撑大。",
+  "_comment_files": "build.files 排除规则有两条红线：① puppeteer / puppeteer-core 必须打进包（puppeteer-extra 是 peer 依赖，缺了登录不了 WhatsApp；Chromium 本体在系统缓存 ~/.cache/puppeteer，另有 src/browserPath.js 兜底到本机 Chrome/Edge）；② knowledge/*.md 必须保留（那就是人设/红线/范例，误排除会让软件报「知识库缺少文件」）。",
+  "_comment_npmRebuild": "npmRebuild:false 是 2026-10-08 加的。原因：better-sqlite3-multiple-ciphers 自带 Windows x64 预编译（prebuilds/win32-x64.node），本来不需要重编译，但 electron-builder 默认会跑 @electron/rebuild 去编译它 → Python 3.13 没有 distutils → gyp 报 ModuleNotFoundError → 打包直接失败。关掉重建即可，反正用的是预编译产物。如果哪天换机器后报「找不到 .node」，第一个要怀疑的就是这里。",
+  "_comment_asarUnpack": "asarUnpack 里的 better-sqlite3-multiple-ciphers 是**原生 .node 模块**，必须 unpack —— 打进 asar 里 Node 加载不了二进制。新加任何原生模块都要记得加这一条。",
+  "devDependencies": {
+    "electron": "^44.4.5",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.beeassistant.app",
+    "productName": "蜜蜂信息采集",
+    "copyright": "蜜蜂信息采集 · 本地客户消息采集与中文回复建议",
+    "artifactName": "wa-assistant-setup-${version}-${arch}.${ext}",
+    "npmRebuild": false,
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "electron/**/*",
+      "src/**/*",
+      "public/**/*",
+      "knowledge/**/*",
+      "config.yaml",
+      "CHANGELOG.md",
+      "package.json",
+      "bin/**/*",
+      "!**/*.pdb",
+      "!**/*.zip",
+      "!**/node_modules/*/{test,tests,__tests__,example,examples,doc,docs,benchmark,benchmarks}/**",
+      "!**/node_modules/**/*.{md,map,ts,flow,coffee}",
+      "!**/.bin/**",
+      "!**/node_modules/@puppeteer/browsers/lib/cjs/generated/**",
+      "!**/node_modules/electron/**",
+      "!**/node_modules/electron-builder/**",
+      "!**/node_modules/whatsapp-web.js/docs/**"
+    ],
+    "asarUnpack": [
+      "**/node_modules/whatsapp-web.js/**",
+      "**/node_modules/better-sqlite3-multiple-ciphers/**",
+      "bin/**/*"
+    ],
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "蜜蜂信息采集",
+      "artifactName": "wa-assistant-setup-${version}.${ext}",
+      "differentialPackage": true
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "baiqiuran-mf",
+        "repo": "bee-assistant-releases",
+        "releaseType": "release",
+        "channel": "latest"
+      }
+    ]
+  },
+  "engines": {
+    "node": ">=20.5.0"
+  },
+  "license": "MIT"
+}

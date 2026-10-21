@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>内置 WA 抓好友发图 · 功能参考图</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #f4f6f9; color: #1f2733; padding: 28px; line-height: 1.6;
+  }
+  h1 { font-size: 22px; margin-bottom: 4px; }
+  .sub { color: #6b7785; font-size: 13px; margin-bottom: 22px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .card {
+    background: #fff; border-radius: 12px; padding: 18px 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.06); border-top: 4px solid #c6ccd4;
+  }
+  .card.now { border-top-color: #e2604f; }
+  .card.plan { border-top-color: #2f9e6f; }
+  .card h2 { font-size: 16px; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .tag { font-size: 11px; padding: 2px 8px; border-radius: 20px; color: #fff; }
+  .tag.red { background: #e2604f; } .tag.green { background: #2f9e6f; }
+  .step {
+    display: flex; gap: 10px; padding: 9px 0; border-bottom: 1px dashed #eaeef2;
+  }
+  .step:last-child { border-bottom: none; }
+  .num {
+    flex: 0 0 22px; height: 22px; border-radius: 50%; background: #2b6cb0; color: #fff;
+    font-size: 12px; display: flex; align-items: center; justify-content: center; font-weight: 700;
+  }
+  .step.bad .num { background: #c0c7d0; }
+  .step.good .num { background: #2f9e6f; }
+  .body { font-size: 13.5px; }
+  .body b { color: #1f2733; }
+  .cross { color: #c0392b; font-weight: 700; }
+  .ok { color: #2f9e6f; font-weight: 700; }
+  .file { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 11.5px;
+    background: #f0f3f7; color: #444; padding: 1px 6px; border-radius: 4px; }
+  .full { grid-column: 1 / -1; }
+  .note {
+    background: #fff8e6; border: 1px solid #f0d99a; border-radius: 10px;
+    padding: 14px 18px; font-size: 13px; color: #6b5510;
+  }
+  .note b { color: #8a6d1a; }
+  .legend { display:flex; gap:18px; font-size:12px; color:#6b7785; margin: 4px 0 20px; }
+  .legend span { display:flex; align-items:center; gap:6px; }
+  .dot { width:10px; height:10px; border-radius:50%; display:inline-block; }
+</style>
+</head>
+<body>
+  <h1>内置 WA（WA①②③④⑤）抓好友发图 · 功能参考图</h1>
+  <div class="sub">用途：好友发来的宠物照 / 参考图 → AI 看图解中文说明 → 同时嵌缩略图进客户存档 Word 文档</div>
+
+  <div class="legend">
+    <span><i class="dot" style="background:#e2604f"></i>现状（断链）</span>
+    <span><i class="dot" style="background:#2f9e6f"></i>改造后（接通）</span>
+    <span><i class="dot" style="background:#c0c7d0"></i>未触发 / 占位</span>
+  </div>
+
+  <div class="grid">
+    <!-- 现状 -->
+    <div class="card now">
+      <h2>❌ 现状：webview 发图接不到 <span class="tag red">断</span></h2>
+      <div class="step good"><div class="num">1</div><div class="body">好友在 <b>WA①②③④⑤</b> webview 发来图片</div></div>
+      <div class="step bad"><div class="num">2</div><div class="body"><span class="cross">故意不抓</span>：<span class="file">main.js:2683</span> 写死 <span class="file">mediaPath:''</span> / <span class="file">mediaFetchState:'na'</span></div></div>
+      <div class="step bad"><div class="num">3</div><div class="body"><span class="cross">不存盘</span> → <span class="file">D:\蜜蜂采集数据\wa-assistant\media\</span> 无此图</div></div>
+      <div class="step bad"><div class="num">4</div><div class="body"><span class="cross">AI 扫描不触发</span> → <span class="file">media.js:84 describeLater</span> 没人调 → 无 mediaZh 中文说明</div></div>
+      <div class="step bad"><div class="num">5</div><div class="body"><span class="cross">Word 无缩略图</span> → <span class="file">wordDoc.js</span> 重建时这条消息没有图可嵌</div></div>
+    </div>
+
+    <!-- 改造后 -->
+    <div class="card plan">
+      <h2>✅ 改造后：接通整条链 <span class="tag green">通</span></h2>
+      <div class="step good"><div class="num">1</div><div class="body">好友在 <b>WA①②③④⑤</b> webview 发来图片</div></div>
+      <div class="step good"><div class="num">2</div><div class="body"><span class="ok">取图（新模块）</span>：<span class="file">src/waWebMedia.js</span> 走 <span class="file">webContents.executeJavaScript</span> 跑 B+C（不依赖 pupPage）</div></div>
+      <div class="step good"><div class="num">3</div><div class="body"><span class="ok">存盘</span> → 落 <span class="file">media/</span> + 写 <span class="file">mediaPath</span> / <span class="file">mediaFetchState:'done'</span></div></div>
+      <div class="step good"><div class="num">4</div><div class="body"><span class="ok">AI 扫描</span> → <span class="file">media.describeLater</span> → <span class="file">ai.describeImage</span> → <b>mediaZh 中文说明</b>（喂 AI 建议回复）</div></div>
+      <div class="step good"><div class="num">5</div><div class="body"><span class="ok">Word 嵌缩略图</span> → <span class="file">wordDoc.js</span> 每小时重建 → 720px 小图内嵌客户存档 .docx</div></div>
+    </div>
+
+    <!-- 红线 -->
+    <div class="card full note">
+      <b>🔴 四模块红线（最高优先）：</b>内置 webview 取图逻辑必须<b>独立写</b>（新文件 <span class="file">src/waWebMedia.js</span>），
+      绝不复用 / 抽公共函数去服务外置 Chrome 的 <span class="file">src/mediaRaw.js</span>（它依赖 <span class="file">client.pupPage</span>，webview 没有）。
+      两个模块同名按钮 ≠ 同代码，各自一套。
+    </div>
+
+    <!-- 已存在的功能 -->
+    <div class="card full">
+      <h2>📦 已存在、只需被「喂图」的两块（不用重做）</h2>
+      <div class="step"><div class="num">A</div><div class="body"><b>AI 扫描写中文说明</b>：<span class="file">src/media.js:84</span> <span class="file">describeLater()</span> → <span class="file">:102 ai.describeImage()</span> → 出 <b>mediaZh</b>。外部 Chrome 已跑通，webview 只差「有人把图喂进来」。</div></div>
+      <div class="step"><div class="num">B</div><div class="body"><b>客户存档 Word（带缩略图）</b>：<span class="file">src/wordDoc.js</span>（v1.1.0）→ <span class="file">main.js:2022 wordDoc.startHourly()</span> 每小时重建 → 写 <span class="file">data/word/*.docx</span>，图片压 720px 内嵌。</div></div>
+    </div>
+  </div>
+</body>
+</html>

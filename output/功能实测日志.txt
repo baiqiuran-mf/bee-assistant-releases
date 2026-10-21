@@ -1,0 +1,121 @@
+蜜蜂信息采集 · 功能实测（真打接口 + 真调 AI）
+数据目录（隔离）：E:\WorkBuddy-Projects\wa-assistant\.tmp-test-data\functional_check
+配置文件（副本）：E:\WorkBuddy-Projects\wa-assistant\.tmp-test-data\functional_check\config.yaml
+
+=== 一、内核启动 ===
+  PASS  内核起来并监听端口（没有 ERR_SERVER_ALREADY_LISTEN）   ← 端口 8787
+  PASS  startWhatsApp:false —— 没有自动开浏览器、没有自动连 WhatsApp   ← 已按桌面入口的参数启动
+  PASS  GET /api/version：界面构建戳 + 界面/数据目录   ← build=20261012-0215 · public=.\public · data=.\.tmp-test-data\functional_check
+  PASS  GET /api/state：5 个 WhatsApp 号都在（主号…五号）   ← 1一号 2二号 3三号 4四号 5五号
+  PASS  Signal 账号仍在账号表第 6 位（1-5 是 WhatsApp 号，6 是 Signal）   ← 6Signal
+  PASS  Signal 不再进顶栏账号条（老板 2026-10-11：顶栏只显示一号~五号）   ← 1一号 2二号 3三号 4四号 5五号
+  PASS  每个账号都有红绿灯状态（offline/online/waiting_qr）   ← offline,offline,offline,offline,offline
+  PASS  AI 就绪状态能读出来   ← aiReady=true · （已就绪）
+
+=== 二、接收信息（采集环节） ===
+  PASS  POST /api/manual：一段对话粘进去就能建成客户   ← 客户编号 1A00001
+  PASS  GET /api/customers：新客户出现在左栏，未读/待处理都记账了   ← unread=2 pending=1 region=美国 波特兰 tz=America/Los_Angeles
+  PASS  编号规则：账号 1 + 字母段 + 五位序号   ← 1A00001
+  PASS  填了地区会自动带出时区   ← 美国 波特兰 → America/Los_Angeles
+  PASS  GET /api/stats/today：今日收到/已处理/待处理 + 按账号拆   ← 收到 3 · 已处理 0 · 待处理 3 · 按账号 {"1":3}
+  PASS  GET /api/customer/:code：消息 + 极简档案 6 字段都返回   ← 4 条消息 · 档案字段 id/code/account_id/wa_jid/phone/name/region/timezone/stage_day/mood/pending/summary/profile_json/created_at/last_msg_at/channel/unread/created_at_source/tg_username/is_sim/queue_since/phone_src
+  PASS  英文消息进来时没有译文（翻译是后台补的，先推消息后翻译）   ← translate_state=null
+  PASS  纯中文消息不进翻译队列（省一半成本）   ← 中文那条已入库；翻译时会由 ② 的语种判定跳过
+  PASS  POST /api/customer/:code/read：点开客户未读清零   ← unread=0
+
+=== 三、② 翻译收到的消息（真调 AI） ===
+  PASS  ② 翻译：客户发来的英文 → 中文（后台自动翻，翻完推给界面）   ← 嗨！我看到你画的宠物画了。我的狗上个月走了，我特别想要一幅纪念它的画。
+  PASS  本来就是中文的那条没被翻译（跳过，不浪费钱）   ← body_zh=null
+  PASS  中英混写那条：正则拿不准才让 AI 判一次（判完要么翻、要么跳过，不会卡住）   ← state=done body_zh=谢谢！我等你的消息，请告诉我尺寸有哪些选项。
+  PASS  自己发出的消息没有被翻译（红线：只翻客户发来的）   ← out 方向那条无译文（原文照存）
+  PASS  POST /api/customer/:code/translate：把没翻的历史消息补翻   ← 排上队 1 条 → 对了，我姐姐住在California，她也超喜欢你的风格。
+  PASS  补翻是后台跑的（接口立刻返回，不阻塞界面）   ← 接口立即返回 queued=1，没等翻译结果
+
+=== 四、③ 回复建议（真调 AI，会顺带更新档案） ===
+  PASS  POST /api/customer/:code/suggest：出来分组建议（每条客户留言 3 条）   ← 共 3 组 / 9 条（每组 3 条）
+  PASS  每条建议都带一个角度（共情 / 故事 / 推进…）   ← empathy / story / nudge / empathy / story / nudge / empathy / story / nudge
+  PASS  带「为什么这么说」的理由 + 发前自查   ← rationale=Day 1 只做一件事：把买卖关系扭成两个聊宠物的人。三条都先接情绪、再问宠物名 · 自查 3 条
+  PASS  按七天节奏判了第几天   ← Day 1（来源 join）
+  PASS  加载了知识库（人设/红线/范例/七天玩法）   ← 必加载 4 份 · 命中 products.md/stories.md
+  PASS  建议是中文、且第一句能接住"宠物过世"这件事   ← 上个月……那还挺近的。你现在还好吗？
+
+先不急着谈画，我想先听听他。
+
+他叫什么名字？
+  PASS  生成建议后客户档案列齐全（6 字段）   ← 档案字段 id/code/account_id/wa_jid/phone/name/region/timezone/stage_day/mood/pending/summary/profile_json/created_at/last_msg_at/channel/unread/created_at_source/tg_username/is_sim/queue_since/phone_src
+
+=== 五、采纳 / 不要这条（学习闭环） ===
+  PASS  POST /api/suggestion/adopt：采纳 → 存进话术库   ← 话术库 1 条（去重=false）
+  PASS  POST /api/suggestion/reject：记负样本 + 立刻换思路重出（每组 3 条）   ← 新一批 3 组 / 9 条，第 1 条：上个月……那还挺近的。
+
+你现在还好吗？
+
+先不急着谈这些，我想先听听他。
+  PASS  重出的建议和刚才那批不一样（真换了角度）   ← 新角度：empathy / story / nudge / empathy / story / nudge / empathy / story / nudge
+  PASS  GET /api/learned：话术库 + 负样本 + 统计   ← 话术 1 条 · 负样本 1 条
+
+=== 六、客户档案（手动保存 + 从对话里提取） ===
+  PASS  POST /api/customer/:code/profile：改档案 + 自动补时区   ← 地区=美国 纽约 → 时区=America/New_York
+  PASS  改地区会生成/更新档案文档（data/customers/*.md）   ← .\.tmp-test-data\functional_check\customers\1A00001_功能实测客户_+15419000123.md
+  PASS  手填的加入时间标记为 manual（以后自动流程不再覆盖）   ← manual
+  PASS  POST /api/customer/:code/extract：读整段对话抽出档案（不用先生成建议）   ← 抽出 2 个字段：阶段/宠物
+  PASS  提取后档案文档跟着重写一份   ← .\.tmp-test-data\functional_check\customers\1A00001_功能实测客户_+15419000123.md
+
+=== 六·五、底部「✓ 标记已回复 / ⏭ 跳过消息」：存档 + 隐藏左栏那一格 ===
+  PASS  点按钮前：这个客户在左栏是「待处理」（pending=1）   ← pending=1 unread=1
+  PASS  POST /api/customer/:code/replied：返回写好的档案文件路径   ← .\.tmp-test-data\functional_check\customers\1A00001_功能实测客户_+15419000123.md
+  PASS  ① 存档：最新那条对话真的写进了客户的 .md 档案   ← 档案里能找到「Quick question: do you ship to…」
+  PASS  ② 隐藏：标记已回复后 pending 清零（左栏那一格收进「已处理」）   ← pending=0
+  PASS  再来一条新消息：又在左栏变成「待处理」   ← pending=1
+  PASS  POST /api/customer/:code/replied {skip:true}：返回 skipped=true + 档案路径   ← skipped=true · .\.tmp-test-data\functional_check\customers\1A00001_功能实测客户_+15419000123.md
+  PASS  ① 存档：跳过也把最新对话写进 .md 档案   ← 档案里能找到「Also, I might need two paintin…」
+  PASS  ② 隐藏：跳过后 pending 清零（同样把那一格收起来）   ← pending=0
+
+=== 七、④ 采纳后翻成英文（可选 DeepSeek / GPT / Agnes） ===
+  PASS  POST /api/translate：中文建议 → 2~3 个英文版本   ← 2 个版本
+
+=== 八、⑤ 看图（客户发来的图片 → 中文说明，真调 AI） ===
+  PASS  handleMessage：图片能落盘（data/media/）并入库   ← .\.tmp-test-data\functional_check\media\1A00002_1791761630165.jpg
+  PASS  ⑤ 看图：视觉模型真的看懂了图，写出中文说明   ← 照片中显示的是一个极简主义的几何图案，主要是对角线分割的画面。
+
+一条深蓝色的粗条纹斜贯画面，与背景的黄褐色（土黄色）形成鲜明对比。这种设计看起来非常现代和抽象，常用于平面设计或装
+
+=== 九、⑥ 听客户发的语音（语音转文字） ===
+  PASS  语音 key 已填，接口具备 /audio/transcriptions 调用条件   ← 模型 FunAudioLLM/SenseVoiceSmall
+
+=== 十、⑦ 看视频 ===
+  PASS  视频接口已留好但明确标"没接"（不假装能用）   ← wired=false
+
+=== 十一、AI 设置 / 提示词 / 连接测试 ===
+  PASS  GET /api/ai/config：key 只回显尾巴，不回明文（hasKey + keyHint）   ← hasKey=true · keyHint=「sk-••••36uz」
+  PASS  7 个 AI 任务 + 6 个服务商目录都返回（含申请地址）   ← 9 个任务 / 10 个服务商
+  PASS  提取间隔能从设置里读出来（兜底重扫用）   ← 2 秒
+  PASS  GET /api/ai/prompts：7 个任务的真实提示词都拿得到   ← 9 个任务
+  PASS  ① 接收信息标明「不调用 AI」（采集环节）
+  PASS  ③ 回复建议的提示词里能看到知识库正文 + 教练块   ← 提示词里含 persona 正文
+  PASS  POST /api/ai/test：拿配置真打一次请求验证 key   ← 连通 ✓ hy3
+
+=== 十二、界面实时推送（SSE） ===
+  PASS  SSE 连上就会推事件（新消息到界面不用刷新）   ← 收到事件：new_message, pending
+  PASS  新消息事件里带了客户编号（界面据此跳转/计数）
+
+=== 十三、红线与安全 ===
+  PASS  没有任何"发送消息"接口（发送永远人工）   ← 全文件只有读/建议/统计接口
+  PASS  试探性 POST /api/send 返回 404（不是静默成功）   ← HTTP 404
+  PASS  静态页面带上禁缓存头（改完代码不会看到旧界面）   ← cache-control: no-store, no-cache, must-revalidate, max-age=0
+  PASS  app.js / style.css 也禁缓存   ← cache-control: no-store, no-cache, must-revalidate, max-age=0
+  PASS  index.html 里 css/js 带构建戳（?v=），文件一改地址就变
+
+=== 十四、打开账号浏览器（点账号名） ===
+  PASS  POST /api/account/:id/open：账号不存在时明确报错，不静默   ← HTTP 500：没有账号 99
+  PASS  （真启动浏览器这一条只能在桌面版点账号名验证）   ← 本脚本刻意不启动 Chrome，避免污染 sessions/ 和弹二维码
+
+=== 十五、设置：提取间隔 ===
+  PASS  POST /api/ai/config：改提取间隔（2~15 秒）能存下并热生效   ← 现在是 8 秒
+  PASS  超出范围会被夹回合法值（99 → 15）   ← → 15 秒
+  PASS  回写 config.yaml 时中文注释全保留、掩码不写回   ← 注释还在、没有把 •••• 当成 key 存进去
+
+=== 十六、收尾 ===
+  PASS  内核能干净关掉（不留端口占用）   ← 进程内关服务；数据都在 E:\WorkBuddy-Projects\wa-assistant\.tmp-test-data\functional_check
+
+========== 功能实测结果：72 通过 / 0 待确认 / 0 失败 ==========

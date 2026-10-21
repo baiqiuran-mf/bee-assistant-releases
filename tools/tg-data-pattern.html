@@ -1,0 +1,128 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8">
+<title>Telegram 数据规律分析</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;padding:24px;background:#eef1f5;color:#1f2933;font:14px/1.75 "Microsoft YaHei",system-ui,sans-serif}
+h1{margin:0 0 6px;font-size:22px}
+h2{margin:26px 0 12px;font-size:17px;padding-bottom:6px;border-bottom:2px solid #63bd93}
+.sub{color:#5b6b7c;font-size:13px;margin-bottom:20px}
+.card{background:#fff;border:1px solid #cfd8e3;border-radius:10px;padding:16px 20px;margin-bottom:14px}
+.mono{font-family:Consolas,monospace;font-size:12px}
+.dim{color:#7b8794}
+.ok{color:#2d8a5f}.bad{color:#c0392b}.warn{color:#b8860b}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:#f3f6fa;text-align:left;padding:6px 10px;border-bottom:1px solid #dde4ec;color:#5b6b7c;font-weight:600}
+td{padding:5px 10px;border-bottom:1px solid #eef2f6;vertical-align:top}
+.verdict{background:#fff4f4;border-left:4px solid #c0392b;padding:14px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+.verdict h3{margin:0 0 8px;font-size:16px;color:#c0392b}
+.real{background:#f0f9f4;border-left:4px solid #2d8a5f;padding:14px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+.real h3{margin:0 0 8px;font-size:16px;color:#2d8a5f}
+.kv{display:flex;flex-wrap:wrap;gap:10px 26px;margin:10px 0}
+.kv div{background:#f5f8fb;border-radius:6px;padding:7px 13px;font-size:13px}
+.kv b{font-size:17px;color:#1f6aa5}
+ul{margin:6px 0;padding-left:22px}li{margin:4px 0}
+.hit{background:#fff9e6;border-left:3px solid #eab308;padding:10px 14px;border-radius:0 6px 6px 0;margin:10px 0;font-size:13px}
+</style></head><body>
+<h1>Telegram 数据规律分析</h1>
+<div class="sub">对象：生产库 44 条Telegram 消息 / 4 个客户　｜方法：全部实测，不推断</div>
+
+<div class="verdict">
+<h3>结论 1：这些数据确实是「拿不到正常数据」，但原因不是 API 不行</h3>
+<div class="kv">
+  <div>消息总数 <b>44</b></div>
+  <div>集中在 <b>1</b> 天</div>
+  <div>msg_ts 与入库时刻差值最大 <b>74ms</b></div>
+  <div>差值 &lt;1秒的 <b>44/44</b></div>
+  <div>正文长度中位数 <b>5</b> 字</div>
+  <div>长度 ≤4 字的 <b>19/44</b></div>
+</div>
+<p><b>硬证据（真实对话不可能长这样）：</b></p>
+<ul>
+<li><b>44/44 条的 <code>msg_ts</code>（Telegram 服务器给的消息时间）与 <code>created_at</code>（我们入库时间）差值 &lt;1 秒，最大只有 74 毫秒</b>。真实历史消息是过去发的，采集是现在拉的，两者应该差几小时到几天。</li>
+<li><b>44 条全部落在同一天（2026-10-16），且集中成几团</b>：03:35:09 一秒内进 10 条、03:37:16 一秒内进 12 条。</li>
+</ul>
+<p>→ 这批是<b>「打开软件那一瞬间，MTProto 一次性把当前可见的消息全拉下来」</b>的结果。<code>msg_ts</code> 被写成了入库那一刻的时间，所以"消息时间"和"入库时间"一样。<b>采集器没读到真实的历史时间戳。</b></p>
+</div>
+
+<div class="card">
+<h2 style="margin-top:0;border:none">① 采集时刻分布（每秒一柱）</h2>
+<table><thead><tr><th>时刻(UTC)</th><th>条数</th><th style="width:280px">分布</th><th>解读</th></tr></thead><tbody>
+<tr><td class="mono">03:32:21</td><td>1</td>
+  <td><span style="display:inline-block;width:18px;height:14px;background:#63bd93;border-radius:3px;vertical-align:middle"></span></td>
+  <td class="dim"></td></tr><tr><td class="mono">03:32:22</td><td>4</td>
+  <td><span style="display:inline-block;width:73px;height:14px;background:#63bd93;border-radius:3px;vertical-align:middle"></span></td>
+  <td class="dim"></td></tr><tr><td class="mono">03:35:08</td><td>1</td>
+  <td><span style="display:inline-block;width:18px;height:14px;background:#63bd93;border-radius:3px;vertical-align:middle"></span></td>
+  <td class="dim"></td></tr><tr><td class="mono">03:35:09</td><td>10</td>
+  <td><span style="display:inline-block;width:183px;height:14px;background:#c0392b;border-radius:3px;vertical-align:middle"></span></td>
+  <td class="dim">⚠️ 一秒内成团= 批量拉取</td></tr><tr><td class="mono">03:35:10</td><td>6</td>
+  <td><span style="display:inline-block;width:110px;height:14px;background:#c0392b;border-radius:3px;vertical-align:middle"></span></td>
+  <td class="dim">⚠️ 一秒内成团= 批量拉取</td></tr><tr><td class="mono">03:37:15</td><td>1</td>
+  <td><span style="display:inline-block;width:18px;height:14px;background:#63bd93;border-radius:3px;vertical-align:middle"></span></td>
+  <td class="dim"></td></tr><tr><td class="mono">03:37:16</td><td>12</td>
+  <td><span style="display:inline-block;width:220px;height:14px;background:#c0392b;border-radius:3px;vertical-align:middle"></span></td>
+  <td class="dim">⚠️ 一秒内成团= 批量拉取</td></tr><tr><td class="mono">03:38:28</td><td>2</td>
+  <td><span style="display:inline-block;width:37px;height:14px;background:#63bd93;border-radius:3px;vertical-align:middle"></span></td>
+  <td class="dim"></td></tr><tr><td class="mono">03:42:34</td><td>1</td>
+  <td><span style="display:inline-block;width:18px;height:14px;background:#63bd93;border-radius:3px;vertical-align:middle"></span></td>
+  <td class="dim"></td></tr><tr><td class="mono">04:10:36</td><td>1</td>
+  <td><span style="display:inline-block;width:18px;height:14px;background:#63bd93;border-radius:3px;vertical-align:middle"></span></td>
+  <td class="dim"></td></tr><tr><td class="mono">04:10:38</td><td>1</td>
+  <td><span style="display:inline-block;width:18px;height:14px;background:#63bd93;border-radius:3px;vertical-align:middle"></span></td>
+  <td class="dim"></td></tr><tr><td class="mono">06:08:12</td><td>2</td>
+  <td><span style="display:inline-block;width:37px;height:14px;background:#63bd93;border-radius:3px;vertical-align:middle"></span></td>
+  <td class="dim"></td></tr><tr><td class="mono">06:09:02</td><td>1</td>
+  <td><span style="display:inline-block;width:18px;height:14px;background:#63bd93;border-radius:3px;vertical-align:middle"></span></td>
+  <td class="dim"></td></tr><tr><td class="mono">06:09:04</td><td>1</td>
+  <td><span style="display:inline-block;width:18px;height:14px;background:#63bd93;border-radius:3px;vertical-align:middle"></span></td>
+  <td class="dim"></td></tr>
+</tbody></table>
+<div class="hit"><span class="mono">03:35:09</span>、<span class="mono">03:35:10</span>、<span class="mono">03:37:16</span>这几个时刻每秒 ≥6 条 —— 这就是「一次性拉取」的指纹。真人聊天不会一秒内发 12 条。</div>
+</div>
+
+<div class="card">
+<h2 style="margin-top:0;border:none">② 正文的真实样貌（去掉代理串，只看人话 34 条）</h2>
+<table><thead><tr><th>词</th><th>出现次数</th><th>条形</th></tr></thead><tbody>
+<tr><td class="mono">Hi</td><td>7</td><td><span style="display:inline-block;width:220px;height:14px;background:#1f6aa5;border-radius:3px;vertical-align:middle"></span></td></tr><tr><td class="mono">October</td><td>3</td><td><span style="display:inline-block;width:94px;height:14px;background:#1f6aa5;border-radius:3px;vertical-align:middle"></span></td></tr><tr><td class="mono">hi</td><td>3</td><td><span style="display:inline-block;width:94px;height:14px;background:#1f6aa5;border-radius:3px;vertical-align:middle"></span></td></tr><tr><td class="mono">j</td><td>3</td><td><span style="display:inline-block;width:94px;height:14px;background:#1f6aa5;border-radius:3px;vertical-align:middle"></span></td></tr><tr><td class="mono">9</td><td>2</td><td><span style="display:inline-block;width:63px;height:14px;background:#1f6aa5;border-radius:3px;vertical-align:middle"></span></td></tr><tr><td class="mono">Hello</td><td>2</td><td><span style="display:inline-block;width:63px;height:14px;background:#1f6aa5;border-radius:3px;vertical-align:middle"></span></td></tr><tr><td class="mono">07</td><td>2</td><td><span style="display:inline-block;width:63px;height:14px;background:#1f6aa5;border-radius:3px;vertical-align:middle"></span></td></tr><tr><td class="mono">helo14</td><td>2</td><td><span style="display:inline-block;width:63px;height:14px;background:#1f6aa5;border-radius:3px;vertical-align:middle"></span></td></tr><tr><td class="mono">09</td><td>2</td><td><span style="display:inline-block;width:63px;height:14px;background:#1f6aa5;border-radius:3px;vertical-align:middle"></span></td></tr><tr><td class="mono">14</td><td>1</td><td><span style="display:inline-block;width:31px;height:14px;background:#1f6aa5;border-radius:3px;vertical-align:middle"></span></td></tr><tr><td class="mono">16</td><td>1</td><td><span style="display:inline-block;width:31px;height:14px;background:#1f6aa5;border-radius:3px;vertical-align:middle"></span></td></tr><tr><td class="mono">24</td><td>1</td><td><span style="display:inline-block;width:31px;height:14px;background:#1f6aa5;border-radius:3px;vertical-align:middle"></span></td></tr><tr><td class="mono">57</td><td>1</td><td><span style="display:inline-block;width:31px;height:14px;background:#1f6aa5;border-radius:3px;vertical-align:middle"></span></td></tr><tr><td class="mono">hai</td><td>1</td><td><span style="display:inline-block;width:31px;height:14px;background:#1f6aa5;border-radius:3px;vertical-align:middle"></span></td></tr><tr><td class="mono">C</td><td>1</td><td><span style="display:inline-block;width:31px;height:14px;background:#1f6aa5;border-radius:3px;vertical-align:middle"></span></td></tr><tr><td class="mono">He</td><td>1</td><td><span style="display:inline-block;width:31px;height:14px;background:#1f6aa5;border-radius:3px;vertical-align:middle"></span></td></tr><tr><td class="mono">Thx</td><td>1</td><td><span style="display:inline-block;width:31px;height:14px;background:#1f6aa5;border-radius:3px;vertical-align:middle"></span></td></tr><tr><td class="mono">hello</td><td>1</td><td><span style="display:inline-block;width:31px;height:14px;background:#1f6aa5;border-radius:3px;vertical-align:middle"></span></td></tr>
+</tbody></table>
+<div class="hit">
+可见「人话」几乎全是 <b>单字/双字母测试串</b>：Hi / hi / hai / hello / helo / C / Y / F / Tf / Fff / jjj / Thx / Nilai。<br>
+<b>这不是真实客户对话</b>，这是<b>你在测试采集功能时自己发/自己测的字符串</b>。
+</div>
+</div>
+
+<div class="card">
+<h2 style="margin-top:0;border:none">③ 唯一「像真人」的 10 条 —— 其实是代理配置串</h2>
+<p class="dim">Eileen Lin（7A00003）发来的 10 条长消息，全部是这个结构：</p>
+<table><thead><tr><th>形态</th><th>实测值</th></tr></thead><tbody>
+<tr><td>固定结构</td><td class="mono">主机 : 端口 : 用户名 : 密码 \n https://主机:端口/路径</td></tr>
+<tr><td>不同 IP</td><td class="mono">5 个 → 198.87.177.142  38.110.136.213  206.163.2.100  198.65.103.226  198.65.67.111</td></tr>
+<tr><td>固定端口</td><td class="mono">8022（IP 型）、8001（域名型）</td></tr>
+<tr><td>域名</td><td class="mono">platinum-vip.miyavip.vip（出现 15 次）</td></tr>
+<tr><td>用户名/密码</td><td class="mono">固定 10 组，跨消息重复（如 szezcdsxxz / oqwmwemoeemoyi 出现 2 次）</td></tr>
+</tbody></table>
+<div class="hit"><b>判读：</b>这是<b>代理 IP 服务的转发列表</b>（大概率是账号/订阅到期后对方在发节点提醒）。<b>不是客户跟你聊油画的内容</b>。<br>
+更糟的是：这 10 条里有<b>5 条的「译文」和原文一字不差</b> —— 翻译模型直接返回原文，纯浪费 token。</div>
+</div>
+
+<div class="real">
+<h3>结论 2：规律是有的，但规律本身说明「这不是客户数据」</h3>
+<table><thead><tr><th>规律</th><th>实测结论</th></tr></thead><tbody>
+<tr><td><b>时间无规律</b></td><td>全部挤在 1 天、成团出现 → 不是真人作息（真人有昼夜分布）</td></tr>
+<tr><td><b>内容无规律</b></td><td>中位数 5 字，19/44 条 ≤4 字，全是单字母测试串</td></tr>
+<tr><td><b>方向无规律</b></td><td>客户发 32 / 我方发 12 —— 我方发的那些（hi/hai/hello/helo）明显是<b>测试回话</b>，手打的，不是策略库出的</td></tr>
+<tr><td><b>客户重合</b></td><td>3 个人名 wanyu lee / Eileen Lin / Xue 反复出现 → 同一个人在测</td></tr>
+<tr><td><b>唯一有信息量的</b></td><td>EileenLin09、wanfengzhiqiu 两个 TG 用户名 —— <b>这是目前唯一真实的客户标识</b></td></tr>
+</tbody></table>
+</div>
+
+<div class="card">
+<h2 style="margin-top:0;border:none">④ 所以「API 拿不到正常数据」的真实原因（三层）</h2>
+<table><thead><tr><th>层级</th><th>问题</th><th>证据</th></tr></thead><tbody>
+<tr><td><b>1. 数据源层</b></td><td>这些消息<b>本来就是测试数据</b>，不是真实客户聊的</td><td>中位数 5 字、全是 Hi/C/Y；<code>msg_ts</code>= 入库时间</td></tr>
+<tr><td><b>2. 采集层</b></td><td><code>msg_ts</code> 没抓到真实消息时间 → <b>时间字段目前不可信</b></td><td>44/44 条差值 &lt;1s，最大 74ms</td></tr>
+<tr><td><b>3. 身份层</b></td><td>Telegram 不给手机号 → 客户只能靠 TG 用户名识别</td><td>4 个客户 phone 全空，只有 2 个有用户名</td></tr>
+</tbody></table>
+<div class="hit"><b>API 本身是好的</b> —— 它如实返回了库里真实存在的东西。问题在于<b>你库里现在装的是测试数据</b>，而且 MTProto 那条路<b>没读到真实时间戳</b>。这两件事都不是"API 不行"。</div>
+</div>
+</body></html>

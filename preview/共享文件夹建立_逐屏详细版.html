@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>建共享文件夹 · 逐屏详细版</title>
+<style>
+  :root{
+    --bg:#f5f6f8;--card:#fff;--line:#e2e5ea;--ink:#1a1e23;--sub:#5c6570;
+    --ok:#0a7d3f;--okbg:#e7f6ed;--bad:#b3261e;--badbg:#fdecea;
+    --warn:#8a5a00;--warnbg:#fff5e0;--blue:#1257c4;--bluebg:#e9f1fd;
+    --purple:#5b3fb8;--purplebg:#f0ecfc;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.75 -apple-system,"Segoe UI","Microsoft YaHei",sans-serif}
+  .wrap{max-width:980px;margin:0 auto;padding:30px 20px 70px}
+  h1{font-size:26px;margin:0 0 6px}
+  .sub{color:var(--sub);font-size:14px;margin-bottom:22px}
+  h2{font-size:20px;margin:40px 0 16px;padding-bottom:9px;border-bottom:2px solid var(--line)}
+  h3{font-size:16.5px;margin:24px 0 10px;color:#2a3038}
+  h4{font-size:15px;margin:18px 0 8px;color:#3a424c}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 22px;margin-bottom:16px}
+  .warnbox{background:var(--warnbg);border-left:4px solid #d99b00;border-radius:8px;padding:14px 18px;margin-bottom:14px}
+  .redbox{background:var(--badbg);border-left:4px solid var(--bad);border-radius:8px;padding:14px 18px;margin-bottom:14px}
+  .greenbox{background:var(--okbg);border-left:4px solid var(--ok);border-radius:8px;padding:14px 18px;margin-bottom:14px}
+  .bluebox{background:var(--bluebg);border-left:4px solid var(--blue);border-radius:8px;padding:14px 18px;margin-bottom:14px}
+  .purplebox{background:var(--purplebg);border-left:4px solid var(--purple);border-radius:8px;padding:14px 18px;margin-bottom:14px}
+  table{width:100%;border-collapse:collapse;font-size:14px;margin:10px 0}
+  th,td{padding:9px 11px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+  th{background:#f0f2f5;font-weight:600;font-size:13px;color:#3c454f}
+  tbody tr:last-child td{border-bottom:none}
+  code{background:#eef0f3;padding:1.5px 6px;border-radius:4px;font-size:13px;
+    font-family:ui-monospace,Consolas,monospace;word-break:break-all}
+  pre{background:#22262b;color:#e6e9ed;padding:15px 18px;border-radius:10px;
+    overflow-x:auto;font-size:13px;line-height:1.8;
+    font-family:ui-monospace,Consolas,monospace;margin:10px 0}
+  .tag{display:inline-block;padding:2px 9px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap}
+  .t-ok{background:var(--okbg);color:var(--ok)}
+  .t-bad{background:var(--badbg);color:var(--bad)}
+  .t-warn{background:var(--warnbg);color:var(--warn)}
+  .t-blue{background:var(--bluebg);color:var(--blue)}
+  ol,ul{margin:8px 0;padding-left:24px}
+  li{margin:7px 0}
+  /* 逐屏步骤 */
+  .scr{background:#fff;border:1px solid var(--line);border-radius:12px;margin-bottom:20px;overflow:hidden}
+  .scr-h{background:#2b3138;color:#fff;padding:11px 18px;font-weight:600;font-size:15px;
+    display:flex;align-items:center;gap:10px}
+  .scr-h .n{background:#4a525c;color:#fff;width:24px;height:24px;line-height:24px;
+    text-align:center;border-radius:50%;font-size:13px;flex:0 0 24px}
+  .scr-b{padding:18px 22px}
+  .ui{border:2px dashed #b8c0ca;border-radius:8px;padding:12px 14px;margin:10px 0;background:#fafbfc}
+  .ui-t{font-size:12px;color:var(--sub);font-weight:600;margin-bottom:8px;
+    padding-bottom:6px;border-bottom:1px solid var(--line)}
+  .fld{background:#fff;border:1px solid #c4ccd6;border-radius:6px;padding:7px 11px;margin:6px 0;font-size:13.5px}
+  .fld b{color:var(--blue)}
+  .btnrow{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+  .btn{background:#e8ebef;border:1px solid #a8b2be;border-radius:5px;padding:5px 15px;
+    font-size:13px;color:#1a1e23}
+  .btn.pri{background:var(--blue);color:#fff;border-color:var(--blue)}
+  .btn.ok{background:var(--ok);color:#fff;border-color:var(--ok)}
+  .tabs{display:flex;gap:0;border-bottom:2px solid #c4ccd6;margin:10px 0 12px;font-size:13.5px}
+  .tabs span{padding:7px 18px;background:#eef0f3;border:1px solid #c4ccd6;border-bottom:none;
+    border-radius:6px 6px 0 0;margin-right:3px}
+  .tabs span.on{background:var(--blue);color:#fff;border-color:var(--blue);font-weight:600}
+  .chk{display:inline-block;width:15px;height:15px;border:2px solid #7d8794;border-radius:3px;
+    margin-right:7px;vertical-align:-2px;background:#fff}
+  .chk.on{background:var(--ok);border-color:var(--ok);position:relative}
+  .chk.on::after{content:"✓";color:#fff;position:absolute;left:1px;top:-3px;font-size:13px;font-weight:700}
+  .chk.dis{background:#d5dae0;border-color:#a8b2be;position:relative}
+  .chk.dis::after{content:"✕";color:#7d8794;position:absolute;left:1px;top:-3px;font-size:12px;font-weight:700}
+  .pit{margin:12px 0 0;padding:11px 14px;background:#fff8f5;border-left:3px solid #d99b00;border-radius:6px;font-size:13.5px}
+  .pit b{color:var(--bad)}
+  .tip{margin:12px 0 0;padding:11px 14px;background:#f2f9f4;border-left:3px solid var(--ok);border-radius:6px;font-size:13.5px}
+  .kv{display:grid;grid-template-columns:132px 1fr;gap:5px 14px;font-size:14px}
+  .kv dt{color:var(--sub)}
+  .kv dd{margin:0}
+  .chk-list{list-style:none;padding-left:0}
+  .chk-list li{padding-left:28px;position:relative}
+  .chk-list li::before{content:"☑";position:absolute;left:0;color:var(--ok);font-size:15px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>建共享文件夹 · 逐屏详细版</h1>
+<div class="sub">蜜蜂信息采集 ｜ 目标机器 192.168.10.204（PC-20251021LCHJ）｜ 操作机器 192.168.10.46 ｜ 2026-10-08</div>
+
+<div class="bluebox">
+<strong>这一份是"手把手"版</strong>：每一步都写清楚「在哪个窗口、点什么按钮、看到什么、填什么」，
+照着做就行，不用猜。顺序是 <b>1 → 2 → 3 → 4 → 5</b>，别跳着做。
+</div>
+
+<h2>动手前：先搞清三个前提</h2>
+<div class="card">
+<h3 style="margin-top:0">我刚才实测到的情况（决定你要注意什么）</h3>
+<table>
+<thead><tr><th style="width:200px">检查项</th><th style="width:180px">结果</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>ping 192.168.10.204</td><td><span class="tag t-ok">通，&lt;1ms</span></td><td>网络没问题</td></tr>
+<tr><td>445 端口</td><td><span class="tag t-ok">开放</span></td><td>文件共享服务在跑</td></tr>
+<tr><td>139 端口</td><td><span class="tag t-ok">开放</span></td><td>老协议也在跑</td></tr>
+<tr><td>80 / 443 端口</td><td><span class="tag t-bad">关闭</span></td><td>不能用网页方式访问，是正常的安全默认</td></tr>
+<tr><td>列举共享名</td><td><span class="tag t-bad">拒绝访问</span></td><td><b>这是当前最大障碍</b>，见下方说明</td></tr>
+</tbody>
+</table>
+
+<div class="redbox">
+<h4 style="margin-top:0">「拒绝访问」到底是什么意思</h4>
+<p style="margin-bottom:0">不是共享没建，是<strong>建了但不让你看</strong>。Windows 默认「保护性共享」会隐藏共享列表，
+不登录对方账号就看不到任何共享名。所以<strong>你可能建了共享自己却没发现</strong> —— 别急着重建，
+先做下面的步骤 1~3，权限给对了它会自己冒出来。</p>
+</div>
+
+<h4>操作前必须知道的三件事</h4>
+<table>
+<thead><tr><th style="width:150px">项目</th><th>实际情况</th></tr></thead>
+<tbody>
+<tr><td>要操作哪台机器</td><td><b>204 那台</b>（<code>PC-20251021LCHJ</code>），不是你现在这台 46</td></tr>
+<tr><td>网络类型</td><td>它在 <code>WORKGROUP</code> 工作组（没连域），所以<strong>不用域账号，用本地账号就行</strong></td></tr>
+<tr><td>用哪个账号</td><td>下面权限设置时填「要下载软件的那个人」在 204 上的登录名</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="warnbox">
+<b>切换到 204 那台机器：</b>让对方在那台电脑上打开浏览器查一下 <code>ipconfig</code>，
+确认 IPv4 是 <code>192.168.10.204</code>，然后你远程操作那台电脑做下面的步骤。
+</div>
+
+<h2>第 1 步：建文件夹</h2>
+
+<div class="scr">
+<div class="scr-h"><span class="n">1</span>打开 D 盘，新建文件夹</div>
+<div class="scr-b">
+<p><strong>做什么：</strong></p>
+<ol class="step">
+<li>按 <code>Win + E</code> 打开文件资源管理器</li>
+<li>点左边 <strong>此电脑</strong> → 找到 <code>D:</code> 盘 → 双击进去<br>
+<span style="color:var(--sub)">如果这台机器没有 D 盘，就用 C 盘，见下面的替代方案</span></li>
+<li>在空白处<strong>点右键</strong></li>
+<li>选 <strong>新建 → 文件夹</strong></li>
+<li>名字改成 <code>wa-update</code>（全小写，用减号，别用空格和中文）</li>
+<li>回车确认</li>
+</ol>
+
+<div class="ui">
+<div class="ui-t">📁 文件资源管理器 — D:</div>
+<div class="fld"><b>D:</b>（此电脑）　　驱动器　　128 GB 可用</div>
+<div style="margin-top:14px;padding:26px;text-align:center;color:#8a929c;border:1px dashed #c4ccd6;border-radius:6px;background:#fff">
+右键这里 → 新建 → 文件夹<br>
+<span style="font-size:12.5px">然后输入：wa-update</span>
+</div>
+<div class="btnrow"><span class="btn">✕ 取消</span><span class="btn pri">🔄 刷新</span></div>
+</div>
+
+<div class="pit">
+<b>⚠️ 路径别选错：</b>
+<ul style="margin:6px 0 0">
+<li><b>可以</b>：<code>D:\wa-update</code>　<code>C:\wa-update</code></li>
+<li><b>不要</b>：<code>C:\Program Files\...</code>（要管理员权限，会各种失败）</li>
+<li><b>不要</b>：桌面（有时权限会抽风）</li>
+<li><b>不要</b>：中文路径，比如 <code>D:\更新文件夹</code>（某些工具会乱码）</li>
+<li><b>不要</b>：<code>D:\</code> 根目录直接共享（会把整个盘暴露出去）</li>
+</ul>
+</div>
+<div class="tip">
+<b>💡 没有 D 盘怎么办：</b>直接用 <code>C:\wa-update</code>，一样能用。C 盘根目录下建文件夹不需要管理员权限。
+</div>
+</div>
+</div>
+
+<h2>第 2 步：右键共享</h2>
+
+<div class="scr">
+<div class="scr-h"><span class="n">2</span>设置「共享」选项卡</div>
+<div class="scr-b">
+<ol class="step">
+<li>在 <code>wa-update</code> 文件夹上<strong>点右键</strong></li>
+<li>选最下面的 <strong>属性</strong>（不是「共享」直接点，那个容易漏）</li>
+<li>弹出的窗口顶部有一排选项卡，点 <strong>共享</strong></li>
+<li>点 <strong>共享...</strong> 按钮（带一个小人图标的）</li>
+</ol>
+
+<div class="ui">
+<div class="ui-t">📁 wa-update 属性</div>
+<div class="tabs"><span>常规</span><span>兼容</span><span>安全</span><span>详细</span><span>以前版本</span><span class="on">共享</span></div>
+<div style="font-size:13.5px;color:#3a424c">文件夹共享:　<span style="color:#7d8794">未共享</span></div>
+<div class="btnrow" style="margin-top:14px"><span class="btn ok">👥 共享...</span><span class="btn">👥 共享...（高级）</span></div>
+</div>
+
+<div class="pit">
+<b>⚠️ 常见点错：</b>这一排有两个「共享...」按钮，左边那个是<strong>基础共享</strong>（用「共享名」那套），
+右边那个是<strong>高级共享</strong>（用「共享名+权限」那套）。<b>现在先点左边这个</b>，第 4 步再用右边那个。
+</div>
+</div>
+</div>
+
+<div class="scr">
+<div class="scr-h"><span class="n">3</span>填共享名 → 点「共享」</div>
+<div class="scr-b">
+<p>点完「共享...」会弹出一个新窗口，标题是「文件夹共享」。</p>
+<ol class="step">
+<li>「共享名」输入框里填：<code>wa-update</code><br>
+<span style="color:var(--sub)"><b>只填名字</b>，不要填 <code>\\192.168.10.204\wa-update</code> 那种完整路径</span></li>
+<li>下面「注释」框留空，或者写一句 <code>蜜蜂信息采集安装包</code>（方便以后认）</li>
+<li>点 <strong>共享...</strong> 按钮（对话框右下角）</li>
+<li>等它转一下，会弹「文件夹已共享」的提示，点 <strong>完成</strong></li>
+<li>回到属性窗口，会看到「文件夹共享」那行变成 <code>已共享</code>，右边显示 <code>共享名: wa-update</code></li>
+<li>点属性窗口的 <strong>取消</strong>（或确定都行）</li>
+</ol>
+
+<div class="ui">
+<div class="ui-t">👥 文件夹共享</div>
+<div class="fld">共享名(<span style="color:#b3261e">*</span>)：　<b>wa-update</b></div>
+<div class="fld">注释：　　　　蜜蜂信息采集安装包</div>
+<div style="font-size:12.5px;color:var(--sub);margin-top:6px">✔ 通过局域网共享此文件夹<br>　　客户可以从这里下载安装包</div>
+<div class="btnrow"><span class="btn">取消</span><span class="btn pri">共享...</span></div>
+</div>
+
+<div class="tip">
+<b>💡 记一下这个地址：</b>现在 <code>\\192.168.10.204\wa-update</code> 这个地址已经存在了。
+等 3、4、5 步做完，在 46 这台上就能用它了。
+</div>
+</div>
+</div>
+
+<h2>第 3 步：权限设置（🔴 最容易漏、最关键）</h2>
+
+<div class="redbox">
+<strong>这一步是整个教程的核心。</strong>Windows 共享有两个地方都能设权限，而且<strong>规则不一样</strong>：
+<ul style="margin:8px 0 0">
+<li><b>「共享」选项卡里的权限</b> —— 管<strong>通过网络访问的人</strong>（我们主要靠这个）</li>
+<li><b>「安全」选项卡里的权限</b> —— 管<strong>所有访问者</strong>，包括本机用户</li>
+</ul>
+<b>两个都要设，而且要让它们不打架。</b>下面分开讲，先设共享权限（第 4 步）再设安全权限（本步）。
+</div>
+
+<div class="scr">
+<div class="scr-h"><span class="n">4</span>先设「安全」选项卡</div>
+<div class="scr-b">
+<ol class="step">
+<li>重新<strong>右键 <code>wa-update</code> → 属性</strong></li>
+<li>点 <strong>安全</strong> 选项卡（就在「共享」左边）</li>
+<li>点 <strong>编辑...</strong> 按钮</li>
+<li>弹出「wa-update 的权限」窗口</li>
+</ol>
+
+<div class="ui">
+<div class="ui-t">🔐 wa-update 的权限</div>
+<div style="font-size:12.5px;color:var(--sub);margin-bottom:6px">组的用户或名称:</div>
+<div class="fld" style="margin:3px 0">Administrators</div>
+<div class="fld" style="margin:3px 0">SYSTEM</div>
+<div class="fld" style="margin:3px 0">Users　<span style="color:#b3261e">（灰色不可改）</span></div>
+<div style="font-size:12.5px;color:var(--sub);margin:12px 0 6px">组的权限:</div>
+<div class="fld" style="margin:3px 0">完全控制　修改　读取和执行　列出文件夹内容　读取</div>
+<div class="btnrow"><span class="btn">取消</span><span class="btn">添加...</span><span class="btn pri">应用</span></div>
+</div>
+
+<div class="pit">
+<b>⚠️ 你会看到 <code>Users</code> 那一行是<b>灰色</b>的</b> —— 这是因为它显示的是"本机 Users 组"，
+不能在安全选项卡里改。<b>别管它</b>，直接点「添加...」新建一个。
+</div>
+</div>
+</div>
+
+<div class="scr">
+<div class="scr-h"><span class="n">5</span>点「添加...」→ 高级 → 立即查找 → 选人</div>
+<div class="scr-b">
+<ol class="step">
+<li>点 <strong>添加...</strong></li>
+<li>弹出「选择用户或组」窗口，<strong>不要</strong>在上面的输入框里手打名字（容易打错）</li>
+<li>点下面的 <strong>高级...</strong> 按钮</li>
+<li>弹出「选择用户或组」大窗口，点 <strong>立即查找</strong><br>
+<span style="color:var(--sub)">会花 5~20 秒，列出这台机器上所有用户和组</span></li>
+<li>在下面的列表里<strong>双击</strong>你要加的那个人（或组）<br>
+<span style="color:var(--sub)">只有你自己用 → 选你自己的登录名；给会员用 → 选会员的登录名；想让任何人都能下 → 选 <code>Everyone</code></span></li>
+<li>点 <strong>确定</strong>（可能要点两次）</li>
+</ol>
+
+<div class="ui">
+<div class="ui-t">🔍 选择用户或组（高级查找）</div>
+<div class="fld">查找范围：　<b>PC-20251021LCHJ</b>　▾</div>
+<div class="fld" style="height:110px;overflow:hidden;line-height:1.9;font-size:13px">
+　Everyone<br>
+　Users<br>
+　Administrator<br>
+　<span style="color:#b3261e">▸ zhangsan　（要选的人）</span><br>
+　<span style="color:#8a929c">　lisi</span>
+</div>
+<div class="btnrow"><span class="btn">取消</span><span class="btn">检查名称</span><span class="btn pri">确定</span></div>
+</div>
+
+<div class="bluebox" style="margin-bottom:0">
+<b>💡 该选谁？给你两个选择，按实际情况挑：</b>
+<table style="margin:8px 0 0;background:#fff">
+<thead><tr><th style="width:120px">选谁</th><th>适合</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td><b><code>Everyone</code></b><br><span class="tag t-blue">推荐</span></td><td>会员在公司/家里不同电脑</td><td>只要在局域网内都���下，不用每人建账号。<b>前提是这个网络是你自己可控的</b></td></tr>
+<tr><td><b>会员登录名</b></td><td>想控制谁能下</td><td>每个人在 204 上都要有本地账号，麻烦但更安全</td></tr>
+<tr><td><b>你的登录名</b></td><td>只有你自己下载</td><td>最简单，但会员就下不了</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+
+<div class="scr">
+<div class="scr-h"><span class="n">6</span>把权限打勾（这两个必勾）</div>
+<div class="scr-b">
+<p>选完人回到「wa-update 的权限」窗口，<strong>上半部分多了一行你刚加的人/组</strong>。
+现在要给它勾权限：</p>
+
+<div class="ui">
+<div class="ui-t">🔐 wa-update 的权限 — Everyone</div>
+<div style="font-size:12.5px;color:var(--sub);margin-bottom:8px">勾选要设置的权限:</div>
+<div class="fld" style="background:#fff;line-height:2.1">
+<span class="chk dis"></span>完全控制<br>
+<span class="chk dis"></span>修改<br>
+<span class="chk on"></span>读取和执行<br>
+<span class="chk on"></span><b style="color:#b3261e">列出文件夹内容</b>　<span class="tag t-bad">漏了会连目录都打不开</span><br>
+<span class="chk on"></span>读取
+</div>
+<div class="btnrow"><span class="btn">取消</span><span class="btn">应用</span><span class="btn pri">确定</span></div>
+</div>
+
+<div class="redbox">
+<h4 style="margin-top:0">🔴 两个必勾项，第二个最容易被漏</h4>
+<ul style="margin:6px 0 0">
+<li><b>读取和执行</b> —— 没这个连文件都下载不了</li>
+<li><b>列出文件夹内容</b> —— <b>没这个会出现「能连上 IP 但打不开文件夹，提示拒绝访问」</b>。
+这是新手最常撞的坑，我见过好几个人卡在这。</li>
+</ul>
+<b>不要</b>勾「写入」「修改」「删除」—— 客户只需要下载，给了反而有风险。
+</div>
+
+<p style="margin-top:14px">勾完之后：</p>
+<ol class="step">
+<li>点 <strong>应用</strong>（会闪一下，可能弹个确认框，选「是」）</li>
+<li>点 <strong>确定</strong></li>
+<li>可能弹「Windows 安全中心」问你「是否更改防火墙设置」→ 点 <strong>允许</strong>（如果弹的话）</li>
+</ol>
+</div>
+</div>
+
+<h2>第 4 步：高级共享</h2>
+
+<div class="scr">
+<div class="scr-h"><span class="n">7</span>回到「共享」选项卡，点「共享...」（高级那个）</div>
+<div class="scr-b">
+<ol class="step">
+<li>再次<strong>右键 <code>wa-update</code> → 属性</strong></li>
+<li>点 <strong>共享</strong> 选项卡</li>
+<li>这次点<strong>右边</strong>那个 <strong>共享...</strong> 按钮（高级共享）</li>
+<li>弹出「高级共享」窗口</li>
+</ol>
+
+<div class="ui">
+<div class="ui-t">👥 高级共享</div>
+<div class="fld"><span class="chk on"></span>共享此文件夹</div>
+<div class="fld" style="background:#fff;line-height:2">
+　共享名：　<b>wa-update</b><br>
+　注释：　　蜜蜂信息采集安装包<br>
+　<span style="color:#2a3038"><b>访问权限</b>（关键！）：</b><br>
+　　Everyone　→　<span class="tag t-bad">无</span>　<span style="color:#7d8794">← 很多人卡在这</span>
+</div>
+<div class="btnrow"><span class="btn">取消</span><span class="btn pri">更改...</span><span class="btn pri">确定</span><span class="btn">关闭</span></div>
+</div>
+
+<div class="redbox">
+<h4 style="margin-top:0">🔴 这一步最关键：「访问权限」默认是「无」</h4>
+<p style="margin-bottom:0">很多人在第 3 步设好了安全权限就以为完了，结果发现还是连不上 ——
+<b>因为「访问权限」这一栏是独立的，默认就是「无」</b>，必须在这里单独改成「读取」。</p>
+</div>
+</div>
+</div>
+
+<div class="scr">
+<div class="scr-h"><span class="n">8</span>点「更改...」把「无」改成「读取」</div>
+<div class="scr-b">
+<ol class="step">
+<li>在「访问权限」那一栏点 <strong>更改...</strong> 按钮</li>
+<li>弹出「wa-update 的共享权限」窗口</li>
+<li>在「组或用户名」里点 <code>Everyone</code>（或你加的那个人）</li>
+<li>把下面的权限勾上：<br>
+☑ <b>读取</b><br>
+☐ 更改（不勾）<br>
+☐ 完全控制（不勾）</li>
+<li>点 <strong>确定</strong></li>
+<li>回到「高级共享」窗口，确认现在显示 <code>Everyone → 读取</code></li>
+<li>点 <strong>确定</strong>，再点 <strong>关闭</strong></li>
+</ol>
+
+<div class="ui">
+<div class="ui-t">🔐 wa-update 的共享权限</div>
+<div class="fld" style="background:#fff;line-height:2">
+<b>Everyone</b>　<span class="tag t-ok">读取</span>　<span style="color:#7d8794">（已改成读取 ✓）</span>
+</div>
+<div class="btnrow"><span class="btn">取消</span><span class="btn pri">确定</span></div>
+</div>
+
+<div class="tip">
+<b>💡 怎么确认设对了：</b>回到「高级共享」窗口，「访问权限」那栏应该显示
+<code style="color:var(--ok)">Everyone → 读取</code>。
+如果还显示「无」，说明没改成功，回去重做第 7、8 步。
+</div>
+</div>
+</div>
+
+<h2>第 5 步：开防火墙</h2>
+
+<div class="purplebox">
+<strong>为什么这步不能跳：</strong>Windows 防火墙默认<strong>阻止</strong>入站的文件共享连接。
+前面 4 步都做对了，如果没有这一步，从 46 这台连过去还是会显示「找不到网络路径」或超时。
+</div>
+
+<div class="scr">
+<div class="scr-h"><span class="n">9</span>先确认网络是「专用」还是「公用」</div>
+<div class="scr-b">
+<p>这一步决定后面怎么设。<strong>如果你的网络是「公用」，文件共享会被防火墙挡得更严</strong>。</p>
+
+<p><strong>图形界面看：</strong>设置 → 网络和 Internet → 状态 → 找到当前网络（比如「以太网」）→ 看右边写的是
+「专用网络」还是「公用网络」。</p>
+
+<p style="margin-top:12px"><strong>命令行看（推荐，更准）：</strong>在 204 上按
+<code>Win + X</code> → 选「终端(管理员)」或「Windows PowerShell(管理员)」，然后：</p>
+<pre>Get-NetConnectionProfile | Select-Object InterfaceAlias, NetworkCategory</pre>
+
+<div class="ui">
+<div class="ui-t">管理员: Windows PowerShell</div>
+<div class="fld" style="background:#0d1117;color:#c9d1d9;font-family:monospace;font-size:12.5px;line-height:1.9">
+InterfaceAlias　NetworkCategory<br>
+-----------　----------------<br>
+<span style="color:#7d8794">以太网　　　　　　Private</span>　← 专用（好）<br>
+<span style="color:#7d8794">WLAN　　　　　　　Public</span>　　← 公用（要改）
+</div>
+</div>
+
+<p style="margin-top:12px"><strong>如果是 Public（公用），先改成 Private（专用）：</strong></p>
+<pre>Set-NetConnectionProfile -InterfaceAlias "以太网" -NetworkCategory Private</pre>
+<p style="color:var(--sub)">把 <code>"以太网"</code> 换成上一步显示的实际接口名（<code>InterfaceAlias</code> 那一列）。</p>
+</div>
+</div>
+
+<div class="scr">
+<div class="scr-h"><span class="n">10</span>放行文件共享端口</div>
+<div class="scr-b">
+<p><strong>方法 A：图形界面</strong></p>
+<ol class="step">
+<li>按 <code>Win + R</code>，输入 <code>wf.msc</code> → 回车<br>
+<span style="color:var(--sub)">（"wf" = Windows Firewall，msc = 管理控制台）</span></li>
+<li>左边点 <strong>「入站规则」</strong></li>
+<li>中间列表里往下拉，找所有 <code>文件和打印机共享</code> 开头的规则</li>
+<li>看每一行的「配置文件」列，<strong>要确保「专用」那一列是 <span class="tag t-ok">已启用</span></strong><br>
+<span style="color:var(--sub)">如果是「公用」被勾上了，可以取消勾选，只留专用</span></li>
+<li>如果一条都没有：点右边 <strong>「新建规则...」</strong>，按下面填</li>
+</ol>
+
+<div class="ui">
+<div class="ui-t">🔥 新建入站规则向导</div>
+<div class="fld" style="line-height:2">
+规则类型：　　<span class="tag t-blue">程序</span>　端口　预定义　自定义<br>
+<span style="color:#7d8794">（已经默认选了「程序」，直接下一步）</span>
+</div>
+<div class="fld" style="line-height:2">
+协议：　　　　<span class="tag t-blue">TCP</span><br>
+本地端口：　　<span class="tag t-blue">445</span>
+</div>
+<div class="fld" style="background:#fff;line-height:2">
+配置文件：　☑ 域　　<span class="chk on"></span><b>专用</b>　　<span class="chk dis"></span>公用<br>
+<span style="color:#7d8794">（只勾「专用」，公用不勾）</span>
+</div>
+<div class="btnrow"><span class="btn">取消</span><span class="btn pri">下一步</span></div>
+</div>
+
+<p style="margin-top:12px"><strong>方法 B：一条命令搞定（推荐，最快）</strong></p>
+<p>在 204 的<strong>管理员 PowerShell</strong> 里跑：</p>
+<pre># 放行文件和打印机共享（仅专用网络）
+Set-NetFirewallRule -DisplayGroup "File and Printer Sharing" -Enabled True -Profile Private
+
+# 放行网络发现（可选，但建议开，不然"网络"里看不到这台机器）
+Set-NetFirewallRule -DisplayGroup "Network Discovery" -Enabled True -Profile Private</pre>
+
+<div class="tip">
+<b>💡 怎么知道跑成功了：</b>没有任何输出就是成功了。
+想确认的话可以再跑一次查询命令：
+<pre style="margin:8px 0 0">Get-NetFirewallRule -DisplayGroup "File and Printer Sharing" |
+  Where-Object Enabled -eq True | Select-Object DisplayName, Profile</pre>
+能列出规则就说明已启用。
+</div>
+</div>
+</div>
+
+<h2>第 6 步：网络发现</h2>
+
+<div class="scr">
+<div class="scr-h"><span class="n">11</span>让这台机器在"网络"里能被看见</div>
+<div class="scr-b">
+<div class="bluebox">
+<b>💡 这一步其实可选。</b>网络发现只影响「网络」界面里能不能用鼠标双击看到这台机器。
+<b>就算不开</b>，只要把地址 <code>\\192.168.10.204\wa-update</code> 直接敲进地址栏，一样能访问。
+所以忘了开也不会影响下载，只是没那么方便。
+</div>
+
+<p><strong>图形界面：</strong></p>
+<ol class="step">
+<li>控制面板 → <strong>网络和 Internet</strong></li>
+<li>点 <strong>网络和共享中心</strong> → 左边点 <strong>更改高级共享设置</strong></li>
+<li>中间下拉框选 <strong>专用网络</strong>（<span style="color:var(--sub)">重要：一定要选专用，选公用的不改</span>）</li>
+<li>把 <strong>网络发现</strong> 改成 <span class="tag t-ok">启用</span></li>
+<li>把 <strong>文件和打印机共享</strong> 改成 <span class="tag t-ok">启用</span></li>
+<li>点 <strong>保存更改</strong></li>
+</ol>
+
+<div class="ui">
+<div class="ui-t">🖧 更改高级共享设置 — 专用网络</div>
+<div class="fld" style="line-height:2.2">
+网络发现　　<span class="tag t-ok">启用</span><br>
+文件和打印机共享　<span class="tag t-ok">启用</span>
+</div>
+<div style="font-size:12.5px;color:var(--sub);margin-top:6px">密码保护共享　　<b>关闭</b></div>
+<div class="btnrow"><span class="btn">取消</span><span class="btn pri">保存更改</span></div>
+</div>
+
+<p style="margin-top:12px"><strong>命令行方式：</strong></p>
+<pre># 关闭密码保护共享（这样 Everyone 才能直接访问，不用输密码）
+Set-NetFirewallRule -DisplayGroup "File Sharing" -Name "Passwordless File Sharing" -Enabled True -Profile Private
+
+# 或者更直接：关闭整个网络的密码保护
+Set-SmbServerConfiguration -EnableAuthenticateUserSharing $false -Force -Confirm:$false</pre>
+</div>
+</div>
+
+<h2>第 7 步：验证（在这台 46 上做）</h2>
+
+<div class="greenbox">
+<strong>上面 6 步做完后，回到你现在这台机器（192.168.10.46）</strong>，跑下面 3 条命令。
+这是确认真的通了，不是"应该通了"。
+</div>
+
+<div class="card">
+<h3 style="margin-top:0">验证 ①：能看到共享名吗</h3>
+<pre>net view \\192.168.10.204</pre>
+<p><strong>成功的样子：</strong>列出一个表格，里面有 <code>wa-update</code>，状态是 <code>共享</code> 或 <code>Disk</code>。</p>
+<p><strong>还是「拒绝访问」：</strong>说明第 3 步或第 4 步的权限没生效，回去检查「访问权限」那一栏是不是还是「无」。</p>
+</div>
+
+<div class="card">
+<h3>验证 ②：能列出文件吗</h3>
+<pre>dir \\192.168.10.204\wa-update</pre>
+<p><strong>成功的样子：</strong>显示 <code>File Not Found</code> 或者列出文件（<b>现在应该是空的</b>，因为还没放文件），
+但<b>关键是不要出现「拒绝访问」</b>。</p>
+<p><strong>提示「拒绝访问」：</strong>权限还没给对。最可能是漏勾了「<b>列出文件夹内容</b>」。</p>
+</div>
+
+<div class="card">
+<h3>验证 ③：映射成盘符（更方便，后面传文件用）</h3>
+<pre>net use Z: \\192.168.10.204\wa-update
+dir Z:
+net use Z: /delete</pre>
+<p><strong>成功的样子：</strong><code>命令成功完成</code>，然后 <code>dir Z:</code> 能列出内容。</p>
+<p><strong>映射后传文件就方便了：</strong>直接 <code>copy xxx Z:\</code> 就行，不用每次写全路径。</p>
+</div>
+
+<div class="card">
+<h3>验证 ④：放个测试文件试试写权限</h3>
+<pre>echo test &gt; \\192.168.10.204\wa-update\test.txt
+dir \\192.168.10.204\wa-update
+del \\192.168.10.204\wa-update\test.txt</pre>
+<p>这步测的是<strong>你自己有没有写权限</strong>。如果你给的是「读取」权限，客户端下不了，
+但<strong>你自己要能写</strong>（以后要往里放新版本）。</p>
+<p style="margin-bottom:0"><strong>如果这一步失败了</strong>，说明你给 <code>Everyone</code> 的权限太严了。
+最简单的办法：<strong>先给 Everyone 完全控制，等所有文件都放好了，再改回「读取」</strong>。</p>
+</div>
+
+<h2>常见卡点速查</h2>
+
+<div class="card">
+<table>
+<thead><tr><th style="width:120px">卡在第几步</th><th style="width:220px">症状</th><th>原因和解法</th></tr></thead>
+<tbody>
+<tr><td>第 2 步</td><td>没有「共享」选项卡</td><td>你点的是「压缩为 ZIP 文件」旁边的菜单。<b>要在文件夹上</b>右键 → 属性</td></tr>
+<tr><td>第 3 步</td><td>「添加...」是灰的点不动</td><td>属性窗口没获得管理员权限。<b>关掉 → 右键「以管理员身份运行」文件资源管理器 → 再试</b></td></tr>
+<tr><td>第 3 步</td><td>找不到人名</td><td>要点「高级... → 立即查找」才列出所有账号，别在手打框里输</td></tr>
+<tr><td>第 4 步</td><td>「访问权限」显示「无」</td><td><b>最常见的坑</b>。必须点「更改...」单独改成「读取」，光设安全权限没用</td></tr>
+<tr><td>第 5 步</td><td>PowerShell 报「拒绝访问」</td><td>没以管理员身份运行。按 <code>Win+X</code> → 选带「管理员」字样的那个</td></tr>
+<tr><td>第 5 步</td><td>找不到接口名</td><td>把命令里的 <code>"以太网"</code> 换成 <code>Get-NetConnectionProfile</code> 显示的实际名字</td></tr>
+<tr><td>验证 ①</td><td>「拒绝访问」</td><td>回第 4 步看访问权限。Windows 默认会隐藏共享列表，权限不对就看不到任何东西</td></tr>
+<tr><td>验证 ②</td><td>提示要输账号密码</td><td>正常！说明 Everyone 没生效。<b>可以直接输 204 上的账号密码</b>，或回去确认加了 Everyone</td></tr>
+<tr><td>全部做完</td><td>提示「找不到网络路径」</td><td>99% 是防火墙。<b>回第 5 步</b>，并且确认网络类别是「专用」不是「公用」</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2>全部做完后：下一步</h2>
+
+<div class="greenbox">
+验证通过（<code>net view</code> 能看到 <code>wa-update</code>）之后，告我一声，
+<strong>我立刻帮你把 1.5.0 的三个文件复制过去并核对大小</strong>：<br>
+<code>wa-assistant-setup-1.5.0.exe</code>（138,569,700 字节）　
+<code>wa-assistant-setup-1.5.0.exe.blockmap</code>（146,844 字节）　
+<code>latest.yml</code>（353 字节）
+</div>
+
+<div class="bluebox">
+<b>💡 一个安全提醒：</b>共享文件夹开完之后，别忘了
+<code>latest.yml</code> 和 exe 要<strong>同一次打包</strong>一起复制。
+yml 文件里记着 exe 的 sha512 校验值，手工换 exe 不换 yml 会导致校验失败。
+</div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>翻译建议</title>
+  <!-- 独立浮窗：由 Electron 的 translate 窗口加载（translate.html）。
+       复用主界面的 style.css（.tr-ver / .tr-bar / .zh 等样式都在里面）。
+       body.float-window + .float-head 让整条标题栏可拖动，且窗口可移出主窗口。 -->
+  <link rel="stylesheet" href="/style.css?v=__BUILD__">
+</head>
+<body class="float-window">
+  <div class="float-head">
+    <div class="float-title">翻译建议 · 英文口语</div>
+    <button id="tr-close" class="x" title="关闭">×</button>
+  </div>
+  <div class="float-body">
+    <div class="tr-src">
+      <b>中文原文</b>
+      <div id="tr-src-text" class="zh-src"></div>
+    </div>
+    <div class="tr-bar">
+      <label>模型
+        <span class="tr-model" id="tr-provider-label" title="在「AI 设置 → ④ 采纳后翻成英文」里换">读取中…</span>
+      </label>
+      <label>版本数
+        <select id="tr-count">
+          <option value="2">2 个</option>
+          <option value="3">3 个</option>
+        </select>
+      </label>
+      <label>方式
+        <select id="tr-mode">
+          <option value="manual">手动翻译</option>
+          <option value="auto">自动翻译</option>
+        </select>
+      </label>
+      <button id="tr-go" class="primary">翻译</button>
+    </div>
+    <div id="tr-out" class="tr-out">
+      <div class="hint">点「翻译」后，会按这个客户的地区（比如美国人→美式口语）、到第几天、朋友关系口吻，给出 2-3 个英文版本，并附 AI 的整体建议。</div>
+    </div>
+  </div>
+  <script src="/translate.js?v=__BUILD__"></script>
+</body>
+</html>

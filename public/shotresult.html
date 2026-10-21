@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>截图翻译</title>
+  <link href="/style.css?v=__BUILD__" rel="stylesheet">
+  <style>
+    html, body { margin: 0; height: 100%; background: #fff; font: 14px/1.6 system-ui, sans-serif; color: #222; }
+    .float-head {
+      height: 34px; display: flex; align-items: center; padding: 0 10px;
+      background: #2f6df0; color: #fff; cursor: move; -webkit-app-region: drag;
+    }
+    .float-head .t { font-weight: 600; }
+    .float-head .x {
+      margin-left: auto; -webkit-app-region: no-drag; cursor: pointer; background: transparent;
+      border: none; color: #fff; font-size: 18px;
+    }
+    .wrap { padding: 10px 12px; overflow: auto; height: calc(100% - 34px); box-sizing: border-box; }
+    img.shot { max-width: 100%; border: 1px solid #e2e5ea; border-radius: 6px; display: block; margin-bottom: 10px; background: #f5f6f8; }
+    .tr-title { font-weight: 600; margin: 6px 0 4px; color: #2f6df0; }
+    .tr-text { white-space: pre-wrap; word-break: break-word; background: #f7f8fa; border: 1px solid #eceef1; border-radius: 6px; padding: 8px 10px; }
+    .copy { margin-top: 8px; padding: 4px 12px; border: 1px solid #cfd3da; background: #fff; border-radius: 5px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="float-head"><span class="t">截图翻译</span><button class="x" id="close">×</button></div>
+  <div class="wrap">
+    <img class="shot" id="shot" alt="截图">
+    <div class="tr-title">AI 译文（中文）</div>
+    <div class="tr-text" id="text">（等待翻译…）</div>
+    <button class="copy" id="copy">复制译文</button>
+  </div>
+  <script src="/shotresult.js?v=__BUILD__"></script>
+</body>
+</html>

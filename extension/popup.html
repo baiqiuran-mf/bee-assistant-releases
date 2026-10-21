@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>蜜蜂采集 · 抓图插件</title>
+  <style>
+    body { font: 13px/1.5 -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; padding: 14px; width: 316px; margin: 0; }
+    b { font-size: 14px; }
+    label { display: block; margin: 10px 0 3px; color: #555; }
+    input { width: 100%; box-sizing: border-box; padding: 7px 8px; border: 1px solid #d8d8d8; border-radius: 6px; font-size: 12px; }
+    button { margin-top: 10px; width: 100%; padding: 9px; border: 0; border-radius: 6px; background: #1d6fb8; color: #fff; font-size: 13px; cursor: pointer; }
+    button:hover { background: #155a96; }
+    button.ghost { background: #fff; color: #1d6fb8; border: 1px solid #1d6fb8; }
+    button.ghost:hover { background: #eef5fc; }
+    #msg { margin-top: 8px; color: #1d9e75; min-height: 16px; font-size: 12px; }
+    .box { margin-top: 12px; padding: 9px 10px; background: #f6f8fa; border: 1px solid #e6e9ec; border-radius: 7px; font-size: 12px; color: #333; }
+    .box .row { display: flex; justify-content: space-between; gap: 8px; padding: 2px 0; }
+    .box .row span:first-child { color: #777; }
+    .ok { color: #1d9e75; font-weight: 600; }
+    .bad { color: #cf3b3b; font-weight: 600; }
+    .tip { margin-top: 10px; color: #888; font-size: 11.5px; line-height: 1.6; }
+    hr { border: 0; border-top: 1px solid #eee; margin: 12px 0 2px; }
+  </style>
+</head>
+<body>
+  <b>蜜蜂采集 · 网页版 WhatsApp 抓图</b>
+
+  <div class="box" id="status">
+    <div class="row"><span>插件状态</span><span id="st-state">读取中…</span></div>
+    <div class="row"><span>当前对话</span><span id="st-chat">—</span></div>
+    <div class="row"><span>页面客户消息</span><span id="st-incoming">—</span></div>
+    <div class="row"><span>其中图片</span><span id="st-imgs">—</span></div>
+    <div class="row"><span>已发回软件</span><span id="st-captured">—</span></div>
+    <div class="row" id="st-err-row" style="display:none"><span>最近错误</span><span id="st-err" class="bad">—</span></div>
+  </div>
+
+  <button id="scan" class="ghost">🔍 扫描当前对话（把客户发来的图全发一遍）</button>
+
+  <hr>
+  <label>接收端口（软件默认 8787）</label>
+  <input id="port" value="8787">
+  <label>账号编号（软件里第几个号，默认 1）</label>
+  <input id="accountId" value="1">
+  <label>连接令牌（从软件「⚙ 设置 → 网页插件」复制）</label>
+  <input id="token" placeholder="粘贴令牌">
+  <button id="save">保存</button>
+  <div id="msg"></div>
+  <div class="tip">
+    网页版 WhatsApp 打开一个对话后：客户发来的图片会自动发回软件；你自己发的不抓。<br>
+    页面左下角会有「🐝 蜜蜂抓图」角标，点它也能扫描。
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

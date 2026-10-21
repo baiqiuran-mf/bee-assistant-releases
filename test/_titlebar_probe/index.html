@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>蜜蜂信息采集</title>
+  <!-- 直接引真实的 public/style.css —— 验的就是真样式，不是另写一份假的 -->
+  <link href="../../public/style.css" rel="stylesheet">
+</head>
+<body>
+  <!-- 与 public/index.html 里那段一字不差的 .win-drag（自绘蓝色标题栏） -->
+  <div class="win-drag">
+    <span class="wd-logo" aria-hidden="true">🐝</span>
+    <span class="wd-title">蜜蜂信息采集</span>
+  </div>
+
+  <!-- 下面照 real 顶栏结构摆一份静态样张，方便一眼看出蓝色条和下面 HTML 顶栏的分界 -->
+  <header>
+    <div class="head-top">
+      <span class="brand">蜜蜂信息采集 <span class="ver">v2.6.1102</span></span>
+      <span class="brand-logos"></span>
+      <span class="build">构建戳 20261013-2354</span>
+      <span class="head-right">
+        <span id="status" class="red" title="AI 情况">●</span>
+        <button class="ghost">＋ 手动录入</button>
+        <button class="ghost">话术编排台</button>
+        <button class="ghost">⚙ 设置</button>
+      </span>
+    </div>
+    <div class="head-bottom">
+      <div class="acct online"><span class="led green"></span><button class="acct-name">一号</button></div>
+      <div class="acct online"><span class="led green"></span><button class="acct-name">二号</button></div>
+      <div class="acct online"><span class="led green"></span><button class="acct-name">三号</button></div>
+      <div class="acct online"><span class="led green"></span><button class="acct-name">四号</button></div>
+      <div class="acct online"><span class="led red"></span><button class="acct-name">五号</button></div>
+      <span class="launcher"><span class="led green"></span><button class="launcher-name">S1</button></span>
+      <span class="launcher"><span class="led green"></span><button class="launcher-name">S2</button></span>
+      <span class="launcher"><span class="led red"></span><button class="launcher-name">S3</button></span>
+    </div>
+  </header>
+</body>
+</html>

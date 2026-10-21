@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>对话信息 · 缩略图（2.6.1173：含我们发的图 + 按原图比例）</title>
+<style>
+  body { font-family: -apple-system, "Microsoft YaHei", sans-serif; background: #eef1f5; margin: 0; padding: 24px; color: #1f2d3d; }
+  .hint { max-width: 560px; margin: 0 auto 16px; font-size: 13px; color: #5b6b7d; background: #fff; border: 1px solid #e2e6ea; border-radius: 8px; padding: 10px 14px; }
+  .tv-conv { max-width: 560px; margin: 0 auto; background: #fff; border: 1px solid #e2e6ea; border-radius: 10px; overflow: hidden; }
+  .tv-conv-head { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid #e2e6ea; font-weight: 600; }
+  .tv-conv-head .spacer { flex: 1; }
+  .tv-repaint-btn { font-size: 12px; padding: 3px 8px; border: 1px solid #d6dbe2; background: #f6f8fa; border-radius: 6px; cursor: pointer; }
+  /* —— 缩略图带（顶部，红框位置） —— */
+  .tv-img-row { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 4px; padding: 6px; background: #f6f8fa; border-bottom: 1px solid #e2e6ea; }
+  /* 关键：固定宽 100px，高按原图比例（不再裁成方块） */
+  .tv-img-row .conv-thumb { width: 100px; height: auto; border-radius: 6px; border: 1px solid #e2e6ea; background: #fff; cursor: zoom-in; }
+  .tv-img-row .conv-thumb:hover { border-color: #4f7cff; }
+  .tv-img-row .tag { position: absolute; }
+  .tv-conv-body { max-height: 360px; overflow: auto; padding: 8px 12px; }
+  .tv-msg { position: relative; margin: 6px 0; padding: 6px 10px; border-radius: 10px; max-width: 88%; }
+  .tv-msg.in { background: #eef4ff; margin-right: auto; }
+  .tv-msg.out { background: #eafaf0; margin-left: auto; text-align: right; }
+  .tv-msg .who { font-size: 11px; color: #8a98a8; margin-bottom: 2px; }
+  .tv-zh { font-weight: 600; color: #1f3a5f; }
+  .tv-en { font-size: 12px; color: #6b7a8c; margin-top: 2px; }
+  .tv-suggest { font-size: 11px; margin-top: 4px; border: 1px solid #4f7cff; color: #4f7cff; background: #fff; border-radius: 6px; padding: 2px 8px; cursor: pointer; }
+  .redbox { outline: 3px solid #ff4d4f; outline-offset: 2px; }
+</style>
+</head>
+<body>
+  <div class="hint">红框 = 您标的位置。2.6.1173 起：① 客户(in)和我们自己(out)发的图都进这条带子；② 缩略图<b>固定宽 100px、高按原图比例</b>（横图矮、竖图高，不再裁成方块）。下面是不同比例的示例。</div>
+
+  <div class="tv-conv">
+    <div class="tv-conv-head">
+      对话信息
+      <span class="spacer"></span>
+      <button class="tv-repaint-btn">↻ 补气泡</button>
+      <button class="tv-repaint-btn">标记回复</button>
+    </div>
+
+    <!-- 缩略图带：含 in + out，且比例各异（横/竖/方） -->
+    <div class="tv-img-row redbox">
+      <!-- 客户发来的：横构图（宽200×高100 → 显示 100×50） -->
+      <img class="conv-thumb" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='100'><rect width='200' height='100' fill='%23cfe3ff'/><circle cx='60' cy='40' r='20' fill='%238fb8ff'/><rect y='64' width='200' height='36' fill='%239ecb7a'/></svg>" title="客户发来的横图（猫趴着）">
+      <!-- 客户发来的：正方形（100×100 → 显示 100×100） -->
+      <img class="conv-thumb" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100' height='100' fill='%23ffe3c2'/><polygon points='50,18 82,82 18,82' fill='%23ff9f43'/></svg>" title="客户发的方图（参考图）">
+      <!-- 我们自己发的：竖构图（宽100×高200 → 显示 100×200） -->
+      <img class="conv-thumb" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='200'><rect width='100' height='200' fill='%23d8f5e0'/><rect x='28' y='30' width='44' height='140' rx='8' fill='%2342b983'/></svg>" title="我发的竖图（油画草稿）">
+      <!-- 我们自己发的：横构图 -->
+      <img class="conv-thumb" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='90'><rect width='180' height='90' fill='%23f3d6ff'/><circle cx='90' cy='45' r='30' fill='%23b06bff'/></svg>" title="我发的横图">
+    </div>
+
+    <div class="tv-conv-body">
+      <div class="tv-msg in">
+        <div class="who">客户 · in</div>
+        <div class="tv-zh">这是我家土豆，拿破仑矮脚猫，腿短短的</div>
+        <div class="tv-en">This is my potato, a Napoleon short-leg cat</div>
+        <button class="tv-suggest">💡 建议</button>
+      </div>
+      <div class="tv-msg out">
+        <div class="who">我 · out</div>
+        <div class="tv-zh">好的呀，土豆这种矮脚猫画出来特别可爱，我发张类似风格的草稿给您看</div>
+        <div class="tv-en">Sure, a Napoleon cat like Potato turns out super cute — sending a draft</div>
+      </div>
+      <div class="tv-msg in">
+        <div class="who">客户 · in</div>
+        <div class="tv-zh">哇喜欢！就照这个来</div>
+        <div class="tv-en">Wow I love it! Let's go with this</div>
+        <button class="tv-suggest">💡 建议</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

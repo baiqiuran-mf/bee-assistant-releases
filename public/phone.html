@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>抓取电话</title>
+  <!-- 独立窗口页面：顶栏「📞 抓取」按钮点开（phone.html?code=客户编号）。
+       与主界面共用 style.css。🔴 只读窗口：这里只展示，不改任何数据。
+       body.scan-window 让内容铺满整窗，标题栏可拖动（仿 board 浮窗）。 -->
+  <link rel="stylesheet" href="/style.css?v=__BUILD__">
+  <style>
+    /* 本窗口专用样式（只在这里加，不污染主界面） */
+    body.scan-window { margin: 0; background: #f6f9fc; }
+    .scan-win { display: flex; flex-direction: column; height: 100vh; }
+    .scan-head {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px; background: #cfe8fb; color: #173a52;
+      border-bottom: 1px solid #b9d8ee; flex: none;
+      -webkit-app-region: drag;                 /* 整条可拖动（无边框窗口） */
+    }
+    .scan-head button, .scan-head input { -webkit-app-region: no-drag; }
+    .scan-title { font-weight: 600; font-size: 14px; white-space: nowrap; }
+    .scan-cust { flex: 1; font-size: 12px; color: #2f5d7a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .scan-head .x { border: none; background: transparent; font-size: 20px; line-height: 1; color: #2f5d7a; cursor: pointer; padding: 0 4px; }
+
+    .scan-sum {
+      padding: 8px 14px; font-size: 12px; color: #3d5a70;
+      background: #fff; border-bottom: 1px solid var(--line); flex: none;
+      display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    }
+    .scan-sum b { color: #1f6aa5; }
+    .scan-sum .cur { color: #5a6b7a; }
+
+    .scan-list { flex: 1; overflow: auto; padding: 10px 12px; }
+    .scan-row {
+      background: #fff; border: 1px solid var(--line); border-radius: 10px;
+      padding: 9px 11px; margin-bottom: 8px;
+    }
+    .scan-row.ok { border-left: 3px solid #34a853; }
+    .scan-row.no { border-left: 3px solid #c9d2da; opacity: .82; }
+    .scan-row.cur { box-shadow: 0 0 0 2px rgba(26,115,232,.18); }
+    .scan-line1 { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+    .scan-digits { font: 600 15px/1.3 Consolas, Menlo, monospace; color: #14212e; letter-spacing: .3px; }
+    .scan-row.no .scan-digits { color: #7b8794; font-weight: 500; }
+    .tag {
+      font-size: 11px; padding: 1px 6px; border-radius: 999px;
+      border: 1px solid #c8d6e2; color: #46607a; background: #f2f7fb; white-space: nowrap;
+      -webkit-app-region: no-drag;
+    }
+    .tag.t-plus { border-color: #a9d8b4; color: #1e7a34; background: #eaf7ee; }
+    .tag.t-no { border-color: #dcdcdc; color: #8a8a8a; background: #f6f6f6; }
+    .tag.t-cur { border-color: #9dc4ea; color: #1f6aa5; background: #e8f3fc; }
+    .tag.t-cc { border-color: #ddd0ea; color: #6b4b8a; background: #f5effa; }
+    .tag.t-src { border-color: #bcd6ea; color: #2a5f85; background: #eef6fc; }
+    .scan-raw { font: 12px/1.5 Consolas, Menlo, monospace; color: #5a6b7a; margin-top: 3px; word-break: break-all; }
+    .scan-why { font-size: 12px; color: #6b7c8c; margin-top: 4px; line-height: 1.5; }
+    .scan-from { font-size: 11px; color: #8b98a5; margin-top: 4px; line-height: 1.6; word-break: break-all; }
+    .scan-empty { padding: 40px 20px; text-align: center; color: #7b8794; font-size: 13px; line-height: 1.9; }
+    .scan-note { font-size: 11px; color: #93a1ae; padding: 0 14px 10px; line-height: 1.7; flex: none; }
+  </style>
+</head>
+<body class="scan-window">
+  <div class="scan-win">
+    <div class="scan-head">
+      <span class="scan-title">📞 抓取电话</span>
+      <span class="scan-cust" id="scan-cust">—</span>
+      <button id="scan-reload" class="bp-btn" title="重新读一遍资料">重新抓取</button>
+      <button id="scan-close" class="x" title="关闭">×</button>
+    </div>
+
+    <div class="scan-sum" id="scan-sum">正在抓取…</div>
+
+    <div class="scan-list" id="scan-list">
+      <div class="scan-empty">正在读这位客户在 WhatsApp 里的<b>资料</b>（联系人卡上的号码）…</div>
+    </div>
+
+    <div class="scan-note">
+      🔴 抓的是<b>聊天对象的资料</b>（联系人卡上那个号码），<b>不是</b>聊天对话里的文字。<br>
+      这里只是<b>看</b>：不会改档案，也不会发任何消息。<br>
+      判定标准比自动入库宽松得多 —— 宁可多列一条让你自己否掉，也不让真号从清单里消失。
+    </div>
+  </div>
+
+  <script src="/phone.js?v=__BUILD__"></script>
+</body>
+</html>

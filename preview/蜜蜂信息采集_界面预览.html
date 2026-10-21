@@ -1,0 +1,3979 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>蜜蜂信息采集 · 界面预览</title>
+<style>
+:root {
+  --bg: #f5f6f8;
+  --panel: #ffffff;
+  --line: #e3e5ea;
+  --text: #1d2129;
+  --muted: #8a9099;
+  --accent: #2563eb;
+  --accent-soft: #eef4ff;
+  --red: #e5484d;
+  --green: #30a46c;
+  --amber: #f5a524;
+  --radius: 10px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+}
+
+body { display: flex; flex-direction: column; }
+
+/* ---------- 顶栏 ---------- */
+
+header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+
+/* 第一行：标题 / 待处理 / AI 状态 / AI 设置 / 手动录入 */
+.head-top { display: flex; align-items: center; gap: 10px; }
+
+/* 第二行：左边五个账号，右边一条提示（正好落在右栏「客户档案」上方） */
+.head-bottom { display: flex; align-items: center; gap: 10px; }
+
+header .brand { font-weight: 600; letter-spacing: .3px; white-space: nowrap; }
+/* 版本号：故意做得极小、很淡，只在排查「界面是不是旧的」时才需要看它 */
+header .brand .build {
+  margin-left: 6px;
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--muted);
+  opacity: .75;
+  letter-spacing: 0;
+  cursor: help;
+}
+
+.pending {
+  background: #fdecec;
+  color: var(--red);
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.pending.zero { background: #f0f1f3; color: var(--muted); }
+/* 「待处理」右边那句极简说明：解释消息左边的红/绿数字 */
+.pending-tip { font-size: 11px; color: var(--muted); white-space: nowrap; }
+
+/* 「AI 提示词」贴着 AI 状态灯放（按截图红框的位置：顶栏右侧那一簇的最左边）。
+   用 margin-left:auto 把这一簇推到右边，其余按钮跟着它排。 */
+#btn-prompts { margin-left: auto; white-space: nowrap; }
+
+/* AI 状态：做成按钮，没配 key 时点一下就打开 AI 设置 */
+#status {
+  min-width: 0;
+  max-width: 46%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+#status.ok { color: var(--green); background: #eefaf4; border: 1px solid #cdeedd; }
+#status.warn {
+  color: #b45309;
+  background: #fff8ec;
+  border: 1px solid #f6e2bd;
+  font-weight: 600;
+}
+#status.warn:hover { background: #fdf1dc; }
+#btn-ingest, #btn-ai { white-space: nowrap; flex: 0 0 auto; }
+
+.muted { color: var(--muted); font-size: 12px; }
+
+/* ---------- 顶栏账号条：五个账号，红绿灯 + 小按钮 ---------- */
+
+.acct-bar {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;      /* 窗口窄了才折行，正常宽度五个账号一行排开 */
+  align-items: center;
+}
+
+.acct {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 4px 2px 7px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fafbfc;
+  font-size: 12px;
+}
+.acct.busy { opacity: .6; }
+
+/* 红绿灯：绿=已登录 online，黄=待扫码 waiting_qr，红=离线/异常 */
+.led {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, .05);
+}
+.led.green { background: var(--green); }
+.led.red   { background: var(--red); }
+.led.amber { background: var(--amber); animation: led-blink 1.1s ease-in-out infinite; }
+@keyframes led-blink { 0%, 100% { opacity: 1; } 50% { opacity: .28; } }
+
+/* 账号名本身就是按钮：点它开这个账号的浏览器（2026-09-24 按用户要求，
+   去掉后面那个单独的「浏览器」按钮，省地方也更直觉） */
+.acct-name {
+  width: auto;
+  flex: 0 0 auto;
+  padding: 1px 7px;
+  /* 静止态就给一点点"这是按钮"的暗示（浅底 + 浅边），否则看着像纯文字、没人知道能点 */
+  border: 1px solid #e3e7eb;
+  border-radius: 6px;
+  background: #fff;
+  color: var(--text);
+  font-weight: 600;
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.acct-name:hover { background: #eef1f4; border-color: var(--line); }
+.acct-name:active { background: #e4e8ec; }
+.acct-name:disabled { color: var(--muted); cursor: default; }
+
+.acct-state { color: var(--muted); font-size: 11px; white-space: nowrap; }
+
+.acct.online { border-color: #cdeedd; background: #eefaf4; }
+.acct.waiting_qr { border-color: #f6e2bd; background: #fff8ec; }
+.acct.error { border-color: #f6cdd0; background: #fdf0f0; }
+.acct.busy .acct-name { color: var(--muted); }
+
+/* ---------- 主体三栏 ---------- */
+
+main {
+  flex: 1;
+  display: grid;
+  /* 左栏 264px。2026-09-25 第二轮：客户行右端那两个按钮挪到中栏头部以后，
+     这里就不再需要为按钮留宽度了，恢复成 264px，客户名反而更宽松。 */
+  grid-template-columns: 264px 1fr 340px;
+  gap: 1px;
+  background: var(--line);
+  min-height: 0;
+}
+
+#list {
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  min-height: 0;
+  overflow: hidden;
+}
+#list-body { flex: 1; min-height: 0; overflow-y: auto; }
+
+/* 左栏顶部「今日消息」提示窗：收到 / 已处理 / 待处理 + ① ② ③ ④ ⑤ 各几条 */
+.today-box {
+  flex: 0 0 auto;
+  margin: 10px 10px 6px;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fbfcfe;
+}
+.tb-head { display: flex; justify-content: space-between; align-items: baseline; font-size: 12px; font-weight: 700; color: #4b5563; }
+.tb-head .tb-date { font-size: 11px; font-weight: 400; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tb-row { display: flex; gap: 5px; margin-top: 7px; }
+.tb-cell { flex: 1; padding: 4px 2px; text-align: center; background: #fff; border: 1px solid var(--line); border-radius: 6px; }
+.tb-cell b { display: block; font-size: 16px; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.tb-cell span { font-size: 10px; color: var(--muted); }
+.tb-cell b.has { color: var(--red); }
+.tb-acct { display: flex; flex-wrap: wrap; gap: 3px 8px; margin-top: 7px; }
+.tb-acct .ta { font-size: 12px; color: #b9bec7; font-variant-numeric: tabular-nums; }
+.tb-acct .ta b { margin-left: 1px; font-weight: 700; }
+.tb-acct .ta.has { color: var(--red); }
+.tb-tip { margin-top: 6px; font-size: 10px; color: var(--muted); letter-spacing: .2px; }
+#chat, #panel {
+  background: var(--panel);
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* 左栏：客户列表（这一栏就是"新消息提醒"） */
+
+.cust {
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid #f1f2f4;
+  cursor: pointer;
+}
+.cust:hover { background: #fafbfc; }
+.cust.active { background: var(--accent-soft); }
+.cust.has-unread { background: #f7fbff; }
+.cust.has-unread .name { color: #0b4f9e; }
+
+.cust .dot {
+  flex: 0 0 auto;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  margin-top: 8px;
+  background: transparent;
+}
+.cust.pending .dot { background: var(--red); }
+
+/* 客户行左端的「账号圈数字」① ② ③ ④ ⑤：就占在原来红点的位置上。
+   红 = 这个账号来了新消息（唯一的持续提醒）；绿 = 看过了但还没处理完；
+   处理完（回复 / 标记已回复）→ 数字消失，退回上面的小圆点。 */
+.cust .row-num {
+  flex: 0 0 auto;
+  width: 18px;
+  margin-top: 2px;
+  text-align: center;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.1;
+  cursor: help;
+}
+.cust .row-num.red {
+  color: var(--red);
+  text-shadow: 0 0 6px rgba(220, 40, 40, .22);
+}
+.cust .row-num.green {
+  color: var(--green);
+  text-shadow: 0 0 6px rgba(16, 160, 80, .22);
+}
+
+.cust .meta { min-width: 0; flex: 1; }
+.cust .top { display: flex; align-items: baseline; gap: 6px; }
+.cust .name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.cust .code { font-size: 11px; color: var(--muted); font-family: ui-monospace, Menlo, Consolas, monospace; }
+/* 左栏客户行 = 「编码 + 客户名」两段，不再带任何标签。
+   （2026-09-26 按用户要求：原来那种「1A00004 名称: emme ai」里的「名称:」放错了位置，
+     现在「名称:」只出现在**中栏头部**客户名那一行，见 #chat-head .ch-name .name-label） */
+
+/* 未读徽标：同一个客户连发多条，累计在这一个数字上（点开就清零） */
+.cust .unread {
+  flex: 0 0 auto;
+  margin-left: auto;
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--red);
+  color: #fff;
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.cust .preview {
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cust .tags { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+/* 中栏：对话 */
+
+#chat { display: flex; flex-direction: column; }
+
+/* 中栏顶部：客户名 + 档案条
+   档案条（.ch-facts）是用户点名要的：把右栏「客户档案」里最该随时看见的几项抬上来，
+   16px 加粗，含【加入时间】和【客户当地时间】（当地时间每 30 秒自己走一格）。 */
+#chat-head {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  position: sticky;
+  top: 0;
+  z-index: 3;
+}
+#chat-head .ch-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+}
+#chat-head .ch-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  font-size: 17px;
+  /* 2026-09-25 第三轮按用户要求（看图 QQ20260925-221400.png 箭头）：
+     客户名加黑加粗，原来跟编号一样偏灰，一眼扫过去不够抓人。 */
+  font-weight: 800;
+  color: #000;
+}
+#chat-head .ch-name .code {
+  font-size: 12px;
+  font-weight: 700;
+  color: #1f2937;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+}
+/* 客户名那一行 = 「编码 → 名称: → 名字」（2026-09-26 按用户要求重排）
+   用户看图（红圈）说：「名称:」原来放在【左栏客户行】里不对，要放在【中栏头部】（蓝圈）这里。
+     · 「名称:」= 红色 + 14px + 加粗 + 黑体字族（照用户原话）
+     · 客户名 = 黑色加粗，单独包一层 .cname 便于着色 */
+#chat-head .ch-name .name-label {
+  flex: 0 0 auto;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--red);
+  font-family: "SimHei", "黑体", "Heiti SC", "Microsoft YaHei", sans-serif;
+  white-space: nowrap;
+}
+#chat-head .ch-name .cname { color: #000; font-weight: 800; }
+
+/* 中栏头部**最右端**那一栏：两个按钮**横排**（2026-09-25 第三轮按用户要求，
+   原来是上下叠放，现在改成一行左右结构 —— 左「客户档案」、右「从对话里提取档案」）。
+     左 = 「客户档案」→ 打开这个客户的档案弹窗
+     右 = 「从对话里提取档案」→ 一点就抽，不用先开弹窗（蓝字加粗）
+   margin-left:auto 把这栏顶到头部最右边，不论左边名字多长都贴着右边缘。 */
+#chat-head .ch-doc-col {
+  flex: 0 0 auto;
+  margin-left: auto;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+}
+#chat-head .ch-doc-col button {
+  width: auto;
+  padding: 4px 10px;
+  font-size: 12px;
+  line-height: 1.5;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+  color: #6b7280;
+  cursor: pointer;
+  white-space: nowrap;
+}
+/* 「客户档案」是主入口，做成一眼就能看出是按钮的样子（浅蓝底 + 蓝边 + 蓝字） */
+#chat-head .ch-doc-col .ch-doc {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  border-color: #cbdcfb;
+  background: var(--accent-soft);
+}
+/* 「从对话里提取档案」按用户要求：和「客户档案」做成**同款按钮**（浅蓝底 + 蓝边框 + 蓝字），
+   只是位置在右、文字稍短。保持蓝色加粗（weight 700）以满足断言。 */
+#chat-head .ch-doc-col .ch-extract {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+  border-color: #cbdcfb;
+  background: var(--accent-soft);
+}
+#chat-head .ch-doc-col button:hover { border-color: var(--accent); color: var(--accent); background: #e6efff; }
+#chat-head .ch-doc-col button:active { background: #d7e5ff; }
+#chat-head .ch-doc-col button:disabled { color: var(--muted); background: #f5f6f8; cursor: default; }
+
+/* 栏目③ 档案条：浅色卡片包起来，和下面的对话区隔开，一眼扫完。
+   2026-09-25 第三轮按用户要求（看图 QQ20260925-222448.png 红框）：
+   原来是一整行 flex-wrap，内容一长就换行换得歪歪扭扭（红框里就是这个"排版错位"）。
+   现在改成**固定两行**：每行各自是一个 .fact-row，
+     第一行 = 加入时间 + ★认识第 N 天★ + Day N
+     第二行 = 地区 + 客户当地时间
+   行内还是允许换行（窄窗口不至于溢出），但两行的分工永远不乱。 */
+#chat-head .ch-facts {
+  margin-top: 8px;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.5;
+  background: #f7f9fc;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+/* 2026-09-26 按用户要求（绿框 + 两根红箭头）：档案条每条都是**两列网格 1fr 1fr**。
+   左列 = 加入时间 / 地区；右列 = ★认识第 N 天★+Day N / 客户当地时间+时差。
+   右列固定从卡片水平中点开始，两条右列信息因此对齐、并落在绿框正中位置。 */
+#chat-head .ch-facts .fact-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: baseline;
+  gap: 4px 18px;
+  min-width: 0;
+}
+/* 右列：贴着网格第二列左沿（=卡片中点），内容左对齐，两条右信息共用同一左边界 */
+#chat-head .ch-facts .fact-cell-right { justify-self: start; min-width: 0; }
+#chat-head .ch-facts .fact { display: inline-flex; align-items: baseline; gap: 5px; white-space: nowrap; }
+#chat-head .ch-facts .fact b { color: #6b7280; font-weight: 700; }
+
+/* 「★ 认识 第 N 天 ★」按用户要求：
+   - 前后各一个**黄色五角星**，把这段和左右的信息隔开（好看 + 好找）
+   - 「认识」两个字改成**黑色**（第 N 天还是蓝色粗体，见下面 .day-num） */
+#chat-head .ch-facts .fact-know { gap: 4px; }
+#chat-head .ch-facts .fact-know .star {
+  font-style: normal;
+  color: #f5b301;
+  font-size: 14px;
+  line-height: 1;
+}
+#chat-head .ch-facts .sub-fact.sub-joined { color: #000; }
+
+/* 「Day N」按用户要求：加粗、14px、紫色，跟在「认识第 N 天」右边 */
+#chat-head .ch-facts .fact-day {
+  color: #7c3aed;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: .3px;
+}
+
+/* 档案条上的三个标题按用户要求各自上色，扫一眼就能对上号：
+   加入时间=红　客户当地时间=绿　地区=紫 */
+#chat-head .ch-facts .fact b.fact-joined { color: var(--red); }
+#chat-head .ch-facts .fact b.fact-loc { color: var(--green); }
+#chat-head .ch-facts .fact b.fact-region { color: #7c3aed; }
+#chat-head .ch-facts .sub-fact {
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+/* 地区没抽到时显示的占位（用户要求「地区」这一项永远都在） */
+#chat-head .ch-facts .fact-empty {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+/* 阶段 / 地区：彩色小标签（pill），比纯文字更醒目、对齐更整齐 */
+#chat-head .ch-facts .chip {
+  display: inline-block;
+  padding: 1px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.7;
+  white-space: nowrap;
+}
+#chat-head .ch-facts .chip-stage {
+  background: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe;
+}
+#chat-head .ch-facts .chip-region {
+  background: #f3e8ff; color: #7c3aed; border: 1px solid #e9d5ff;
+}
+
+/* 「第 N 天」按用户要求：蓝色 + 加粗（2026-09-25，看图 QQ20260925-175558.png 的蓝框） */
+#chat-head .ch-facts .sub-fact .day-num {
+  color: var(--accent);
+  font-weight: 800;
+}
+
+/* ---------------- 栏目③ 字体（2026-09-25 按用户要求） ----------------
+   用户看图圈了红框：中栏档案头部（客户名 + 编号 + 加入时间 + 客户当地时间 + 阶段 + 地区）
+   里【所有文字】一律黑体、14px。右侧那两个按钮在红框外，不动。 */
+#chat-head .ch-name,
+#chat-head .ch-name .code,
+#chat-head .ch-facts,
+#chat-head .ch-facts .sub-fact {
+  font-family: "SimHei", "黑体", "Heiti SC", "Microsoft YaHei", sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+/* 档案条末尾原来那个「客户档案 ↗」已删（2026-09-25 第二轮：和头部右端那个按钮重复） */
+#chat-head .sub {
+  display: block;
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+/* 中栏底部：生成建议（原来在右栏卡片里，按用户要求挪下来） */
+#chat-foot {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--line);
+  background: #fbfcfd;
+}
+#chat-foot button.primary { min-width: 148px; padding: 8px 16px; font-size: 14px; }
+/* 「标记已回复」挪到这里挨着「生成建议」：不再占满一整行（原来在右栏是 width:100%） */
+#chat-foot button.done { width: auto; padding: 8px 14px; font-size: 13px; background: #f6f8fa; }
+#chat-foot .hint { margin: 0; }
+.suggest-out:empty::before {
+  content: '点下面中间的「⚡ 生成建议」——建议会出现在这里。';
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* 对话区顶部状态条：就在客户名/电话那一行的正下方。
+   翻译没好时显示「等待翻译中…」，翻好了整条消失（不占地方）。 */
+.chat-status {
+  padding: 6px 16px;
+  font-size: 12px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.chat-status.hidden { display: none; }
+.chat-status.busy { background: #fff8ec; color: #96631a; }
+.chat-status.warn { background: #fdf0f0; color: #a32226; }
+
+/* 小转圈：等翻译的时候让人看得出"在动"，不是卡住了 */
+.spin {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  flex: 0 0 auto;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+#msgs { flex: 1; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+
+/* 气泡改成"左边数字 + 右边内容"两栏，数字才能挂在消息左侧 */
+.bubble { max-width: 76%; display: flex; align-items: flex-start; gap: 8px; }
+.bubble .bub-main { flex: 1 1 auto; min-width: 0; }
+.bubble .who { font-size: 11px; color: var(--muted); margin-bottom: 3px; }
+.bubble .body {
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: #f2f3f5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.bubble.out { align-self: flex-end; }
+.bubble.out .body { background: #dbeafe; }
+.bubble.out .who { text-align: right; }
+.bubble .zh {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #5b6472;
+  border-left: 2px solid #dfe3e8;
+  padding-left: 8px;
+  white-space: pre-wrap;
+}
+/* 还没翻好：灰字 + 转圈，翻好之后这里会变成中文 */
+.bubble .zh.waiting {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #9aa3ad;
+  font-style: italic;
+  border-left-color: #e8ebee;
+}
+.bubble .zh.failed {
+  color: #a23b3b;
+  border-left-color: #e7b4b4;
+  background: #fdf3f3;
+  font-style: normal;
+}
+/* 客户发来的图片/语音：AI 看完听完写的中文说明（⑤ 看图 / ⑥ 听语音） */
+.bubble .zh.media-zh {
+  border-left-color: #b9d2f2;
+  background: #f4f8ff;
+  color: #23405f;
+  padding: 4px 8px;
+  border-radius: 0 6px 6px 0;
+}
+.bubble .media { margin-top: 4px; font-size: 12px; color: var(--muted); }
+
+.empty { color: var(--muted); text-align: center; margin-top: 60px; font-size: 13px; }
+
+/* ---------- 手动录入面板 ---------- */
+
+button.ghost { background: #f6f8fa; font-size: 12px; }
+
+.ingest {
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  padding: 12px 16px;
+}
+.ingest.hidden { display: none; }
+
+.ingest-inner { display: flex; flex-direction: column; gap: 8px; max-width: 1100px; }
+
+.ingest .row { display: flex; gap: 10px; align-items: flex-start; flex-wrap: wrap; }
+
+/* 录入面板：每个输入框都带标签和一行说明，不用猜这个框是干嘛的 */
+.ig-field { display: flex; flex-direction: column; gap: 3px; flex: 1 1 200px; min-width: 170px; }
+.ig-label { font-size: 11px; color: #4b5563; font-weight: 600; }
+.ig-label em { font-style: normal; font-weight: 400; color: var(--muted); margin-left: 4px; }
+.ig-tip { font-size: 11px; color: var(--muted); line-height: 1.5; }
+.ig-tip b { color: #4b5563; font-weight: 600; }
+
+.ig-text-field { flex: 1 1 100%; }
+.ig-desc {
+  font-size: 12px;
+  color: #4b5563;
+  line-height: 1.6;
+  background: #f6f8fa;
+  border-left: 3px solid var(--accent-soft);
+  padding: 6px 10px;
+  border-radius: 0 4px 4px 0;
+}
+.ig-desc code {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 0 4px;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 11px;
+}
+
+.ingest .ig-field input {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 13px;
+  background: #fff;
+  color: var(--text);
+}
+.ingest .ig-field input:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+
+.ingest textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font: 13px/1.6 ui-monospace, Consolas, monospace;
+  resize: vertical;
+  background: #fff;
+  color: var(--text);
+}
+.ingest textarea:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+.ingest .row .muted { font-size: 12px; }
+
+/* 右栏：档案 + 建议 */
+
+#panel { padding: 12px; display: flex; flex-direction: column; gap: 12px; }
+
+.card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px;
+  background: #fff;
+}
+.card h4 { margin: 0 0 10px; font-size: 13px; color: #4b5563; }
+.card-tools { margin: -4px 0 8px; }
+button.mini {
+  width: 100%;
+  padding: 5px 8px;
+  font-size: 11px;
+  background: #f6f8fa;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: #4b5563;
+  cursor: pointer;
+}
+button.mini:hover { border-color: var(--accent); color: var(--accent); }
+
+/* 加入时间：右边跟一个"认识第 N 天"，七天节奏盯这个数 */
+.field.joined { position: relative; padding-bottom: 14px; }
+.joined-sub { position: absolute; right: 0; bottom: -2px; font-size: 11px; color: var(--muted); }
+
+.field { margin-bottom: 8px; }
+.field label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 3px; }
+.field input, .field select {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 13px;
+  background: #fff;
+  color: var(--text);
+}
+.field input:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+/* 附加字段里「生活规律 / 家庭经济情况」要单独一行（整行宽度，多行输入）。
+   #profile 是两列 grid，所以必须显式 grid-column: 1 / -1 才会真的独占一行。 */
+.field.full { display: block; grid-column: 1 / -1; }
+.field.full textarea, .field textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: inherit;
+  background: #fff;
+  color: var(--text);
+  resize: vertical;
+  line-height: 1.5;
+}
+.field.full textarea:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+/* 核心 6 字段 与 附加 10 字段 之间的分隔条（两列 grid 里也要独占一行） */
+.pf-sep {
+  grid-column: 1 / -1;
+  margin: 14px 0 6px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--line);
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.kv { font-size: 12px; color: #4b5563; }
+.kv div { display: flex; justify-content: space-between; gap: 8px; padding: 2px 0; }
+.kv span:first-child { color: var(--muted); }
+
+button {
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--text);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+button:hover { border-color: #c9ced6; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary:hover { background: #1d4ed8; }
+button.done { width: 100%; background: #f6f8fa; }
+button:disabled { opacity: .55; cursor: not-allowed; }
+
+.opt {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 8px;
+  background: #fcfcfd;
+}
+.opt .tone { font-size: 11px; color: var(--muted); margin-bottom: 5px; text-transform: uppercase; letter-spacing: .5px; }
+.opt .text { white-space: pre-wrap; word-break: break-word; }
+.opt.neutral { border-color: #c7d9f7; background: #f8fbff; }
+
+.rationale { font-size: 12px; color: #4b5563; margin-top: 6px; }
+.flags { margin-top: 6px; font-size: 12px; color: var(--red); }
+.hint { font-size: 11px; color: var(--muted); margin-top: 6px; }
+.warn { color: var(--amber); font-size: 12px; }
+
+/* ---------- 客户档案字段（按 人 → 动机 → 规格 → 状态 分组） ---------- */
+
+.pf-wrap { margin-top: 10px; border-top: 1px dashed var(--line); padding-top: 10px; }
+.pf-head { font-size: 12px; font-weight: 600; color: #4b5563; margin-bottom: 8px; }
+
+.pf-group { margin-bottom: 10px; }
+.pf-gname {
+  font-size: 11px;
+  color: var(--accent);
+  background: var(--accent-soft);
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 10px;
+  margin-bottom: 5px;
+}
+
+.pf { margin-bottom: 6px; }
+.pf-k { font-size: 11px; color: #4b5563; margin-bottom: 2px; display: flex; align-items: center; gap: 4px; }
+.pf-hint {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 13px; height: 13px;
+  border-radius: 50%;
+  background: #eef1f5;
+  color: var(--muted);
+  font-size: 9px;
+  cursor: help;
+}
+.pf-v {
+  width: 100%;
+  padding: 5px 7px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  font-size: 12px;
+  background: #fff;
+  color: var(--text);
+}
+.pf-v:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+
+/* 宠物主角这种多子字段的，横排挤在一起 */
+.pf-obj .pf-sub { display: flex; gap: 4px; flex-wrap: wrap; }
+.pf-obj .pf-sub label { flex: 1 1 60px; display: flex; flex-direction: column; gap: 2px; min-width: 54px; }
+.pf-obj .pf-sub span { font-size: 10px; color: var(--muted); }
+.pf-obj .pf-sub input {
+  padding: 4px 6px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  font-size: 12px;
+  background: #fff;
+  color: var(--text);
+  width: 100%;
+}
+.pf-obj .pf-sub input:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: #d6d9de; border-radius: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* ---------------- 建议卡片：角度 / 采纳 / 换思路 ---------------- */
+
+.opt .angle {
+  font-size: 11px;
+  color: var(--accent);
+  background: #eef3ff;
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 4px;
+  margin-bottom: 6px;
+}
+.opt .angle.done { color: #15803d; background: #eafaf0; }
+
+.opt .acts { display: flex; gap: 6px; margin-top: 8px; }
+.opt .acts button { padding: 4px 10px; font-size: 12px; }
+.opt .acts .adopt { border-color: var(--accent); color: var(--accent); }
+.opt .acts .adopt:hover { background: #eef3ff; }
+.opt .acts .rej { color: var(--muted); }
+.opt .acts .save { border-color: #15803d; color: #15803d; }
+.opt .acts .save:hover { background: #eafaf0; }
+
+.opt textarea.edit {
+  width: 100%;
+  min-height: 72px;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.6;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  resize: vertical;
+}
+.opt .note {
+  width: 100%;
+  margin-top: 6px;
+  font-size: 12px;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.daybar {
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+  background: #fbfcfe;
+  font-size: 12px;
+}
+.daybar span { color: #374151; }
+.daybar .sig { margin-top: 4px; font-size: 11px; color: var(--muted); }
+
+.again { display: flex; gap: 6px; margin-top: 10px; }
+.again input {
+  flex: 1;
+  font-size: 12px;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.again button { font-size: 12px; white-space: nowrap; }
+
+/* ---------- 翻译弹窗 ---------- */
+
+.modal { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; }
+.modal.hidden { display: none; }
+.modal-mask { position: absolute; inset: 0; background: rgba(20, 24, 31, 0.42); }
+.modal-box {
+  position: relative;
+  width: min(560px, 92vw);
+  max-height: 86vh;
+  overflow-y: auto;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.22);
+}
+.modal-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+  font-weight: 600; font-size: 14px;
+}
+.modal-head .x {
+  width: 28px; height: 28px; padding: 0; line-height: 1;
+  font-size: 18px; color: var(--muted); border-radius: 6px;
+}
+.modal-head .x:hover { background: #f1f2f4; border-color: var(--line); }
+.modal-body { padding: 14px 16px; }
+
+/* 客户档案弹窗（2026-09-25 从右栏搬到弹窗）。
+   入口 = **栏目3 中栏档案头部最右端**那个「客户档案」按钮（客户名那一行右边的空白处）。
+   弹窗比原来的右栏宽得多，所以基础字段排成两列，档案表 / 提示横跨整行。
+   「保存档案」按钮在**窗口最上面**（.pf-topbar），不再沉在最底下；
+   「从对话里提取档案」也挪到了栏目3，和「客户档案」按钮上下叠放，弹窗里不再有。 */
+.pf-box { width: min(620px, 94vw); }
+.pf-box #profile { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
+.pf-box #profile > .pf-wrap,
+.pf-box #profile > .hint,
+.pf-box #profile > .warn { grid-column: 1 / -1; }
+
+/* 弹窗顶部按钮条：左边「保存档案」，右边一句提醒 */
+.pf-topbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: -2px 0 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+.pf-topbar #pf-save {
+  flex: 0 0 auto;
+  width: auto;
+  padding: 5px 18px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.pf-topbar .pf-topbar-tip {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.tr-src { background: #f6f8fa; border-radius: 8px; padding: 8px 10px; margin-bottom: 12px; }
+.tr-src b { display: block; font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+.tr-src .zh-src { white-space: pre-wrap; word-break: break-word; font-size: 13px; color: var(--text); }
+
+.tr-bar { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 12px; }
+.tr-bar label { display: flex; flex-direction: column; gap: 3px; font-size: 11px; color: var(--muted); }
+.tr-bar select { padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px; font-size: 13px; background: #fff; color: var(--text); }
+.tr-bar button.primary { margin-left: auto; align-self: flex-end; }
+
+.tr-out { display: flex; flex-direction: column; gap: 10px; }
+.tr-ver { border: 1px solid var(--line); border-radius: 8px; padding: 10px; background: #fcfcfd; }
+.tr-ver-head { display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--accent); font-weight: 600; margin-bottom: 5px; }
+.tr-ver-head .x.copy { width: auto; height: auto; padding: 2px 10px; font-size: 11px; color: var(--accent); border: 1px solid var(--accent-soft); background: var(--accent-soft); border-radius: 6px; }
+.tr-ver-head .x.copy:hover { background: #e2ecff; }
+.tr-ver-text { white-space: pre-wrap; word-break: break-word; font-size: 14px; line-height: 1.6; }
+.tr-ver-note { margin-top: 5px; font-size: 12px; color: #4b5563; }
+.tr-tip {
+  border-left: 3px solid var(--amber);
+  background: #fff8ec;
+  padding: 8px 10px;
+  border-radius: 0 6px 6px 0;
+  font-size: 12px;
+  color: #7a5a10;
+  white-space: pre-wrap;
+}
+
+/* ---------------- 提示条 ----------------
+   位置：顶栏第二行的右侧 —— 也就是右栏「客户档案」的正上方。
+   规则：同一时刻【只显示一条】，长了用省略号截断，绝不换行、绝不用弹窗盖住工作区。 */
+
+#toast {
+  margin-left: auto;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 52%;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0;
+  transition: opacity .18s ease-out;
+  pointer-events: none;
+}
+#toast.show { opacity: 1; }
+#toast.n-info  { background: #eef2f7; color: #33415c; border: 1px solid #dbe3ec; }
+#toast.n-ok    { background: #eefaf4; color: #14663f; border: 1px solid #cdeedd; }
+#toast.n-warn  { background: #fff8ec; color: #8a5a08; border: 1px solid #f6e2bd; }
+#toast.n-error { background: #fdf0f0; color: #b3261e; border: 1px solid #f6cdd0; font-weight: 600; }
+
+/* 报错也要看得见，不能只是灰字 */
+.ingest .row .muted.err { color: #b3261e; font-weight: 600; }
+
+/* ---------------- AI 设置弹窗 ----------------
+   结构：头部（标题）+ 可滚动的 #ai-body（7 个 AI 表 + 5 个服务商表单）+ 固定的保存条 */
+
+.ai-box { width: 660px; max-width: 96vw; }
+.ai-box .modal-body { max-height: 68vh; overflow-y: auto; padding-bottom: 4px; }
+
+.ai-lead {
+  font-size: 12px;
+  line-height: 1.7;
+  color: #374151;
+  background: #f6f8fa;
+  border-left: 3px solid var(--accent-soft);
+  border-radius: 0 6px 6px 0;
+  padding: 8px 10px;
+  margin-bottom: 12px;
+}
+.ai-lead b { color: var(--text); }
+
+/* 一、7 个 AI 表 */
+.ai-tasks { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px 12px; margin-bottom: 14px; }
+.ai-tasks-head,
+.ai-prov-head {
+  font-weight: 700;
+  font-size: 13px;
+  color: #374151;
+  margin-bottom: 8px;
+}
+.ai-prov-head { margin-top: 14px; }
+
+.ai-task { border-top: 1px dashed #eceef1; padding: 7px 0; }
+.ai-task:first-of-type { border-top: none; padding-top: 0; }
+.ai-task-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ai-task-cn { font-weight: 700; font-size: 13px; white-space: nowrap; }
+.ai-task-right { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+.ai-task-pick {
+  padding: 3px 6px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 12px;
+  background: #fff;
+  color: var(--text);
+  max-width: 190px;
+}
+.ai-cur-model {
+  font-size: 11px;
+  color: var(--muted);
+  font-family: ui-monospace, Consolas, monospace;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ai-task-use { font-size: 11px; color: var(--muted); line-height: 1.6; margin-top: 2px; }
+.fixed-model {
+  font-size: 12px;
+  font-weight: 600;
+  color: #14663f;
+  background: #eefaf4;
+  border: 1px solid #cdeedd;
+  border-radius: 6px;
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+.ai-badge.warn { background: #fff8ec; color: #8a5a08; }
+
+.ai-pick {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 8px 10px;
+  margin-top: 10px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  background: #fafbfc;
+}
+.ai-pick label { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 12px; }
+.ai-pick select { width: auto; }
+.ai-pick .hint { margin: 0; flex: 1 1 240px; }
+
+/* 二、5 个服务商 */
+.ai-sec {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px 12px;
+  margin-bottom: 10px;
+}
+.ai-sec-head { font-weight: 600; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ai-use { font-size: 11px; color: #4b5563; background: #f6f8fa; border-radius: 6px; padding: 5px 8px; margin-bottom: 8px; line-height: 1.6; }
+.ai-sec label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+.ai-sec label input { margin-top: 3px; }
+.ai-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: #f0f1f3;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.ai-badge.on { background: #eefaf4; color: #14663f; }
+.ai-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ai-row button.mini { width: auto; padding: 4px 12px; font-size: 12px; }
+.ai-test { font-size: 12px; }
+.ai-test.ok { color: #14663f; }
+.ai-test.err { color: #b3261e; }
+.ai-test-url { font-size: 11px; color: var(--muted); margin-top: 3px; word-break: break-all; font-family: ui-monospace, Consolas, monospace; }
+.ai-apply { margin-top: 8px; font-size: 12px; color: #4b5563; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ai-apply a { color: var(--accent); word-break: break-all; }
+.ai-apply button.mini.copy { width: auto; padding: 3px 9px; font-size: 11px; }
+.ai-note { margin-top: 7px; font-size: 11px; color: var(--muted); line-height: 1.7; }
+
+.ai-foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 16px;
+  padding: 12px 0 0;
+  border-top: 1px solid var(--line);
+}
+.ai-file { font-size: 11px; color: var(--muted); word-break: break-all; margin: 8px 16px 14px; }
+.ai-file code { background: #f4f5f7; padding: 1px 4px; border-radius: 4px; }
+
+/* ============================================================
+   「AI 提示词」弹窗：左边选任务，右边看这个任务实际发出去的提示词
+   ============================================================ */
+.pr-box { width: 940px; max-width: 97vw; }
+.pr-body {
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
+  padding: 12px 16px;
+  max-height: 70vh;
+}
+
+/* 左：任务清单 */
+.pr-side {
+  flex: 0 0 208px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px;
+  overflow-y: auto;
+  background: #fbfcfd;
+}
+.pr-tab {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 7px 9px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text);
+  cursor: pointer;
+}
+.pr-tab:hover { background: #f1f3f5; }
+.pr-tab.on { background: #fff; border-color: var(--accent-soft); box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+.pr-tab .pr-tab-cn { font-weight: 700; display: block; }
+.pr-tab .pr-tab-sub { font-size: 11px; color: var(--muted); display: block; margin-top: 1px; }
+.pr-tab-cap {
+  font-size: 11px;
+  color: var(--muted);
+  padding: 4px 9px 6px;
+  border-bottom: 1px dashed #eceef1;
+  margin-bottom: 4px;
+}
+
+/* 右：内容 */
+.pr-main { flex: 1 1 auto; min-width: 0; overflow-y: auto; padding-right: 2px; }
+.pr-title { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+.pr-badges { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; margin-bottom: 10px; }
+.pr-when {
+  font-size: 12px;
+  line-height: 1.75;
+  color: #374151;
+  background: #f6f8fa;
+  border-left: 3px solid var(--accent-soft);
+  border-radius: 0 6px 6px 0;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+}
+.pr-where { font-size: 11px; color: var(--muted); margin-bottom: 10px; word-break: break-all; }
+.pr-where code { background: #f4f5f7; padding: 1px 4px; border-radius: 4px; }
+
+.pr-block { margin-bottom: 12px; }
+.pr-block-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #374151;
+  margin-bottom: 5px;
+}
+.pr-block-head .pr-copy { margin-left: auto; }
+.pr-pre {
+  margin: 0;
+  padding: 9px 11px;
+  background: #fafbfc;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  font-size: 12px;
+  line-height: 1.75;
+  color: #1f2937;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 300px;
+  overflow-y: auto;
+  font-family: ui-monospace, Menlo, Consolas, "Microsoft YaHei", monospace;
+}
+.pr-pre.pr-sys { border-left: 3px solid #7aa7d8; background: #f7fafd; }
+.pr-pre.pr-user { border-left: 3px solid #d8b77a; background: #fdfaf5; }
+.pr-out { font-size: 12px; line-height: 1.75; color: #1f2937; background: #f8f9fa; border-radius: 7px; padding: 8px 10px; }
+.pr-notes { margin: 0; padding-left: 18px; font-size: 12px; line-height: 1.8; color: #4b5563; }
+.pr-notes li { margin-bottom: 2px; }
+.pr-parts { margin-top: 8px; }
+.pr-parts summary { cursor: pointer; font-size: 12px; color: var(--accent); margin-bottom: 6px; }
+.pr-part-label { font-size: 11px; color: var(--muted); margin: 6px 0 3px; }
+button.mini.copy.pr-copy { width: auto; padding: 3px 9px; font-size: 11px; }
+
+/* ---------------- 模拟新消息面板（栏目1 的「🧪 模拟新消息」按钮开合） ----------------
+   2026-09-25：锚在右上角的小卡片，**不是全屏遮罩**
+   （这是用户点名两次的红线：副信息一律锚定小卡片 / 角落提示条）。 */
+.sim-panel {
+  position: fixed;
+  top: 78px;
+  right: 14px;
+  width: 376px;
+  max-height: calc(100vh - 104px);
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 12px 32px rgba(16, 24, 40, 0.16);
+  z-index: 40;
+}
+/* 关闭按钮必须能真正把面板藏起来（原来漏了这条，class 加了却看不见效果，
+   表现成"关不了"）。其它面板各有自己的 .X.hidden 规则，sim 这一处漏了。 */
+.sim-panel.hidden { display: none; }
+.sim-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: move;            /* 顶栏可拖动整个面板 */
+  user-select: none;
+}
+.sim-head .x { width: 26px; height: 26px; padding: 0; line-height: 1; font-size: 17px; color: var(--muted); border-radius: 6px; }
+.sim-head .x:hover { background: #f1f2f4; border-color: var(--line); }
+.sim-body { padding: 10px 12px 12px; }
+.sim-tip {
+  margin: 0 0 9px;
+  font-size: 11.5px;
+  line-height: 1.7;
+  color: #4b5563;
+  background: var(--accent-soft);
+  border-left: 3px solid var(--accent);
+  border-radius: 5px;
+  padding: 7px 9px;
+}
+.sim-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 7px; }
+.sim-grid .sim-field:nth-child(3) { grid-column: span 2; }
+.sim-field { display: flex; flex-direction: column; gap: 3px; margin-bottom: 7px; font-size: 12px; }
+.sim-field > span:first-child { color: var(--muted); font-size: 11.5px; }
+.sim-field input,
+.sim-field select,
+.sim-field textarea {
+  width: 100%;
+  font-size: 12.5px;
+  padding: 5px 7px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+.sim-field textarea { resize: vertical; line-height: 1.6; }
+.sim-hint { font-size: 11px; color: var(--muted); }
+.sim-quick { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin: 0 0 8px; }
+.sim-quick-label { font-size: 11.5px; color: var(--muted); }
+button.sim-q { width: auto; padding: 2px 8px; font-size: 11px; border-radius: 999px; }
+.sim-row { display: flex; gap: 6px; margin-bottom: 7px; }
+.sim-row-last { margin-bottom: 9px; }
+.sim-row button { flex: 1 1 auto; width: auto; font-size: 12px; padding: 5px 8px; }
+.sim-count { font-size: 11.5px; color: var(--muted); align-self: center; white-space: nowrap; flex: 0 0 auto; }
+.sim-log {
+  font-size: 11.5px;
+  line-height: 1.7;
+  color: #374151;
+  background: #f8f9fa;
+  border-radius: 7px;
+  padding: 7px 9px;
+  max-height: 132px;
+  overflow-y: auto;
+}
+.sim-log b { color: var(--accent); }
+.sim-log .bad { color: var(--red); }
+.sim-log .good { color: var(--green); }
+.sim-log .line { padding: 1px 0; border-bottom: 1px dashed #e5e7eb; }
+.sim-log .line:last-child { border-bottom: none; }
+
+
+/* 预览页专属：顶部说明条 */
+.demo-banner {
+  background: #fff8e6;
+  border-bottom: 1px solid #f0dca8;
+  color: #7a5a10;
+  padding: 8px 16px;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.demo-banner .muted { color: #9a7b3a; }
+</style>
+</head>
+<body>
+
+<div class="demo-banner">
+  <b>界面预览</b>　跑的是真实的界面代码（内联了 style.css 与 app.js），后端接口换成写死的数据。
+  所以这里的每一个按钮、气泡、档案卡，和真跑起来一模一样——只是数据是假的。
+  <div class="muted" style="margin-top:4px">
+    本次改动两处：<b>① 左栏客户行</b>——行里不再有任何按钮，整行点哪儿都是"打开这个客户"；
+    <b>② 中栏头部右端</b>——「客户档案」+「从对话里提取档案」两个按钮**上下叠放**在客户名那一行右边的空白处，
+    档案条末尾原来那个重复的「客户档案 ↗」已经删掉。
+  </div>
+  <div class="muted" style="margin-top:4px">
+    已自动打开 Daniel Brooks 并出好三条建议。点中栏头部右边的「客户档案」看档案弹窗，点「从对话里提取档案」看抽取效果，点「不要这条」看换思路，点「采纳」看记忆面板，点任意一条建议上的「翻译」看英文口语弹窗（按客户信息调口吻，可切 GPT）。
+    左侧切到 <b>Dio</b>：他的加入时间是<b>手填</b>的（认识第 89 天），档案里能看到「要避开的雷」那条纪律。
+    切到 <b>Emily Chen</b>：只有部分字段有值，没问出来的一律留空——不编。
+  </div>
+</div>
+
+
+  <!-- ==========================================================================
+       主界面栏目编号（2026-09-25 与用户约定，以后沟通定位都用这个号）
+         栏目1 = 顶栏           品牌 / 待处理 / 数字说明 / AI 提示词 / AI 就绪灯 / AI 设置 / 手动录入 / 模拟新消息
+         栏目2 = 左栏           今日消息提示窗 + 客户列表
+         栏目3 = 中栏 · 档案头部  客户名 + 编号 + 加入时间（认识第 N 天）+ 客户当地时间 + 阶段 + 地区
+         栏目4 = 中栏 · 对话区    消息气泡（原文 + 中文译文 + 图片说明）
+         栏目5 = 中栏 · 底部操作条 ⚡ 生成建议 / ✓ 标记已回复
+         栏目6 = 右栏           中文回复建议
+       说「栏目3 的字太小」= 指中栏档案头部那块，不用再截图圈。
+       ========================================================================== -->
+  <header>
+    <!-- 栏目1：顶栏 -->
+    <div class="head-top">
+      <span class="brand">蜜蜂信息采集<span class="build" id="build" title="界面版本">…</span></span>
+      <span class="pending" id="pending">待处理 0</span>
+      <!-- 紧挨「待处理」的一句极简说明：解释消息左边那两个颜色的数字 -->
+      <span class="pending-tip" id="pending-tip"
+            title="每条新消息左边挂一个数字：红色=还没看的新消息；点一下这条消息，1 秒后变绿（绿=你看过了）；等你真的处理完（标记已回复 / 发出回复），这个数字才消失">数字：红=新消息 · 绿=已看 · 处理完消失</span>
+      <button id="btn-prompts" class="ghost" title="看看每个 AI 是拿什么提示词干这件事的">AI 提示词</button>
+      <button id="status" class="ok" title="AI 情况"></button>
+      <button id="btn-ai" class="ghost">⚙ AI 设置</button>
+      <button id="btn-ingest" class="ghost">＋ 手动录入</button>
+      <button id="btn-sim" class="ghost" title="造一条假的客户新消息，喂给真正的处理链路（采集 → 编号 → 翻译 → 建议 → 档案），用来试软件；不会发给任何人">🧪 模拟新消息</button>
+    </div>
+    <!-- 第二行：左边五个账号（点账号名 = 开它的浏览器），右边一条提示 -->
+    <div class="head-bottom">
+      <div class="acct-bar" id="accounts"></div>
+      <div id="toast"></div>
+    </div>
+  </header>
+
+  <div id="ingest" class="ingest">
+    <div class="ingest-inner">
+      <div class="row">
+        <label class="ig-field">
+          <span class="ig-label">客户标识 <em>必填</em></span>
+          <input id="ig-ident" placeholder="手机号 / 代号，如 14155550000 或 dio-farm">
+          <span class="ig-tip">用来认人。<b>同一个人每次必须填一样的</b>，填错会拆成两个客户。</span>
+        </label>
+        <label class="ig-field">
+          <span class="ig-label">姓名 <em>选填</em></span>
+          <input id="ig-name" placeholder="Dio">
+        </label>
+        <label class="ig-field">
+          <span class="ig-label">地区 <em>选填</em></span>
+          <input id="ig-region" placeholder="旧金山 / 俄勒冈">
+          <span class="ig-tip">填了会自动带出时区和时间差。</span>
+        </label>
+        <label class="ig-field">
+          <span class="ig-label">加入时间 <em>选填</em></span>
+          <input id="ig-joined" type="date">
+          <span class="ig-tip">老客户在这里补他真正加你的日期，不填就按今天算。</span>
+        </label>
+      </div>
+
+      <label class="ig-field ig-text-field">
+        <span class="ig-label">粘贴对话 <em>每行一条</em></span>
+        <span class="ig-desc">
+          把聊天记录整段贴进来。<b>一行算一条消息</b>；以「<code>我:</code>」或「<code>me:</code>」开头的算<b>你发的</b>，其余全部算<b>客户发的</b>。
+        </span>
+        <textarea id="ig-text" rows="6" placeholder="Hi Sherry this is Dio from Facebook
+我: hi Dio, nice to meet you
+I live on a farm, I also have peaches, plums and pears
+我: four kinds? that's a lot of work in autumn"></textarea>
+        <span class="ig-tip">
+          录进去以后走的是同一条链路：翻译 → 写客户档案 → 出中文回复建议。
+          <b>Ctrl + Enter</b> 直接录入。重复粘贴同一段不会产生两份。
+        </span>
+      </label>
+
+      <div class="row">
+        <button class="primary" id="ig-send">录入</button>
+        <button id="ig-close">收起</button>
+        <span class="muted" id="ig-hint">不连 WhatsApp 也能用</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 模拟新消息（测试用，2026-09-25）：
+       锚在右上角的小卡片，**不是全屏遮罩**（红线：副信息一律锚定小卡片）。
+       由顶栏「🧪 模拟新消息」按钮开合。造出来的假消息走真正的 handleMessage 链路，
+       和真客户发消息效果一样；不会发给任何人，可一键清空。 -->
+  <div id="sim-panel" class="sim-panel hidden">
+    <div class="sim-head">
+      <span>🧪 模拟新消息 · 试软件用</span>
+      <button id="sim-close" class="x" title="关闭">×</button>
+    </div>
+    <div class="sim-body">
+      <p class="sim-tip">
+        造一条假消息，喂给<b>真正的处理链路</b>（入库 → 分配编号 → 翻译 → 写档案 → 出建议）。
+        <b>不会发给任何人</b>，只写进你自己的本地库；测完点下面「清空模拟数据」全部删掉。
+      </p>
+      <div class="sim-grid">
+        <label class="sim-field">
+          <span>用哪个账号</span>
+          <select id="sim-acct"></select>
+        </label>
+        <label class="sim-field">
+          <span>客户名</span>
+          <input id="sim-name" placeholder="Emma">
+        </label>
+        <label class="sim-field">
+          <span>手机号（选填）</span>
+          <input id="sim-phone" placeholder="留空自动编 +1999…">
+        </label>
+      </div>
+      <label class="sim-field sim-wide">
+        <span>消息内容</span>
+        <textarea id="sim-text" rows="4" placeholder="Hi Sherry, I saw your pet portraits. My dog passed away last month…"></textarea>
+        <span class="sim-hint"><b>Ctrl + Enter</b> = 直接以「客户发给我」发出去</span>
+      </label>
+      <div class="sim-quick">
+        <span class="sim-quick-label">来一句现成的：</span>
+        <button class="sim-q" data-q="Hi! I saw your pet painting on Facebook. My dog passed away last month, and I would love a memorial portrait.">狗过世·想画</button>
+        <button class="sim-q" data-q="I love it! How much for a 16x20?">问价格</button>
+        <button class="sim-q" data-q="Can I see more photos of your work?">看作品</button>
+        <button class="sim-q" data-q="I am not sure if I can afford it right now, but I really like your style.">说预算紧</button>
+      </div>
+      <div class="sim-row">
+        <button class="primary" id="sim-in">客户发给我（英文）</button>
+        <button id="sim-out" title="模拟你自己发出的消息（用来测「待处理」会不会自动清掉）">我发给客户</button>
+      </div>
+      <div class="sim-row sim-row-last">
+        <button id="sim-clear" title="把 is_sim 标记的模拟客户和它们的消息全部删掉，真实客户一条不碰">清空模拟数据</button>
+        <span class="sim-count" id="sim-count">—</span>
+      </div>
+      <div class="sim-log" id="sim-log"><div class="hint">还没发过模拟消息。</div></div>
+    </div>
+  </div>
+
+  <main>
+    <aside id="list">
+      <!-- 今日消息提示窗：每天的消息概览（收到 / 已处理 / 待处理 + 按账号拆）。
+           数字由 app.js 的 refreshToday() 从 /api/stats/today 取，来消息就刷。 -->
+      <div id="today-box" class="today-box">
+        <div class="tb-head"><span>今日消息</span><span class="tb-date" id="tb-date">—</span></div>
+        <div class="tb-row">
+          <div class="tb-cell"><b id="tb-in">0</b><span>收到</span></div>
+          <div class="tb-cell"><b id="tb-done">0</b><span>已处理</span></div>
+          <div class="tb-cell"><b id="tb-todo">0</b><span>待处理</span></div>
+        </div>
+        <div class="tb-acct" id="tb-acct"></div>
+        <!-- 圈数字对应哪个 WhatsApp：① 主号 ② 二号 ③ 三号 ④ 四号 ⑤ 五号 -->
+        <div class="tb-tip">①主号 ②二号 ③三号 ④四号 ⑤五号</div>
+      </div>
+      <!-- 账号圈数字 ① ② ③ ④ ⑤ 不在这里，而是挂在**每个客户行左端的红点位置**
+           （app.js 的 custNumHtml 渲染）：哪个账号来的新消息，就在那个客户那一行看。
+           红=有新消息、绿=看过还没处理完、处理完就消失。点那一行=打开这个客户。
+           客户行里**没有按钮**：整行点哪儿都是"打开这个客户"。
+           「客户档案 / 从对话里提取档案」两个按钮在中栏头部最右端（见下面 #chat-head）。 -->
+      <div id="list-body"></div>
+    </aside>
+
+    <section id="chat">
+      <!-- 客户名 + 档案条：由 app.js 渲染。
+           第一行 = 客户名（左）+ 「客户档案 / 从对话里提取档案」两个按钮（右，上下叠放）；
+           第二行 = 档案条（从右栏「客户档案」里挑最该随时看见的几项：加入时间 / 认识第几天 /
+           客户当地时间 / 阶段 · 情绪 / 地区），16px 加粗，不用往右栏翻 -->
+      <div id="chat-head">选择一个客户<span class="sub" id="chat-sub"></span></div>
+      <!-- 客户名/电话那一行的正下方：翻译没好的时候在这里提醒「等待翻译中」 -->
+      <div id="chat-status" class="chat-status hidden"></div>
+      <div id="msgs"></div>
+      <!-- 中栏底部：生成建议（原来在右栏卡片里，按你的要求挪下来） -->
+      <div id="chat-foot">
+        <button class="primary" id="btn-suggest" title="按人设 + 七天节奏，给三条中文回复建议">⚡ 生成建议</button>
+        <!-- 「标记已回复」挪到「生成建议」旁边（原来在右栏最下面） -->
+        <button class="done" id="btn-replied" title="这条算处理完了：新消息左边的数字会一起消失">✓ 标记已回复</button>
+        <span class="hint" id="chat-foot-hint">建议会出现在右边「中文回复建议」里</span>
+      </div>
+    </section>
+
+    <aside id="panel">
+      <!-- 客户档案已经改成弹窗（见下面的 #pf-modal）。
+           打开方式：中栏头部最右端那个「客户档案」按钮（就是客户名那一行右边的空白处）。
+           右栏现在只留「中文回复建议」，界面更清爽。 -->
+      <div class="card">
+        <h4>中文回复建议</h4>
+        <div id="suggest-out" class="suggest-out"></div>
+      </div>
+
+    </aside>
+  </main>
+
+  <!-- AI 设置：7 个 AI 各管一件事，填一次就能用。
+       表单由 app.js 按后端给的目录渲染（加一个新用途不用改这个 HTML）。 -->
+  <div id="ai-modal" class="modal hidden">
+    <div class="modal-mask" id="ai-mask"></div>
+    <div class="modal-box ai-box">
+      <div class="modal-head">
+        <span>AI 设置 · 7 个 AI，填一次就能用</span>
+        <button id="ai-close" class="x" title="关闭">×</button>
+      </div>
+      <div class="modal-body" id="ai-body"></div>
+      <div class="ai-foot">
+        <button class="primary" id="ai-save">保存</button>
+        <span class="muted" id="ai-hint">保存后立即生效，不用重启软件</span>
+      </div>
+      <div class="ai-file">配置文件：<code id="ai-file">config.yaml</code></div>
+    </div>
+  </div>
+
+  <!-- AI 提示词：左边选一个任务，右边看它实际发出去的提示词。
+       内容全部由后端现取（和真跑用的是同一份），所以看到的就是真的。 -->
+  <div id="pr-modal" class="modal hidden">
+    <div class="modal-mask" id="pr-mask"></div>
+    <div class="modal-box pr-box">
+      <div class="modal-head">
+        <span>AI 提示词 · 每个 AI 是拿什么话去干这件事的</span>
+        <button id="pr-close" class="x" title="关闭">×</button>
+      </div>
+      <div class="modal-body pr-body">
+        <div class="pr-side" id="pr-side"></div>
+        <div class="pr-main" id="pr-main">
+          <div class="hint">正在读取提示词…</div>
+        </div>
+      </div>
+      <div class="ai-file">提示词都写在 <code>src/ai.js</code> 里（<code>prompt*</code> 那几个函数）；改完存盘重启软件生效。</div>
+    </div>
+  </div>
+
+  <!-- 客户档案弹窗：中栏头部最右端那个「客户档案」按钮打开它（2026-09-25 从右栏搬过来）。
+       内容还是原来那份档案表（人 / 动机 / 规格 / 状态 + 加入时间 / 姓名 / 地区 / 时区 / 阶段 / 情绪）。
+       两个动作按钮都在**窗口最上面**（2026-09-25 按用户要求把底部的「保存档案」抬到顶部）：
+         · 「保存档案」= 在这里；   · 「从对话里提取档案」= 在**中栏头部右端**、
+           和「客户档案」按钮上下叠放（见 app.js 的 renderChatHead / `.ch-doc-col`）。 -->
+  <div id="pf-modal" class="modal hidden">
+    <div class="modal-mask" id="pf-mask"></div>
+    <div class="modal-box pf-box">
+      <div class="modal-head">
+        <span id="pf-title">客户档案</span>
+        <button id="pf-close" class="x" title="关闭">×</button>
+      </div>
+      <div class="modal-body" id="pf-body">
+        <!-- 顶部按钮条：原来在最下面的「保存档案」挪到最上面（不用滚到底部才找到） -->
+        <div class="pf-topbar">
+          <button id="pf-save" class="primary" title="把手改过的字段存下来（阶段 / 情绪 / 档案表都一起存）">保存档案</button>
+          <span class="pf-topbar-tip">改完点左边「保存档案」即可，字段没问出来就空着，别编</span>
+        </div>
+        <div id="profile"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 翻译弹窗：选中某条中文建议 → 译成 2-3 个英文版本（按客户信息调口吻）
+       模型固定用 GPT（按你的要求），这里只显示、不给改。 -->
+  <div id="tr-modal" class="modal hidden">
+    <div class="modal-mask" id="tr-mask"></div>
+    <div class="modal-box">
+      <div class="modal-head">
+        <span>翻译建议 · 英文口语</span>
+        <button id="tr-close" class="x" title="关闭">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="tr-src">
+          <b>中文原文</b>
+          <div id="tr-src-text" class="zh-src"></div>
+        </div>
+        <div class="tr-bar">
+          <label>模型
+            <span class="fixed-model" id="tr-provider-label">GPT（固定）</span>
+          </label>
+          <label>版本数
+            <select id="tr-count">
+              <option value="2">2 个</option>
+              <option value="3">3 个</option>
+            </select>
+          </label>
+          <button id="tr-go" class="primary">翻译</button>
+        </div>
+        <div id="tr-out" class="tr-out">
+          <div class="hint">点「翻译」后，会按这个客户的地区（比如美国人→美式口语）、到第几天、朋友关系口吻，给出 2-3 个英文版本，并附 AI 的整体建议。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/app.js?v=__BUILD__"></script>
+
+<script>
+
+/* ---------- 假后端：只是把接口换成写死的数据，界面逻辑一行没改 ---------- */
+
+const CUSTOMERS = [
+  {
+    code: '1A00012', account_id: 1, wa_jid: '14155552671@c.us', phone: '14155552671',
+    name: 'Daniel Brooks', region: '旧金山', timezone: 'America/Los_Angeles',
+    stage_day: 4, pending: 1, channel: 'whatsapp',
+    created_at: '2026-09-20T15:02:00Z', created_at_source: 'auto',
+    last_body: 'She was 13. Best dog I ever had.',
+    last_body_zh: '她 13 岁。我养过最好的狗。',
+    last_msg_at: '2026-09-23T14:20:00Z',
+    // 10 个附加字段（存 customers.profile_json）——预览里点「客户档案」能看到
+    profile_json: JSON.stringify({
+      '婚姻情况': '已婚，太太叫 Karen',
+      '生活规律': '农场作息，天亮就起，晚上九点睡；下午常在谷仓忙',
+      '别名': 'Dan',
+      '老家家乡': '德州奥斯汀，十年前搬到加州',
+      '爱好': '钓鱼、修旧皮卡、橄榄球',
+      '职业': '农场主（种苹果 + 养鸡）',
+      '家庭经济情况': '有稳定农场收入，对价格会算但舍得给狗花钱',
+      '父母': '母亲住附近镇上，周末会来吃饭',
+      '宠物': '一只 13 岁过世的拉布拉多，叫 Bella',
+      '孩子': '两个孩子，大的上高中',
+    }),
+  },
+  {
+    code: '1A00013', account_id: 1, wa_jid: '14155553388@c.us', phone: '14155553388',
+    name: 'Emily Chen', region: '西雅图', timezone: 'America/Los_Angeles',
+    stage_day: 2, pending: 1, channel: 'whatsapp',
+    created_at: '2026-09-22T18:00:00Z', created_at_source: 'auto',
+    last_body: 'Do you ship to Seattle?',
+    last_body_zh: '能寄到西雅图吗？',
+    last_msg_at: '2026-09-23T11:05:00Z',
+  },
+  {
+    code: '1A00007', account_id: 1, wa_jid: '14155559002@c.us', phone: '14155559002',
+    name: 'Dio', region: '俄勒冈', timezone: 'America/Los_Angeles',
+    stage_day: 2, pending: 0, channel: 'whatsapp',
+    // 手动补的加入时间：他是三个月前就加了的，不是今天
+    created_at: new Date(Date.now() - 88 * 86400000).toISOString(), created_at_source: 'manual',
+    last_body: '我: 好，我醒了找你。晚安 Dio～',
+    last_body_zh: '',
+    last_msg_at: '2026-09-23T22:40:00Z',
+  },
+];
+
+const MESSAGES = {
+  '1A00012': [
+    { id: 1, direction: 'in',  body: 'Hi, I saw your ad on Facebook', body_zh: '你好，我在 Facebook 上看到你的广告', msg_ts: '2026-09-20T15:02:00Z' },
+    { id: 2, direction: 'out', body: 'hey! thanks for reaching out :)', body_zh: '', msg_ts: '2026-09-20T15:10:00Z' },
+    { id: 3, direction: 'in',  body: 'I lost my golden retriever last month. Her name was Cooper.', body_zh: '我上个月失去了我的金毛。她叫 Cooper。', msg_ts: '2026-09-21T16:30:00Z' },
+    { id: 4, direction: 'out', body: 'I am so sorry. I have a cat too — lost her two years ago.', body_zh: '', msg_ts: '2026-09-21T16:44:00Z' },
+    { id: 5, direction: 'in',  body: 'She was 13. Best dog I ever had.', body_zh: '她 13 岁。我养过最好的狗。', msg_ts: '2026-09-23T14:20:00Z' },
+  ],
+  '1A00013': [
+    { id: 1, direction: 'in',  body: 'How much for a 16x20?', body_zh: '16x20 多少钱？', msg_ts: '2026-09-22T18:00:00Z' },
+    { id: 2, direction: 'out', body: '16x20 is $xxx, oil on canvas, about 3 weeks.', body_zh: '', msg_ts: '2026-09-22T18:20:00Z' },
+    { id: 3, direction: 'in',  body: 'Do you ship to Seattle?', body_zh: '能寄到西雅图吗？', msg_ts: '2026-09-23T11:05:00Z' },
+  ],
+  '1A00007': [
+    { id: 1, direction: 'in',  body: 'I live on a farm, I also have peaches, plums, and pears', body_zh: '我住在农场，还有桃子、李子和梨', msg_ts: '2026-09-22T21:30:00Z' },
+    { id: 2, direction: 'out', body: 'Four kinds? that must be a lot of work in autumn', body_zh: '', msg_ts: '2026-09-22T21:35:00Z' },
+    { id: 3, direction: 'in',  body: 'I really like orange cats. I have mice in my barn lol', body_zh: '我特别喜欢橘猫。我谷仓里有老鼠哈哈', msg_ts: '2026-09-22T22:10:00Z' },
+    { id: 4, direction: 'out', body: 'Okay have a wonderful night. Text me when you wake up', body_zh: '', msg_ts: '2026-09-23T22:40:00Z' },
+  ],
+};
+
+const ROUND_1 = {
+  options: [
+    { angle: 'empathy',  text: '13 岁，一整辈子都在你家。她叫什么名字？' },
+    { angle: 'story',    text: '我懂这种感觉。我自己那只猫走的那年，我画了整整一个月才画完。' },
+    { angle: 'curiosity',text: '她最喜欢的姿势是什么？我想先想想怎么构图。' },
+  ],
+  rationale: '他主动说了年龄和"最好的狗"——这是情绪出口，不是询价信号。现在接住情绪比谈画更重要。',
+  riskFlags: ['不要在这句提价格', '不要说 I understand how you feel 这类套话'],
+};
+
+const ROUND_2 = {
+  options: [
+    { angle: 'share',   text: '我们家哆咪也是这样，走之前那几天一直趴在画室门口。' },
+    { angle: 'curiosity', text: '你手机里有没有她趴在阳光里那种照片？那种最好画。' },
+    { angle: 'reassure', text: '不着急。你想好了再给我照片，我可以先画个草图给你看。' },
+  ],
+  rationale: '上一轮偏共情，你说太早了。这次换成分享 + 具体动作，把话题从情绪引到照片上。',
+  riskFlags: [],
+};
+
+let suggestionSeq = 100;
+
+function route(path, body) {
+  if (path === '/api/state') {
+    return {
+      accounts: [
+        { id: 1, label: '1号 · 主号', enabled: true, status: 'online' },
+        { id: 2, label: '2号', enabled: false, status: 'offline' },
+      ],
+      pending: CUSTOMERS.filter((c) => c.pending).length,
+      driver: 'better-sqlite3',
+      ai: {
+        receive: { provider: '', model: '', ready: true, noAi: true },
+        translate: { provider: 'hunyuan', model: 'hy3', ready: true },
+        extract: { provider: 'hunyuan', model: 'hy3', ready: true },
+        suggest: { provider: 'hunyuan', model: 'hy3', ready: true },
+        vision: { provider: "vision", model: "hy-vision-2.0-instruct", ready: true },
+        asr: { provider: "audio", model: "FunAudioLLM/SenseVoiceSmall", ready: false },
+        video: { provider: "vision", model: "hy-vision-2.0-instruct", ready: true },
+        translateReply: { provider: "gpt", model: "gpt-4o-mini", ready: true },
+      },
+    };
+  }
+  if (path === '/api/customers') return CUSTOMERS;
+  if (path === '/api/stats/today') {
+    // 左栏顶部「今日消息」提示窗的假数据
+    return {
+      date: new Date().toISOString().slice(0, 10),
+      received: 7, handled: 4, todo: 3, sent: 2,
+      byAccount: { 1: 4, 2: 2, 3: 1 },
+    };
+  }
+  if (path === '/api/learned') {
+    return {
+      learned: [],
+      rejected: [],
+      stats: { learned: 12, rejected: 5 },
+    };
+  }
+  if (path === '/api/suggestion/adopt') {
+    return { ok: true, dedup: false, id: 1, stats: { learned: 13, rejected: 5 } };
+  }
+  if (path === '/api/suggestion/reject') {
+    suggestionSeq += 1;
+    return Object.assign({}, ROUND_2, {
+      suggestionId: suggestionSeq,
+      attempt: (body.attempt || 0) + 1,
+      angles: ['share', 'curiosity', 'reassure'],
+      day: { day: 4, source: 'auto', signals: [{ key: 'motive', label: '说出动机或场景' }] },
+      knowledge: { always: ['persona.md'], matched: ['stories.md'] },
+    });
+  }
+  if (path === '/api/manual') {
+    return { ok: true, code: '1A00014', isNew: true, count: 3, customer: CUSTOMERS[0] };
+  }
+
+  let m = /^\/api\/customer\/([A-Z0-9]+)$/.exec(path);
+  if (m) {
+    const c = CUSTOMERS.find((x) => x.code === m[1]);
+    if (!c) return { error: '客户不存在' };
+    return {
+      customer: c,
+      messages: MESSAGES[m[1]] || [],
+      duplicates: [],
+      docFile: `data/customers/${c.name}_${c.region}_${c.code}.md`,
+    };
+  }
+
+  m = /^\/api\/customer\/([A-Z0-9]+)\/extract$/.exec(path);
+  if (m) {
+    const c = CUSTOMERS.find((x) => x.code === m[1]);
+    if (!c) return { error: '客户不存在' };
+    // 假抽取：只补 6 字段（姓名/电话/地区/时区/阶段/加入时间），不碰任何附加资料
+    return { ok: true, profile: {}, docFile: `data/customers/${c.name}_${c.region}_${c.code}.md` };
+  }
+
+  m = /^\/api\/customer\/([A-Z0-9]+)\/suggest$/.exec(path);
+  if (m) {
+    suggestionSeq += 1;
+    return Object.assign({}, ROUND_1, {
+      suggestionId: suggestionSeq,
+      attempt: 0,
+      angles: ['empathy', 'story', 'curiosity'],
+      day: { day: 4, source: 'auto', signals: [{ key: 'motive', label: '说出动机或场景' }, { key: 'photo', label: '发来照片 / 聊作品' }] },
+      knowledge: { always: ['persona.md', 'redlines.md', 'playbook7d.md'], matched: ['stories.md'] },
+    });
+  }
+
+  m = /^\/api\/customer\/([A-Z0-9]+)\/(profile|replied)$/.exec(path);
+  if (m) return { ok: true };
+
+  if (path === '/api/translate') {
+    const n = Number(body.count) || 2;
+    const prov = body.provider === 'gpt' ? 'gpt' : 'hunyuan';
+    const model = prov === 'gpt' ? 'gpt-4o-mini' : 'hy3';
+    const versions = [
+      { text: `Hey ${body.text} (EN v1 — casual, friend tone)`, note: '更口语，像朋友微信聊天' },
+      { text: `So ${body.text} (EN v2 — shorter)`, note: '更短，留白让他接话' },
+    ];
+    if (n >= 3) versions.push({ text: `Hi! ${body.text} (EN v3 — warmer)`, note: '更暖，带点温度' });
+    return {
+      ok: true, provider: prov, model, versions,
+      tip: '客户是 Daniel，金毛刚过世——这句别太轻快，先接住他的情绪再自然带出画。',
+    };
+  }
+
+  // AI 设置弹窗（预览是静态的，给一份能看的示例数据；真机上读的是 config.yaml）
+  if (path === '/api/ai/config' && !(o && o.body)) {
+    const prov = (cn, baseUrl, model, hasKey) => ({ baseUrl, model, hasKey, keyHint: hasKey ? '•••• 1234' : '', type: 'openai_compatible' });
+    return {
+      file: 'config.yaml',
+      providers: {
+        hunyuan: prov('混元', 'https://tokenhub.tencentmaas.com/v1', 'hy3', true),
+        gpt: prov('GPT', 'https://api.openai.com/v1', 'gpt-4o-mini', true),
+        anthropic: prov('Claude', 'https://api.anthropic.com/v1', 'claude-sonnet-4-5', false),
+        deepseek: prov('DeepSeek', 'https://api.deepseek.com/v1', 'deepseek-v4-flash', false),
+        agnes: prov('Agnes', 'https://apihub.agnes-ai.com/v1', 'agnes-3.0-flash', false),
+        siliconflow: prov('硅基流动', 'https://api.siliconflow.cn/v1', 'Qwen/Qwen2.5-72B-Instruct', false),
+        openrouter: prov('OpenRouter', 'https://openrouter.ai/v1', 'openai/gpt-4o-mini', false),
+        vision: prov('视觉', '', 'hy-vision-2.0-instruct', false),
+        audio: prov('听觉', 'https://api.siliconflow.cn/v1', 'FunAudioLLM/SenseVoiceSmall', true),
+      },
+      tasks: {
+        receive: { provider: '', model: '', ready: true, noAi: true },
+        translate: { provider: 'hunyuan', model: 'hy3', ready: true },
+        suggest: { provider: 'hunyuan', model: 'hy3', ready: true },
+        translateReply: { provider: 'gpt', model: 'gpt-4o-mini', ready: true },
+        vision: { provider: 'vision', model: 'hy-vision-2.0-instruct', ready: true },
+        asr: { provider: 'audio', model: 'FunAudioLLM/SenseVoiceSmall', ready: true },
+        video: { provider: 'vision', model: 'hy-vision-2.0-instruct', ready: false },
+        extract: { provider: 'hunyuan', model: 'hy3', ready: true },
+      },
+      taskState: {
+        receive: { provider: '', model: '', ready: true, noAi: true, reason: null, wired: true, fixed: '' },
+        translate: { provider: 'hunyuan', model: 'hy3', ready: true, reason: null, wired: true, fixed: '' },
+        suggest: { provider: 'hunyuan', model: 'hy3', ready: true, reason: null, wired: true, fixed: '' },
+        translateReply: { provider: 'gpt', model: 'gpt-4o-mini', ready: true, reason: null, wired: true, fixed: 'gpt' },
+        vision: { provider: 'vision', model: 'hy-vision-2.0-instruct', ready: true, reason: null, wired: true, fixed: '' },
+        asr: { provider: 'audio', model: 'FunAudioLLM/SenseVoiceSmall', ready: true, reason: null, wired: true, fixed: '' },
+        video: { provider: 'vision', model: 'hy-vision-2.0-instruct', ready: false, reason: null, wired: false, fixed: '' },
+        extract: { provider: 'hunyuan', model: 'hy3', ready: true, reason: null, wired: true, fixed: '' },
+      },
+      catalog: {"tasks":[{"key":"receive","cn":"接收信息","wired":true,"noAi":true,"use":"从 WhatsApp 抓取客户发来的新消息（文字 / 图片 / 语音 / 视频），写进本地库、分配客户编号。【采集环节：不调用 AI，也不判断语种】—— 所以这一项不用配 key。中文消息不会被翻译，那是 ② 那边直接跳过的。"},{"key":"translate","cn":"翻译收到的消息","wired":true,"use":"客户发来的英文 → 中文。只翻客户发来的，自己发的不翻；本来就说中文的（含中英混着写里中文占多的）直接跳过，不浪费钱。极少数中英混着写、机器拿不准的，会由这一步顺带问一句要不要翻。"},{"key":"suggest","cn":"回复建议","wired":true,"use":"按人设 + 七天节奏，给你三条中文回复建议（顺带更新客户档案）。"},{"key":"translateReply","cn":"采纳后翻成英文","wired":true,"fixed":"gpt","use":"你挑好的那条中文 → 英文口语（2-3 个版本，按客户地区调口吻）。按你的要求【固定用 GPT】。"},{"key":"vision","cn":"看客户发的图片","wired":true,"use":"客户发来的图片 → 用中文说清画面里有什么（宠物品种、毛色、场景、细节）。"},{"key":"asr","cn":"听客户发的语音","wired":true,"use":"客户发来的语音 → 转成文字 → 再翻成中文。"},{"key":"video","cn":"看客户发的视频","wired":false,"use":"客户发来的视频 → 说清画面。接口已经留好，还没接上（现在先靠 ⑤ 看图 + 人工）。"}],"providers":[{"key":"hunyuan","cn":"混元 Hy3（腾讯 TokenHub）","badge":"推荐 · 最少先填这个","applyTo":"② 翻译 · ③ 回复建议 · ⑤ 看图 —— 填它一把 key，这 3 件事就都能跑了（① 接收信息是采集，不用配）","applyUrl":"https://console.cloud.tencent.com/tokenhub/models","applyName":"腾讯云 TokenHub 控制台（API Key 管理里新建）","sample":"https://tokenhub.tencentmaas.com/v1","modelSample":"hy3","note":"老平台是 console.cloud.tencent.com/hunyuan，接入地址 https://api.hunyuan.cloud.tencent.com/v1 —— 两边 key 和地址都不通用，报 404 先查这里。"},{"key":"gpt","cn":"GPT（OpenAI 或兼容网关）","badge":"④ 专用","applyTo":"④ 采纳建议后翻成英文 —— 按你的要求固定用它，填上才用得了这步","applyUrl":"https://platform.openai.com/api-keys","applyName":"OpenAI 的 API Keys 页面","sample":"https://api.openai.com/v1","modelSample":"gpt-4o-mini","note":"国内直连不通的话，填一个 OpenAI 兼容的中转网关地址也能用（模型名按网关给的写）。"},{"key":"anthropic","cn":"Claude（Anthropic）","badge":"备用","applyTo":"想把「③ 回复建议」换成 Claude 时，在下面 7 个 AI 里把 ③ 指到它","applyUrl":"https://console.anthropic.com/settings/keys","applyName":"Anthropic Console","sample":"https://api.anthropic.com/v1","modelSample":"claude-sonnet-4-5","note":"不填也没关系，默认不用它。"},{"key":"deepseek","cn":"DeepSeek（深度求索）","badge":"可替代混元做 ②③","applyTo":"② 翻译收到的消息 · ③ 回复建议 —— OpenAI 兼容接口，想用 DeepSeek 代替混元做文字生成时，在「7 个 AI」里把 ②③ 指到它。（它不擅长看图，⑤ 看客户图片、⑥ 听语音都别指给它。）","applyUrl":"https://platform.deepseek.com/api_keys","applyName":"DeepSeek 开放平台（API Keys 页面新建）","sample":"https://api.deepseek.com/v1","modelSample":"deepseek-chat","note":"OpenAI 兼容接口（POST /chat/completions），填这家时模型填 deepseek-chat（通用对话）或 deepseek-reasoner（会先推理再答，思考更慢、更稳）。它不适合看图/听语音，所以 ⑤⑥ 别指给它。"},{"key":"agnes","cn":"Agnes（agnes-ai.com）","short":"Agnes","badge":"可替代混元做 ② ③ 抽档案","applyTo":"② 翻译收到的消息 · ③ 回复建议 · 从对话里抽取客户档案 —— OpenAI 兼容接口，在「抽客户档案用哪个 AI」里选它即可用 Agnes 抽档案。","applyUrl":"https://platform.agnes-ai.com/settings/apiKeys","applyName":"Agnes 开放平台（API Keys 页面，复制 sk- 开头那串）","sample":"https://apihub.agnes-ai.com/v1","modelSample":"agnes-3.0-flash","note":"OpenAI 兼容接口（POST /chat/completions）。默认模型 agnes-3.0-flash（文本+视觉都行）。"},{"key":"siliconflow","cn":"硅基流动 SiliconFlow","short":"硅基流动","badge":"国产 · 有免费额度","applyTo":"② 翻译收到的消息 · ③ 回复建议 —— OpenAI 兼容接口，在「7 个 AI」里把 ②③ 指到它就能用。","applyUrl":"https://cloud.siliconflow.cn/account/ak","applyName":"硅基流动控制台（API 密钥页面新建，sk- 开头）","sample":"https://api.siliconflow.cn/v1","modelSample":"Qwen/Qwen2.5-72B-Instruct","note":"OpenAI 兼容接口。⚠️ 模型名要带厂商前缀、以控制台模型列表为准（如 Qwen/Qwen2.5-72B-Instruct、deepseek-ai/DeepSeek-V3）；只写 Qwen2.5-72B 会报 model does not exist。想用它看图（⑤）就填多模态模型（如 Qwen/Qwen2.5-VL-72B-Instruct）。"},{"key":"openrouter","cn":"OpenRouter（一家 key 用遍各家）","short":"OpenRouter","badge":"模型最多","applyTo":"② 翻译收到的消息 · ③ 回复建议 —— 一把 key 就能选 OpenAI / Anthropic / DeepSeek 等各家模型，在「7 个 AI」里把 ②③ 指到它即可。","applyUrl":"https://openrouter.ai/keys","applyName":"OpenRouter Keys 页面（新建，sk-or-v1- 开头）","sample":"https://openrouter.ai/v1","modelSample":"openai/gpt-4o-mini","note":"OpenAI 兼容接口。⚠️ 模型名必须带厂商前缀（openai/gpt-4o-mini、anthropic/claude-3.5-sonnet、deepseek/deepseek-chat），完整列表在 https://openrouter.ai/models 查——直接写 gpt-4o-mini 不带前缀会找不到模型。"},{"key":"vision","cn":"视觉 · 看图","badge":"可以留空","applyTo":"⑤ 看客户发的图片","applyUrl":"https://console.cloud.tencent.com/tokenhub/models","applyName":"留空 = 直接用混元那把 key（推荐）","sample":"https://tokenhub.tencentmaas.com/v1","modelSample":"hy-vision-2.0-instruct","note":"留空就用混元同一把 key + hy-vision-2.0-instruct（⚠️ 名字要写全，写成 hy-vision-2.0 会报 400 model does not exist）。想换成 GPT-4o 看图：地址 https://api.openai.com/v1、key 填 GPT 的、模型填 gpt-4o。"},{"key":"audio","cn":"听觉 · 语音转文字","badge":"要单独填","applyTo":"⑥ 听客户发的语音","applyUrl":"https://cloud.siliconflow.cn/account/ak","applyName":"硅基流动（中文最准、便宜；也可用 OpenAI）","sample":"https://api.siliconflow.cn/v1","modelSample":"FunAudioLLM/SenseVoiceSmall","note":"接口是 OpenAI 风格的 /audio/transcriptions。用 OpenAI 也行：地址 https://api.openai.com/v1、模型 whisper-1、key 在 https://platform.openai.com/api-keys 申请。混元的 key 调不了这里。"}],"taskProviderChoices":["hunyuan","gpt","anthropic","deepseek","agnes","siliconflow","openrouter","vision","audio"],"defaultProviderChoices":["hunyuan","gpt","anthropic","deepseek","agnes","siliconflow","openrouter"]},
+    };
+  }
+
+  // 提示词弹窗：真机是后端从 src/ai.js 现取；预览是静态的，放两条示意
+  if (path === '/api/ai/prompts') {
+    return {
+      file: 'config.yaml',
+      sample: {},
+      tasks: [
+        {
+          key: 'receive', cn: '接收信息', when: '客户每发来一条新消息时（账号连上 WhatsApp 之后）。',
+          where: 'src/main.js · handleMessage() → src/db.js', fixed: '', wired: true, noAi: true,
+          providerCn: '不需要 AI', model: '', ready: true,
+          userLabel: '—（程序自己处理，不发给任何模型）',
+          system: '（这一步没有提示词 —— 接收信息不调用 AI）',
+          user: '（不调用 AI）进来的是两样东西：① 客户发来的消息本体（文字 / 图片 / 语音 / 视频）；② 发送方号码，用来绑客户编号。',
+          output: '消息落进本地库（方向 / 时间 / 渠道 / 有没有媒体）→ 左栏立刻出现这条新消息、未读 +1',
+          notes: ['（预览里只放了示意内容；真机上点开是全部 7 个 AI + 真提示词）',
+                  '【不看语种】中文、英文、表情、图片、语音一视同仁地收进来。',
+                  '【中文不翻】要不要翻译是 ② 那一步的判断，本来就是中文的直接跳过、不花钱。',
+                  '所以这一项不用配 API Key，状态永远是「已就绪」。'],
+        },
+        {
+          key: 'translate', cn: '翻译收到的消息', when: '客户发来外文消息时。',
+          where: 'src/ai.js · translate() / promptTranslate()', fixed: '', wired: true,
+          providerCn: '混元 Hy3（腾讯 TokenHub）', model: 'hy3', ready: true,
+          userLabel: '客户消息原文',
+          system: '你是翻译器。把客户的英文消息译成自然的中文口语。\\n要求：保留原意与语气……只输出译文一行。',
+          user: 'hi, is this still available?',
+          output: '中文译文一行',
+          notes: ['（预览里只放了示意内容；真机上点开是全部 7 个 AI + 真提示词）',
+                  '先判语种再翻：本来就是中文的直接跳过不翻，不花钱。'],
+          partsTitle: "②' 语种兜底提示词（只有中英混着写、正则拿不准时才发这一段）",
+          parts: [{ label: "②' 语种兜底", text: '你只做一件事：判断这条客户消息要不要译成中文。\\n回 yes = 主要是外文（英文等），需要翻；回 no = 主要是中文，中国人一眼看得懂，不用翻。\\n只回一个词：yes 或 no。不要解释。' }],
+        },
+        {
+          key: 'suggest', cn: '回复建议', when: '点中栏底部「⚡ 生成建议」时。',
+          where: 'src/ai.js · suggest() / promptSuggest()', fixed: '', wired: true,
+          providerCn: '混元 Hy3（腾讯 TokenHub）', model: 'hy3', ready: true,
+          userLabel: '客户信息 + 档案 + 最近 20 条对话',
+          system: '<<persona.md>>\\n# 人设与说话习惯\\n（知识库正文整段拼进来）\\n\\n（教练块：第几天 / 今天做什么 / 三个角度）\\n\\n你要替这位卖家想「中文回复建议」……只输出 JSON。',
+          user: '客户：Daniel（编号 1A00001）地区：纽约　阶段：Day 2……',
+          output: 'JSON：三条中文建议 + rationale + riskFlags',
+          notes: ['（预览里只放了示意内容；真机上会显示 persona / redlines / templates / playbook7d 的全文）'],
+          parts: [{ label: '① 知识库（persona / redlines / templates / playbook7d）', text: '（真机这里显示四个文件的正文）' },
+                  { label: '② 教练块（第几天 / 今天做什么 / 三个角度）', text: '（真机这里显示 coach.js 现算的那一段）' }],
+        },
+      ],
+    };
+  }
+
+  return { error: '预览模式没有这个接口：' + path };
+}
+
+window.fetch = async (u, o) => {
+  const path = String(u || '').replace(/^https?:\/\/[^/]+/, '');
+  let body = {};
+  try { body = o && o.body ? JSON.parse(o.body) : {}; } catch (e) { body = {}; }
+  const data = route(path, body);
+  return { status: data.error ? 503 : 200, json: async () => data, text: async () => JSON.stringify(data) };
+};
+
+/* SSE 在预览里不需要，给个空壳免得报错 */
+window.EventSource = class {
+  constructor() {}
+  addEventListener() {}
+  close() {}
+};
+
+</script>
+<script>
+/**
+ * 三栏界面逻辑
+ *
+ * 左：客户列表（红点=待处理）　中：英文原文 + 中文翻译　右：档案卡 + 中文建议
+ * 所有数据来自本地 127.0.0.1 的接口，没有任何外发请求。
+ */
+
+const $ = (id) => document.getElementById(id);
+
+/* ---------------- 界面提示条 ----------------
+   凡是要告诉用户"发生了什么"，一律走这里，宁可吵一点也不要"点了没反应"。
+
+   位置在顶栏第二行右侧（右栏「客户档案」的正上方），而且【只保留一条】：
+   以前是一个堆叠的列表，消息一多就把右下角的工作区糊住了。 */
+var noticeTimer = null;
+
+function showNotice(level, text, ms = 6000) {
+  const box = $('toast');
+  if (!box) return;
+  box.textContent = String(text ?? '');
+  box.title = String(text ?? '');          // 被省略号截断时，悬停能看全
+  box.className = `show n-${level}`;
+  clearTimeout(noticeTimer);
+  noticeTimer = setTimeout(() => {
+    box.className = '';
+    box.textContent = '';
+    box.title = '';
+  }, ms);
+}
+
+// 兜底：脚本一出错，界面必须自己说出来，不许再出现"点了没反应"
+window.addEventListener('error', (e) => showNotice('error', '界面出错：' + (e.message || '未知')));
+window.addEventListener('unhandledrejection', (e) => {
+  const r = e.reason;
+  showNotice('error', '操作失败：' + ((r && r.message) || r || '未知'));
+});
+
+const state = {
+  customers: [],
+  activeCode: null,
+  messages: [],      // 当前对话的消息（带 translating / untranslated 状态）
+  aiReady: false,    // AI 配好了没（决定"等待翻译中"还是"AI 未配置"）
+  suggestBusy: false,
+  suggest: null, // { id, attempt, avoid, day, options, rationale }
+  trText: null,  // 当前正在翻译的中文原文
+  // 「客户档案」弹窗正在看哪个客户（和 activeCode 分开：可以开着甲的对话、
+  // 点开看乙的档案）。见 openProfileModal。
+  profileCode: null,
+  backfillBusy: {},   // 正在补翻译的客户（避免重复请求）
+  backfillWarned: {}, // 已经提示过"AI 没配"的客户（别每次点开都弹一遍）
+  stats: { learned: 0, rejected: 0 },
+};
+
+/* 五个 WhatsApp 账号的圈数字：① = 主号（账号 1）、② = 二号 …… ⑤ = 五号。
+   提前声明在这里，避免后面的函数提前用它时撞上 const 的暂时性死区。 */
+const ACCT_CIRCLED = { 1: '①', 2: '②', 3: '③', 4: '④', 5: '⑤' };
+
+const ANGLE_CN = {
+  empathy: '共情',
+  curiosity: '好奇',
+  story: '故事',
+  humor: '幽默',
+  share: '分享',
+  nudge: '轻推进',
+  reassure: '打消顾虑',
+  close: '收口',
+  retreat: '退让',
+};
+
+async function refreshStats() {
+  try {
+    const d = await api('/api/learned');
+    state.stats = d.stats || state.stats;
+  } catch (e) {
+    /* 接口没起来就算了 */
+  }
+}
+
+/* ============================================================
+   左栏顶部的「今日消息」提示窗
+   今天收到多少条、处理掉多少、还等你多少，以及 ① ② ③ ④ ⑤ 各来了几条。
+   数据来自 /api/stats/today（后端按本地日期算，跨零点自动归零）。
+   ============================================================ */
+async function refreshToday() {
+  try {
+    const d = await api('/api/stats/today');
+    renderToday(d);
+  } catch (e) {
+    /* 接口没起来就算了，数字保持原样 */
+  }
+}
+
+function renderToday(d) {
+  if (!d) return;
+  const dateEl = $('tb-date');
+  if (dateEl) dateEl.textContent = String(d.date || '').slice(5) || '—';
+  const set = (id, v) => { const el = $(id); if (el) el.textContent = String(Number(v) || 0); };
+  set('tb-in', d.received);
+  set('tb-done', d.handled);
+  set('tb-todo', d.todo);
+  const todoEl = $('tb-todo');
+  if (todoEl) todoEl.className = Number(d.todo) ? 'has' : '';
+
+  const by = d.byAccount || {};
+  const wrap = $('tb-acct');
+  if (wrap) {
+    wrap.innerHTML = [1, 2, 3, 4, 5].map((id) => {
+      const n = Number(by[id]) || 0;
+      const label = { 1: '主号', 2: '二号', 3: '三号', 4: '四号', 5: '五号' }[id];
+      return `<span class="ta ${n ? 'has' : ''}" title="账号 ${id}（${label}）：今天收到 ${n} 条">${ACCT_CIRCLED[id]}<b>${n}</b></span>`;
+    }).join('');
+  }
+}
+
+const esc = (s) =>
+  String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+const fmt = (ts) => {
+  if (!ts) return '';
+  const d = new Date(ts);
+  if (isNaN(d)) return String(ts);
+  const p = (n) => String(n).padStart(2, '0');
+  return `${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+};
+
+/* ---------------- 接口 ---------------- */
+
+async function api(path, options) {
+  const res = await fetch(path, options);
+  return res.json();
+}
+
+/* ---------------- 顶栏 ---------------- */
+
+async function refreshState() {
+  try {
+    const s = await api('/api/state');
+    const pendingEl = $('pending');
+    const unread = Number(s.unread) || 0;
+    // 「待处理」= 还没处理过的新消息条数：客户每发来一条就 +1，处理完（标记已回复/已回复）才减
+    const pendMsgs = Number(s.pendingMsgs) || 0;
+    pendingEl.textContent = `待处理 ${pendMsgs}`;
+    pendingEl.className = pendMsgs ? 'pending' : 'pending zero';
+    pendingEl.title = pendMsgs
+      ? `${pendMsgs} 条新消息还没处理${unread ? `（其中 ${unread} 条还没点开看）` : ''}`
+      : '没有待处理的新消息';
+
+    state.aiReady = !!s.aiReady;
+
+    state.accounts = s.accounts || [];
+    renderAccounts(s.accounts || []);
+
+    // AI 状态做成按钮：没配好就点它去填 key（以前只写一行灰字，用户不知道该去哪配）
+    const ready = !!s.aiReady;
+    const st = $('status');
+    st.textContent = ready
+      ? `AI 就绪（${s.ai?.suggest?.provider || ''}/${s.ai?.suggest?.model || ''}）`
+      : '⚠ AI 未配置 —— 点这里填 API Key';
+    st.className = ready ? 'ok' : 'warn';
+    st.title = ready ? 'AI 已配好，可以出建议和翻译了' : (s.aiReason ? `原因：${s.aiReason}　点这里去填` : '点这里去填 API Key');
+
+    // AI 状态变了 → 对话区顶上的提示条也要跟着变（"等待翻译中" ↔ "AI 未配置"）
+    if (state.activeCode) renderChatStatus();
+  } catch (e) {
+    const st = $('status');
+    st.textContent = '接口未连接';
+    st.className = 'warn';
+  }
+}
+
+function statusText(status) {
+  return { online: '在线', waiting_qr: '待扫码', offline: '离线', error: '异常' }[status] || status || '离线';
+}
+
+/** 红绿灯：绿=已登录，黄=待扫码，红=离线/异常 */
+function ledOf(status) {
+  return { online: 'green', waiting_qr: 'amber', error: 'red', offline: 'red' }[status] || 'red';
+}
+
+/**
+ * 顶栏账号条：五个账号各一块
+ *   ● 红绿灯  [主号]  离线      ← 账号名【本身就是按钮】，点它开浏览器
+ *
+ * 2026-09-24 按用户要求改：后面那个单独的「浏览器」按钮去掉了，太占地方。
+ * 扫码在 Chrome 窗口里做：点名字启动这个账号，窗口会被搬到屏幕里并置顶，用手机扫它。
+ * 这里【不显示二维码】。
+ */
+function renderAccounts(accounts) {
+  const bar = $('accounts');
+  if (!bar) return;
+
+  if (!accounts.length) {
+    bar.innerHTML = '<span class="muted">未配置账号 —— 打开项目里的 config.yaml，把要用的账号 enabled 改成 true</span>';
+    return;
+  }
+
+  bar.innerHTML = accounts
+    .map((a) => {
+      const id = esc(a.id);
+      const label = esc(a.label || a.id + '号');
+      const st = esc(statusText(a.status));
+      return `<div class="acct ${esc(a.status)}" data-id="${id}">
+        <span class="led ${ledOf(a.status)}" title="${st}"></span>
+        <button class="acct-name" data-act="open" data-id="${id}"
+          title="点「${label}」启动 / 唤起这个账号的 WhatsApp 浏览器（第一次登录就在这里扫码）">${label}</button>
+        <span class="acct-state">${st}</span>
+      </div>`;
+    })
+    .join('');
+}
+
+/** 点账号名 = 开这个账号的浏览器 */
+$('accounts').addEventListener('click', async (e) => {
+  const btn = e.target.closest('button[data-act]');
+  if (!btn) return;
+  const chip = btn.closest('.acct');
+  const id = chip?.dataset.id;
+  if (!id) return;
+  if (btn.dataset.act === 'open') await openBrowser(id, btn);
+});
+
+/** 点账号名：没开就启动，已开就把那个 Chrome 窗口拉到前台 */
+async function openBrowser(id, btn) {
+  const old = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '开启中…';
+  const chip = btn.closest('.acct');
+  chip?.classList.add('busy');
+  try {
+    const r = await api(`/api/account/${id}/open`, { method: 'POST' });
+    if (r.error) {
+      showNotice('error', `账号 ${id} 打不开：${r.error}`);
+      return;
+    }
+    if (r.action === 'focused') {
+      showNotice('info', r.window
+        ? `账号 ${id}：Chrome 窗口已拉到桌面左上 ${r.window.left}, ${r.window.top}`
+        : `账号 ${id}：Chrome 窗口已拉到前台`);
+    } else if (r.status === 'waiting_qr') {
+      showNotice('warn', `账号 ${id}：Chrome 窗口已打开，用手机 WhatsApp 扫那里的二维码`);
+    } else if (r.revealed === false) {
+      // 窗口没搬回桌面：说清楚原因 + 怎么救（绝不说"已启动"就完事）
+      showNotice('warn', `账号 ${id}：浏览器起来了，但窗口没能自动搬到桌面（${r.revealError || '未知原因'}）—— 在屏幕下面的任务栏点一下 Chrome 就能看到它`);
+    } else {
+      const at = r.window ? `（窗口在左上 ${r.window.left}, ${r.window.top}）` : '';
+      showNotice('ok', r.status === 'online'
+        ? `账号 ${id}：已登录 WhatsApp${at}`
+        : `账号 ${id}：已启动，Chrome 窗口正在打开…${at}`);
+    }
+  } catch (err) {
+    showNotice('error', '连不上本地服务：' + (err.message || err));
+  } finally {
+    btn.disabled = false;
+    btn.textContent = old;
+    chip?.classList.remove('busy');
+    refreshState();
+  }
+}
+
+/* ---------------- 客户列表（左边这栏就是"新消息提醒"） ----------------
+ *
+ * 规则（2026-09-24 按用户要求定）：
+ *   - 一个客户只占一格。他连发 5 条，就在这一格上累计成「5」，不会变成 5 个格子。
+ *   - 没点开之前，未读数一直累加（刷新、重启都不清零，除非你真点开看了）。
+ *   - 有未读的客户永远排在最上面；点开这个客户 = 我看过了，未读清零。
+ */
+
+async function refreshCustomers(selectCode) {
+  const rows = await api('/api/customers');
+  state.customers = rows;
+  paintCustomers();
+  // 只有明确指定要打开哪个客户时才自动打开（否则每次刷新列表都会把对话区重画一遍）
+  if (selectCode) openCustomer(selectCode);
+}
+
+/** 只重画左栏（未读清零这种局部变化，不必重新请求接口） */
+function paintCustomers() {
+  const body = $('list-body');
+  if (!body) return;
+  const rows = state.customers || [];
+  if (!rows.length) {
+    body.innerHTML = '<div class="empty">还没有客户。<br>点某个账号的名字打开浏览器，扫码登录后会自动同步最近对话。</div>';
+    return;
+  }
+  body.innerHTML = rows.map(customerRowHtml).join('');
+  for (const el of document.querySelectorAll('.cust')) {
+    el.onclick = () => openCustomerRow(el.dataset.code);
+  }
+  // 注意：客户行里【没有】任何按钮了。
+  // 「客户档案 / 从对话里提取档案」这两个按钮 2026-09-25 第二轮挪到了**中栏头部最右端**
+  // （renderChatHead 里的 #ch-doc / #ch-extract），左栏客户行恢复成"点哪儿都是打开这个客户"。
+}
+
+function customerRowHtml(c) {
+  const preview = c.last_body_zh || c.last_body || '';
+  // 左栏这个「Day N」跟中栏头部那个紫色徽标必须同一个数（都按加入时间算，Day 0 = 加入当天），
+  // 否则会出现"左栏 Day 2、点进去头部 Day 0"的矛盾。Day 0（刚加入）不显示，免得一堆 Day 0 太吵。
+  const dayIdx = dayIndex(c);
+  const tags = [c.region, dayIdx > 0 ? `Day ${dayIdx}` : '', c.mood].filter(Boolean).join(' · ');
+  const unread = Number(c.unread) || 0;
+  return `<div class="cust ${c.pending ? 'pending' : ''} ${unread ? 'has-unread' : ''} ${c.code === state.activeCode ? 'active' : ''}" data-code="${esc(c.code)}">
+    ${custNumHtml(c)}
+    <div class="meta">
+      <div class="top">
+        <span class="code">${esc(c.code)}</span>
+        <span class="name">${esc(c.name || '未命名')}</span>
+        ${unread ? `<span class="unread" title="有 ${unread} 条新消息还没看">${unread > 99 ? '99+' : unread}</span>` : ''}
+      </div>
+      <div class="preview">${esc(preview)}</div>
+      <div class="tags">${esc(tags)}</div>
+    </div>
+  </div>`;
+}
+
+/**
+ * 客户行左端的「账号圈数字」① ② ③ ④ ⑤ —— 就挂在原来那个**红点的位置**上
+ * （不是放在中间的对话里）。
+ *
+ * 颜色规则（按用户要求）：
+ *   - 红 = 这个客户有新消息（来自哪个 WhatsApp 账号一目了然）——唯一的持续提醒
+ *   - 绿 = 这条你看过了，但**还没处理完**（没回复）——选中的 1 秒后由红转绿
+ *   - 处理完（回复了 / 点「✓ 标记已回复」）→ 数字消失，退回原来那个安静的小圆点
+ *   - 没新消息、也没待回复 → 一直就是小圆点，不显示数字
+ */
+/** code -> 时间戳：刚点开这一行，1 秒内数字仍显示红色（然后自己转绿） */
+const rowSeenAt = {};
+
+function custNumHtml(c) {
+  const acct = Number(c.account_id) || 0;
+  const circ = ACCT_CIRCLED[acct];
+  const unread = Number(c.unread) || 0;
+  const pending = Number(c.pending) || 0;
+  const justSeen = !!rowSeenAt[c.code] && Date.now() < rowSeenAt[c.code];
+  // 没有新消息、也没有待回复：保持原来那个小圆点
+  if (!circ || (!unread && !pending)) return '<div class="dot"></div>';
+  const cls = (unread > 0 || justSeen) ? 'red' : 'green';
+  const tip = cls === 'red'
+    ? `账号 ${acct} 来的新消息（${unread || 1} 条还没看）· 点开这一行 1 秒后变绿`
+    : `账号 ${acct} 来的消息你看过了，还没回复 · 回复了或点「✓ 标记已回复」后这个数字才消失`;
+  return `<span class="row-num ${cls}" title="${esc(tip)}">${circ}</span>`;
+}
+
+/** 清掉这个客户的未读（本地先清，界面立刻响应；服务端失败也没关系，下次刷新以服务端为准） */
+async function markReadQuietly(code) {
+  const row = (state.customers || []).find((c) => c.code === code);
+  if (!row || !Number(row.unread)) return;
+  row.unread = 0;
+  paintCustomers();
+  try {
+    await api(`/api/customer/${code}/read`, { method: 'POST' });
+  } catch (e) {
+    /* 接口没起来就算了 */
+  }
+}
+
+/** 用户在左栏点了一格：先算"看过了"，再打开对话 */
+function openCustomerRow(code) {
+  // 先记「刚点开」：这个账号圈数字 1 秒内保持红色，满 1 秒后自己转绿（用户要的节奏）
+  rowSeenAt[code] = Date.now() + 1000;
+  markReadQuietly(code); // 不 await：先把对话显示出来，清零在后台完成
+  paintCustomers();
+  setTimeout(() => {
+    delete rowSeenAt[code];
+    paintCustomers();   // 红 → 绿（一直绿到真的处理完）
+  }, 1100);
+  openCustomer(code);
+}
+
+/**
+ * 客户当地时间 / 与我们的时差
+ * 客户在纽约、洛杉矶、芝加哥…… 你得知道他那边现在几点，才知道该不该发消息。
+ */
+function tzParts(tz) {
+  if (!tz) return null;
+  try {
+    const f = new Intl.DateTimeFormat('zh-CN', {
+      timeZone: tz, month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hour12: false,
+    });
+    const p = {};
+    for (const x of f.formatToParts(new Date())) p[x.type] = x.value;
+    return p;
+  } catch (e) {
+    return null;
+  }
+}
+
+/** 「09-24 09:51」这样的当地时间；时区不认就返回空 */
+function localTimeOf(tz) {
+  const p = tzParts(tz);
+  if (!p) return '';
+  return `${p.month}-${p.day} ${String(p.hour).padStart(2, '0')}:${String(p.minute).padStart(2, '0')}`;
+}
+
+/** 客户那边比我们早/晚几小时（+ 表示比北京早） */
+function tzOffsetHours(tz) {
+  if (!tz) return null;
+  try {
+    const asLocal = new Date(new Date().toLocaleString('en-US', { timeZone: tz }));
+    if (isNaN(asLocal)) return null;
+    const h = Math.round((asLocal.getTime() - Date.now()) / 3600000);
+    if (!isFinite(h)) return null;
+    return h;
+  } catch (e) {
+    return null;
+  }
+}
+
+/** 时差说成人话：比北京晚 15 小时（洛杉矶）、和北京同时区（伦敦）这种 */
+function tzOffsetText(tz) {
+  const h = tzOffsetHours(tz);
+  if (h === null) return '';
+  if (h === 0) return '和北京同时区';
+  return `比北京${h > 0 ? '早' : '晚'} ${Math.abs(h)} 小时`;
+}
+
+/**
+ * 中栏顶部的「档案条」：把右栏客户档案里最该随时看见的几项抬到这儿。
+ * 按用户要求：14px、加粗；固定两行；必须有「加入时间」和「客户当地时间」。
+ */
+function renderChatHead(c, data) {
+  const head = $('chat-head');
+  if (!head) return;
+  const joined = fmt(c.created_at || c.joined_at);
+  const days = daysSince(c.created_at || c.joined_at);
+  const tz = c.timezone || '';
+  const loc = localTimeOf(tz);
+  // 「加入后第几天」：**纯按加入时间算**（加入当天 = Day 0，过零点 +1），
+  // 不再取 stage_day —— stage_day 是教练按对话内容判的节奏，跟"加入几天了"不是一回事，
+  // 混用会出现「认识第 1 天 Day 2」这种自相矛盾（用户 2026-09-26 点名要改）。
+  // 认识第 N 天 = Day + 1，两个数永远对得上（认识第 1 天 = Day 0）。
+  const dayNo = days !== null ? days - 1 : 0;
+  const who = esc(c.name || c.code);
+  head.innerHTML = `
+    <div class="ch-top">
+      <!-- 客户名那一行：**编码 → 名称: → 名字**（2026-09-26 按用户要求重排）
+           用户看图圈了红圈：原来把「名称:」放在【左栏客户行】里是放错地方了，
+           应该放在【中栏头部】（蓝圈）这里 —— 编码在前，接着红色加粗 14px 的「名称:」，
+           最后才是客户名。左栏客户行恢复成「编码 + 名字」两段，不再带标签。 -->
+      <div class="ch-name">
+        <span class="code">${esc(c.code)}</span>
+        <span class="name-label">名称:</span>
+        <span class="cname">${esc(c.name || '未命名')}</span>
+      </div>
+      <!-- 中栏头部**最右端**两个按钮：横排左右结构（2026-09-25 第三轮按用户要求，
+           原来是上下叠放，现在改成一行：左=客户档案、右=从对话里提取档案）。
+             左 = 客户档案 → 开档案弹窗
+             右 = 从对话里提取档案 → 一点就抽，不用先开弹窗（蓝字加粗）
+           原来档案条末尾那个「客户档案 ↗」和它重复，已经删掉了。 -->
+      <div class="ch-doc-col">
+        <button id="ch-doc" class="ch-doc"
+                title="打开「${who}」的客户档案（加入时间 / 姓名 / 电话 / 地区 / 时区 / 阶段 + 婚姻 / 生活规律 / 别名 / 老家 / 爱好 / 职业 / 家庭经济 / 父母 / 宠物 / 孩子）">客户档案</button>
+        <button id="ch-extract" class="ch-extract"
+                title="读「${who}」的整段对话，把能确认的档案字段抽出来补进档案（不用先生成建议）">从对话里提取档案</button>
+      </div>
+    </div>
+    <!-- 档案条：**2 行 × 2 列**（2026-09-26 按用户要求改成"左右两列、右列从框正中开始"）
+         第一行 = 加入时间（左列） ｜ ★认识第 N 天★ + Day N（右列）
+         第二行 = 地区（左列）      ｜ 客户当地时间 + 时差（右列）
+         用户看图（绿框 + 两根红箭头）：这两条右列信息要**互相对齐**，而且落在
+         这个框的**正中间位置** —— 所以右列固定从盒子水平中点开始（grid 1fr 1fr）。 -->
+    <div class="ch-facts">
+      <div class="fact-row">
+        <span class="fact-cell"><span class="fact"><b class="fact-joined">加入时间</b> ${esc(joined || '—')}</span></span>
+        <span class="fact-cell fact-cell-right">
+          ${days !== null ? `<span class="fact fact-know"><i class="star">★</i><i class="sub-fact sub-joined">认识<span class="day-num">第 ${days} 天</span></i><i class="star">★</i></span>` : ''}
+          <b class="fact-day" title="加入后第几天：按加入时间算，加入当天 = Day 0，过了零点 +1">Day ${dayNo}</b>
+        </span>
+      </div>
+      <div class="fact-row">
+        <!-- 「地区」标题【永远都在】：用户 2026-09-26 要求，不管这个客户有没有抽到地区，
+             点开都必须看到「地区」这一项（没填就显示"未填"），不能整格消失。 -->
+        <span class="fact-cell"><span class="fact"><b class="fact-region">地区</b> ${c.region ? `<span class="chip chip-region">${esc(c.region)}</span>` : '<span class="fact-empty">未填</span>'}</span></span>
+        <span class="fact-cell fact-cell-right">
+          <span class="fact" title="客户那边现在几点（按 ${esc(tz || '未知时区')} 算）"><b class="fact-loc">客户当地时间</b>
+            <span id="ch-loc">${esc(loc || '—')}</span>
+            <i class="sub-fact">${esc(tzOffsetText(tz) || (tz ? '' : '（在右栏填了时区就会显示）'))}</i>
+          </span>
+        </span>
+      </div>
+    </div>`;
+  startClock(tz);
+  // 头部右端两个按钮（横排）：左=打开这个客户的档案弹窗，右=直接读整段对话抽档案
+  const docBtn = $('ch-doc');
+  if (docBtn) docBtn.onclick = () => openProfileModal(c.code);
+  const exBtn = $('ch-extract');
+  if (exBtn) exBtn.onclick = () => extractProfileFromChat(c.code, exBtn);
+
+  // 补翻没翻的消息 + 补看没看的图片/语音（后台跑，界面不用等）
+  const untranslated = Number(data?.untranslated) || 0;
+  const mediaPending = Number(data?.mediaPending) || 0;
+  if (untranslated > 0 || mediaPending > 0) {
+    backfillTranslations(c.code, untranslated + mediaPending);
+  }
+}
+
+/** 客户当地时间每分钟自己走一格（只改那一个节点，不重画整个界面） */
+let clockTimer = null;
+let clockTz = null;
+function startClock(tz) {
+  clockTz = tz;
+  if (clockTimer) clearInterval(clockTimer);
+  if (!tz) return;
+  clockTimer = setInterval(() => {
+    const el = $('ch-loc');
+    if (!el) return;
+    const t = localTimeOf(clockTz);
+    if (t) el.textContent = t;
+  }, 30000);
+}
+
+/**
+ * 打开某个客户的对话
+ * @param {string} code
+ * @param {object} opt {keepSuggest:true} 不把右边已生成的中文建议清掉
+ *        （翻译是后台补的，随时可能有 translated 事件把对话区重画一遍，
+ *          不能顺手把用户刚生成的建议抹掉）
+ */
+async function openCustomer(code, opt = {}) {
+  state.activeCode = code;
+  state.suggest = null;
+  for (const el of document.querySelectorAll('.cust')) {
+    el.classList.toggle('active', el.dataset.code === code);
+  }
+
+  const data = await api(`/api/customer/${code}`);
+  if (data.error) return;
+
+  const c = data.customer;
+  state.customer = c;
+  renderChatHead(c, data);
+  $('chat-sub')?.remove();
+
+  renderMessages(data.messages || []);
+  // 档案现在在弹窗里。弹窗关着时顺便把内容准备好（点「档案」立刻就有）；
+  // 弹窗正开着（可能在看别的客户）就不要覆盖它，免得把用户正在看/改的档案冲掉。
+  const pfOpen = !$('pf-modal')?.classList.contains('hidden');
+  if (!pfOpen) {
+    state.profileCode = code;
+    renderProfile(data);
+  }
+  if (!opt.keepSuggest) $('suggest-out').innerHTML = '';
+}
+
+/** 请后端把没译文的消息 + 没出说明的图片/语音补一遍（后台跑，好一条推一条 translated） */
+async function backfillTranslations(code, count) {
+  if (state.backfillBusy[code]) return;
+  state.backfillBusy[code] = true;
+  try {
+    const r = await api(`/api/customer/${code}/translate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ max: 12 }),
+    });
+    if (r && r.ok === false && r.reason && !state.backfillWarned[code]) {
+      state.backfillWarned[code] = true;
+      showNotice('warn', `有 ${count} 条还没处理：${r.reason}（点顶栏「⚙ AI 设置」看一下）`);
+    }
+  } catch (e) {
+    /* 接口没起来就算了 */
+  } finally {
+    delete state.backfillBusy[code];
+  }
+}
+
+/** 重画对话区（消息带上"正在翻译 / 正在看图"的状态）
+ *  注意：新消息的红/绿数字**不在这里**，而是挂在左栏客户行的红点位置（见 custNumHtml）。
+ *  用户明确：数字放左侧、不要放在中间的对话信息里。 */
+function renderMessages(msgs) {
+  state.messages = msgs || [];
+  $('msgs').innerHTML = state.messages.length
+    ? state.messages.map((m) => renderBubble(m)).join('')
+    : '<div class="empty">暂无消息</div>';
+  $('msgs').scrollTop = $('msgs').scrollHeight;
+  renderChatStatus();
+}
+
+/**
+ * 对话区顶部那条状态（就在客户名/档案条的正下方）：
+ *   - 有消息在翻 / 有图片语音在看 → 「⟳ 等待翻译中…」
+ *   - 有没翻的但 AI 没配       → 告诉他去填 key
+ *   - 都处理好了               → 整条隐藏
+ */
+function renderChatStatus() {
+  const el = $('chat-status');
+  if (!el) return;
+  const msgs = state.messages || [];
+  const waiting = msgs.filter((m) => m.translating).length;
+  const todo = msgs.filter((m) => m.untranslated).length;
+  const failed = msgs.filter((m) => m.translateFailed).length;
+  const media = msgs.filter((m) => m.mediaWaiting || m.mediaWorking).length;
+
+  if (waiting || todo || media || failed) {
+    const parts = [];
+    if (waiting || todo) parts.push(`${waiting || todo} 条正在翻译`);
+    if (failed) parts.push(`${failed} 条之前没翻出来（重开本客户重试）`);
+    if (media) parts.push(`${media} 条在看图/听语音`);
+    const n = parts.join(' · ');
+    el.className = `chat-status ${state.aiReady ? 'busy' : 'warn'}`;
+    el.innerHTML = state.aiReady
+      ? `<span class="spin"></span> 等待翻译中…（${n}，好了会自动出现在下面）`
+      : `<span class="spin"></span> 等待翻译中…（${n}）`
+        + ' —— AI 未配置，点顶栏「⚙ AI 设置」填 API Key，这里就会自动出中文';
+    return;
+  }
+  el.className = 'chat-status hidden';
+  el.textContent = '';
+}
+
+/**
+ * 画一条消息气泡
+ * @param {object} m 消息
+ */
+function renderBubble(m) {
+  const who = m.direction === 'in' ? `${m.customer_code ? '客户' : ''} ${fmt(m.msg_ts)}`.trim() : `我 ${fmt(m.msg_ts)}`;
+  const body = esc(m.body || '');
+  let zh = '';
+  if (m.body_zh) {
+    zh = `<div class="zh">译：${esc(m.body_zh)}</div>`;
+  } else if (m.translateFailed) {
+    // 翻过但失败了：明说，重开本客户会自动重试，别让它假装还在转圈
+    zh = '<div class="zh failed">⚠ 这条没能翻译出来（可能是消息太长或 AI 服务商超时）。重开本客户即可重试。</div>';
+  } else if (m.translating || m.untranslated) {
+    // 客户发来的（英文）还没有中文 —— 等一会儿就出来，不用用户操心
+    zh = '<div class="zh waiting"><span class="spin"></span> 等待翻译中…</div>';
+  }
+
+  // 客户发来的图片 / 语音：AI 用中文写一句"这是什么"（看图 ⑤ / 听语音 ⑥）
+  let mediaZh = '';
+  const icon = m.mediaKind === 'audio' ? '🎤 语音' : m.mediaKind === 'video' ? '🎬 视频' : '🖼 图';
+  if (m.media_zh) {
+    mediaZh = `<div class="zh media-zh">${icon}：${esc(m.media_zh)}</div>`;
+  } else if (m.mediaWaiting || m.mediaWorking) {
+    mediaZh = m.mediaKind === 'audio'
+      ? '<div class="zh waiting"><span class="spin"></span> 正在听语音…（转成文字后给中文）</div>'
+      : '<div class="zh waiting"><span class="spin"></span> 正在看图…</div>';
+  } else if (m.mediaKind === 'video') {
+    mediaZh = '<div class="zh waiting">🎬 视频：还没接自动识别，点开文件自己看一眼</div>';
+  }
+
+  const media = m.media_path ? `<div class="media">📎 ${esc(m.media_path.split(/[\\/]/).pop())}</div>` : '';
+
+  return `<div class="bubble ${m.direction === 'out' ? 'out' : ''}" data-id="${esc(m.id)}">
+    <div class="bub-main">
+      <div class="who">${esc(who)}</div>
+      <div class="body">${body}</div>
+      ${zh}${mediaZh}${media}
+    </div>
+  </div>`;
+}
+
+/* ---------------- 档案卡 ---------------- */
+
+/* datetime-local 需要本地时间的 YYYY-MM-DDTHH:mm */
+function toLocalInput(ts) {
+  if (!ts) return '';
+  const d = new Date(ts);
+  if (isNaN(d)) return '';
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+/**
+ * 认识第几天（1 起）——【按日历天】算，不是滚动 24 小时。
+ * 用户 2026-09-26 明确：加入当天 = 第 1 天；过了本地零点（凌晨）就 +1，第 1 天变第 2 天。
+ * 之前是 Math.floor((now-加入)/24h)+1，加入当天下午 3 点加的人，第二天下午 3 点才 +1，
+ * 跟"过零点就翻页"对不上，所以改成按日历日相减。
+ */
+function daysSince(ts) {
+  if (!ts) return null;
+  const d = new Date(ts);
+  if (isNaN(d)) return null;
+  const startOfDay = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const diff = Math.round((startOfDay(new Date()) - startOfDay(d)) / 86400000);
+  return Math.max(0, diff) + 1;
+}
+
+/**
+ * 「加入后第几天」（0 起）——就是中栏那个紫色 Day 徽标的数。
+ * 加入当天 = Day 0；过了零点 = Day 1（对应"认识第 2 天"）。
+ * 纯按加入时间算，不再跟 stage_day（内容信号判的节奏）走，
+ * 免得出现「认识第 1 天 Day 2」这种自相矛盾的显示（用户 2026-09-26 点名要改）。
+ */
+function dayIndex(c) {
+  const n = daysSince(c && (c.created_at || c.joined_at));
+  return n === null ? 0 : n - 1;
+}
+
+function renderProfile(data) {
+  const c = data.customer;
+  const dup = (data.duplicates || []).length
+    ? `<div class="warn">⚠ 疑似重复客户：${data.duplicates.map((d) => esc(d.code)).join('、')}（同手机号，可能加了你多个号）</div>`
+    : '';
+
+  const days = daysSince(c.created_at);
+  const src = c.created_at_source === 'manual' ? '手填' : '自动';
+
+  // 客户档案 = 6 个核心字段 + 10 个附加字段。
+  // 附加字段存在 customers.profile_json（JSON），不占独立列、不做 schema 改动。
+  let extra = {};
+  try { extra = JSON.parse(c.profile_json || '{}') || {}; } catch (e) { extra = {}; }
+  const xField = (id, label, val) =>
+    `<div class="field"><label>${label}</label><input id="${id}" value="${esc(val || '')}"></div>`;
+
+  $('profile').innerHTML = `
+    ${dup}
+    <div class="field joined">
+      <label>加入时间</label>
+      <input id="pf-joined" type="datetime-local" value="${esc(toLocalInput(c.created_at))}">
+      <span class="joined-sub">${days ? `认识第 ${days} 天` : '未填'} · ${esc(src)}</span>
+    </div>
+    <div class="field"><label>姓名</label><input id="pf-name" value="${esc(c.name || '')}"></div>
+    <div class="field"><label>电话号码</label><input id="pf-phone" value="${esc(c.phone || '')}" placeholder="+1…"></div>
+    <div class="field"><label>地区（填了自动补时区）</label><input id="pf-region" value="${esc(c.region || '')}"></div>
+    <div class="field"><label>时区</label><input id="pf-tz" value="${esc(c.timezone || '')}"></div>
+    <div class="field"><label>阶段（Day）</label><input id="pf-stage" type="number" min="0" value="${c.stage_day ?? 0}">
+      <span class="joined-sub">教练按对话内容判的节奏；中栏那个「Day N」是按加入时间自动算的（加入当天 = Day 0）</span></div>
+
+    <div class="pf-sep"><span>更多资料（选填 · 可手填，也可点「从对话里提取档案」由 DeepSeek 抽取；抽不到的留空）</span></div>
+    ${xField('pf-x-marriage', '婚姻情况', extra['婚姻情况'])}
+    <div class="field full"><label>生活规律（单独一行）</label><textarea id="pf-x-routine" rows="2">${esc(extra['生活规律'] || '')}</textarea></div>
+    ${xField('pf-x-alias', '别名', extra['别名'])}
+    ${xField('pf-x-hometown', '老家 / 家乡', extra['老家家乡'])}
+    ${xField('pf-x-hobby', '爱好', extra['爱好'])}
+    ${xField('pf-x-occupation', '职业', extra['职业'])}
+    <div class="field full"><label>家庭经济情况（单独一行）</label><textarea id="pf-x-family" rows="2">${esc(extra['家庭经济情况'] || '')}</textarea></div>
+    ${xField('pf-x-parents', '父母', extra['父母'])}
+    ${xField('pf-x-pets', '宠物', extra['宠物'])}
+    ${xField('pf-x-children', '孩子', extra['孩子'])}
+
+    <div class="hint">文档：${esc((data.docFile || '').split(/[\\/]/).pop() || '未生成')}</div>
+  `;
+
+  // 标题带上客户档案文件的完整路径（用户要求：把存放位置写在弹窗标题上）
+  const titleEl = $('pf-title');
+  if (titleEl) {
+    const base = c.name ? `客户档案 · ${c.name}` : `客户档案 · ${c.code}`;
+    titleEl.textContent = data.docFile ? `${base}  （文件：${data.docFile}）` : base;
+  }
+}
+
+/* ---------------- 客户档案弹窗（左栏每行最右端「档案」按钮 / 中栏档案条点开） ---------------- */
+
+function pfTitle(code) {
+  const row = (state.customers || []).find((c) => c.code === code);
+  return row?.name ? `客户档案 · ${row.name}` : `客户档案 · ${code}`;
+}
+
+/** 打开某个客户的档案弹窗（不切换左边的对话） */
+function openProfileModal(code) {
+  const target = code || state.activeCode;
+  if (!target) return;
+  const m = $('pf-modal');
+  if (!m) return;
+  state.profileCode = target;
+  const t = $('pf-title');
+  if (t) t.textContent = pfTitle(target);
+  const box = $('profile');
+  if (box) box.innerHTML = '<div class="hint">正在读取档案…</div>';
+  m.classList.remove('hidden');
+  reloadProfile(target);
+}
+
+function closeProfileModal() {
+  const m = $('pf-modal');
+  if (m) m.classList.add('hidden');
+}
+
+async function saveProfile() {
+  const code = state.profileCode || state.activeCode;
+  if (!code) return;
+
+  const joined = $('pf-joined')?.value || '';
+  const body = {
+    name: $('pf-name').value,
+    phone: $('pf-phone').value,
+    region: $('pf-region').value,
+    timezone: $('pf-tz').value,
+    stage_day: Number($('pf-stage').value) || 0,
+  };
+  // 10 个附加字段统一收进 profile_json（键名与 AI 抽取、文档渲染保持一致）
+  const extraMap = {
+    'pf-x-marriage': '婚姻情况', 'pf-x-routine': '生活规律', 'pf-x-alias': '别名',
+    'pf-x-hometown': '老家家乡', 'pf-x-hobby': '爱好', 'pf-x-occupation': '职业',
+    'pf-x-family': '家庭经济情况', 'pf-x-parents': '父母', 'pf-x-pets': '宠物', 'pf-x-children': '孩子',
+  };
+  const extra = {};
+  for (const [id, key] of Object.entries(extraMap)) extra[key] = $(id)?.value ?? '';
+  body.profile_json = JSON.stringify(extra);
+  // 加入时间只在真的改过时才提交，避免每次保存都把手填的来源重新标一遍
+  if (joined) {
+    const d = new Date(joined);
+    if (!isNaN(d)) body.created_at = d.toISOString();
+  }
+
+  const btn = $('pf-save');
+  btn.disabled = true;
+  const oldText = btn.textContent;
+  btn.textContent = '保存中…';
+  try {
+    await api(`/api/customer/${code}/profile`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    // 保存后刷新档案面板：加入时间来源、认识第几天、自动补的时区都会立即更新
+    await reloadProfile(code);
+    btn.textContent = '已保存 ✓';
+  } catch (e) {
+    btn.textContent = '保存失败';
+  } finally {
+    btn.disabled = false;
+    setTimeout(() => { btn.textContent = oldText; }, 1500);
+  }
+  await refreshCustomers(code);
+}
+
+/** 重新拉取并只刷新档案弹窗里的内容（不重排对话、不丢当前建议） */
+async function reloadProfile(code) {
+  try {
+    const data = await api(`/api/customer/${code}`);
+    if (!data.error) renderProfile(data);
+  } catch (e) {
+    /* 接口没起来就算了 */
+  }
+}
+
+/** 从整段对话里抽取档案（不用先生成建议）。
+ *  code 不传就用弹窗里正在看的那个客户；btn 是主界面那一行上的按钮（用来显示进度）。 */
+async function extractProfileFromChat(code, btn) {
+  const target = code || state.profileCode || state.activeCode;
+  if (!target) return;
+  const b = btn;
+  if (b) {
+    b.disabled = true;
+    b.dataset.old = b.textContent;
+    b.textContent = '正在读对话…';
+  }
+  try {
+    const res = await api(`/api/customer/${target}/extract`, { method: 'POST' });
+    if (res.error) {
+      // 抽不动就把原因说出来（界面反馈红线：绝不"点了没反应"）
+      showNotice('warn', `提取档案失败：${res.error}`);
+      const tip = $('profile');
+      if (tip && state.profileCode === target) {
+        tip.insertAdjacentHTML('afterbegin', `<div class="warn">${esc(res.error)}</div>`);
+      }
+      return;
+    }
+    showNotice('ok', '档案已从对话里提取，弹窗/左栏都刷新了');
+    // 不传 code：只刷左栏，【不切换】你正在看的那段对话（和「客户档案」按钮一个分寸）
+    await refreshCustomers();
+    // 抽完档案立刻把弹窗里的内容换掉（不用用户关掉再点开）
+    const m = $('pf-modal');
+    if (m && !m.classList.contains('hidden') && state.profileCode === target) await reloadProfile(target);
+  } catch (e) {
+    showNotice('warn', `提取档案失败：${e.message || e}`);
+  } finally {
+    if (b) {
+      b.disabled = false;
+      b.textContent = b.dataset.old || '从对话里提取档案';
+    }
+  }
+}
+
+async function markReplied() {
+  const code = state.activeCode;
+  if (!code) return;
+  await api(`/api/customer/${code}/replied`, { method: 'POST' });
+  refreshToday();
+  await refreshCustomers(code);
+  await refreshState();
+  // 这些消息都算处理完了 → 重新拉一遍对话，左边的红/绿数字一起消失
+  const d = await api(`/api/customer/${code}`);
+  if (!d.error) renderMessages(d.messages || []);
+}
+
+/* ---------------- 建议 ---------------- */
+
+/**
+ * 生成建议
+ * @param {object} opt {attempt:number, avoid:string[], angleOnly:string}
+ */
+async function generateSuggest(opt = {}) {
+  const code = state.activeCode;
+  if (!code || state.suggestBusy) return;
+
+  state.suggestBusy = true;
+  const btn = $('btn-suggest');
+  btn.disabled = true;
+  btn.textContent = '生成中…';
+  $('suggest-out').innerHTML = `<div class="hint">${
+    opt.attempt ? `第 ${opt.attempt + 1} 次尝试：换一个切入口重新想…` : '正在组织上下文并调用模型…'
+  }</div>`;
+
+  try {
+    const data = await api(`/api/customer/${code}/suggest`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        attempt: opt.attempt || 0,
+        avoid: opt.avoid || [],
+        angleOnly: opt.angleOnly || null,
+      }),
+    });
+    if (data.error) {
+      $('suggest-out').innerHTML = `<div class="warn">${esc(data.error)}</div>`;
+      return;
+    }
+
+    state.suggest = {
+      id: data.suggestionId,
+      attempt: data.attempt || 0,
+      avoid: opt.avoid || [],
+      day: data.day?.day ?? null,
+      options: data.options || [],
+      scene: sceneText(),
+    };
+
+    renderSuggest(data);
+  } finally {
+    state.suggestBusy = false;
+    btn.disabled = false;
+    btn.textContent = state.suggest?.attempt ? '再换一批' : '生成建议';
+  }
+}
+
+/** 当前对话末尾文本，作为场景存进话术库 */
+function sceneText() {
+  const bubbles = [...document.querySelectorAll('#msgs .bubble')].slice(-6);
+  return bubbles
+    .map((b) => {
+      const body = b.querySelector('.body')?.textContent || '';
+      const zh = b.querySelector('.zh')?.textContent || '';
+      return `${body} ${zh}`.trim();
+    })
+    .filter(Boolean)
+    .join('\n')
+    .slice(-600);
+}
+
+function renderSuggest(data) {
+  const day = data.day;
+  const opts = (data.options || []).map(
+    (o, i) => `<div class="opt" data-i="${i}">
+      <div class="angle">${esc(ANGLE_CN[o.angle] || o.angle || '建议')}</div>
+      <div class="text">${esc(o.text)}</div>
+      <div class="acts">
+        <button class="adopt" data-i="${i}">采纳</button>
+        <button class="rej" data-i="${i}">不要这条</button>
+        <button class="tr" data-i="${i}">翻译</button>
+      </div>
+    </div>`
+  );
+
+  $('suggest-out').innerHTML = `
+    ${day ? `<div class="daybar">Day ${esc(day.day)}　<span>${esc(dayGoal(day.day))}</span>
+      <div class="sig">${(day.signals || []).map((s) => esc(s.label)).join(' · ') || '暂无信号'}</div></div>` : ''}
+    ${opts.join('')}
+    ${data.rationale ? `<div class="rationale">理由：${esc(data.rationale)}</div>` : ''}
+    ${(data.riskFlags || []).length ? `<div class="flags">自查：${data.riskFlags.map((f) => esc(f)).join('；')}</div>` : ''}
+    ${data.knowledge?.matched?.length ? `<div class="hint">本次命中知识：${data.knowledge.matched.map((m) => esc(m)).join('、')}</div>` : ''}
+    <div class="again">
+      <input id="rej-reason" placeholder="哪里不对？（选填，填了以后会记住并避开）">
+      <button id="btn-again">三条都不行，换一批</button>
+    </div>
+    <div class="hint">建议是中文的，你翻成自己的英文再发——发出去的语感是你自己的。已记住 ${state.stats.learned} 条 / 已避开 ${state.stats.rejected} 条。</div>
+  `;
+
+  for (const b of document.querySelectorAll('#suggest-out .adopt')) b.onclick = () => startAdopt(Number(b.dataset.i));
+  for (const b of document.querySelectorAll('#suggest-out .rej')) b.onclick = () => rejectOne(Number(b.dataset.i));
+  for (const b of document.querySelectorAll('#suggest-out .tr')) b.onclick = () => translateOption(Number(b.dataset.i));
+  $('btn-again').onclick = rejectAll;
+}
+
+/** 前端备一份每日目标文案，后端没回时也能显示 */
+function dayGoal(day) {
+  return {
+    0: '让他回第二句，且这句带信息量',
+    1: '把「卖家和客人」扭成两个聊宠物的人',
+    2: '用作品建立专业信任',
+    3: '视频通话，信任跃迁，别谈钱',
+    4: '摸清他为什么想要这幅画',
+    5: '确定尺寸、摆放、时间',
+    6: '给两个方案让他选',
+    7: '成了进流程，没成就退回朋友线',
+  }[day] || '';
+}
+
+/* ---- 采纳：先让你改，改完才存 ---- */
+
+function startAdopt(i) {
+  const box = document.querySelector(`#suggest-out .opt[data-i="${i}"]`);
+  if (!box || !state.suggest) return;
+  const opt = state.suggest.options[i];
+  if (!opt) return;
+
+  box.innerHTML = `
+    <div class="angle">${esc(ANGLE_CN[opt.angle] || opt.angle || '建议')} · 采纳前可改</div>
+    <textarea class="edit">${esc(opt.text)}</textarea>
+    <input class="note" placeholder="为什么这条好？（选填，会一起记住）">
+    <div class="acts">
+      <button class="save">记住这条思路</button>
+      <button class="cancel">取消</button>
+    </div>
+  `;
+
+  box.querySelector('.save').onclick = async () => {
+    const text = box.querySelector('.edit').value.trim();
+    const note = box.querySelector('.note').value.trim();
+    if (!text) return;
+
+    const res = await api('/api/suggestion/adopt', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        suggestionId: state.suggest.id,
+        index: i,
+        text,
+        note: note || null,
+        angle: opt.angle,
+        day: state.suggest.day,
+        scene: state.suggest.scene,
+      }),
+    });
+    await refreshStats();
+    if (res.ok) {
+      box.innerHTML = `<div class="angle done">已记住 ${res.dedup ? '（同一句已有，次数 +1）' : ''}</div>
+        <div class="text">${esc(text)}</div>
+        <div class="hint">下次遇到相似场景，会优先往这个路子上靠。</div>`;
+    }
+  };
+  box.querySelector('.cancel').onclick = () => renderSuggest({ ...state.suggest, options: state.suggest.options });
+}
+
+/* ---- 不采纳：记负样本 + 换思路 ---- */
+
+async function rejectOne(i) {
+  if (!state.suggest) return;
+  await doReject({ index: i });
+}
+
+async function rejectAll() {
+  if (!state.suggest) return;
+  await doReject({ index: null });
+}
+
+async function doReject({ index }) {
+  const reason = ($('rej-reason')?.value || '').trim() || null;
+  const s = state.suggest;
+  $('suggest-out').innerHTML = '<div class="hint">记下了，正在换一个切入口重新想…</div>';
+
+  const data = await api('/api/suggestion/reject', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      suggestionId: s.id,
+      index,                    // null = 整批否掉
+      reason,
+      attempt: s.attempt,
+      avoid: s.avoid,
+      day: s.day,
+      scene: s.scene,
+    }),
+  });
+
+  await refreshStats();
+  if (data.error) {
+    $('suggest-out').innerHTML = `<div class="warn">${esc(data.error)}</div>`;
+    return;
+  }
+
+  state.suggest = {
+    id: data.suggestionId,
+    attempt: data.attempt || 0,
+    avoid: [...s.avoid, ...(index === null ? s.options.map((o) => o.text) : [s.options[index]?.text].filter(Boolean))],
+    day: data.day?.day ?? s.day,
+    options: data.options || [],
+    scene: s.scene,
+  };
+  renderSuggest(data);
+}
+
+/* ---------------- 翻译弹窗：选中某条建议 → 出 2-3 个英文版本 ---------------- */
+
+/** 点「翻译」按钮：记下中文原文，打开弹窗 */
+function translateOption(i) {
+  if (!state.suggest) return;
+  const opt = state.suggest.options[i];
+  if (!opt) return;
+  state.trText = opt.text;
+  const src = $('tr-src-text');
+  if (src) src.textContent = opt.text;
+  $('tr-out').innerHTML = '';
+  openTranslateModal();
+}
+
+function openTranslateModal() {
+  const m = $('tr-modal');
+  if (m) m.classList.remove('hidden');
+}
+function closeTranslateModal() {
+  const m = $('tr-modal');
+  if (m) m.classList.add('hidden');
+}
+
+/** 复制英文到剪贴板，给个「已复制」反馈 */
+function copyText(t, btn) {
+  const done = () => {
+    if (btn) {
+      const old = btn.textContent;
+      btn.textContent = '已复制';
+      setTimeout(() => { btn.textContent = old; }, 1200);
+    }
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(t).then(done, () => fallbackCopy(t, done));
+  } else {
+    fallbackCopy(t, done);
+  }
+}
+function fallbackCopy(t, done) {
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = t;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    done();
+  } catch (e) { /* 复制失败就随它去，用户手动选 */ }
+}
+
+/** 调 /api/translate，把 2-3 个英文版本 + AI 的整体建议渲染出来
+ *  模型【固定 GPT】（按用户要求）—— 界面上不给切，避免把口吻改乱 */
+async function doTranslate() {
+  const text = state.trText || '';
+  if (!text) return;
+  const provider = 'gpt';
+  const count = Number($('tr-count')?.value) || 2;
+  const out = $('tr-out');
+  const goBtn = $('tr-go');
+
+  out.innerHTML = '<div class="hint">翻译中…（GPT，按客户信息调口吻，给 ' + count + ' 个版本）</div>';
+  if (goBtn) goBtn.disabled = true;
+  try {
+    const data = await api('/api/translate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, code: state.activeCode, provider, count }),
+    });
+    if (data.error) {
+      out.innerHTML = `<div class="warn">${esc(data.error)}</div>`
+        + (/gpt|key|未配/i.test(data.error)
+          ? '<div class="hint">GPT 还没填 API Key —— 点顶栏「⚙ AI 设置」，在 <b>GPT</b> 那一段填上接入地址和 key，再点「测试连接」。</div>'
+          : '');
+      return;
+    }
+    const versions = data.versions || [];
+    const tip = data.tip || '';
+    let html = versions
+      .map(
+        (v, idx) => `<div class="tr-ver">
+          <div class="tr-ver-head">版本 ${idx + 1}<button class="x copy" data-t="${esc(v.text)}">复制</button></div>
+          <div class="tr-ver-text">${esc(v.text)}</div>
+          ${v.note ? `<div class="tr-ver-note">建议：${esc(v.note)}</div>` : ''}
+        </div>`
+      )
+      .join('');
+    if (tip) html += `<div class="tr-tip"><b>AI 整体建议</b>：${esc(tip)}</div>`;
+    html += `<div class="hint">模型：${esc(data.provider || '')} / ${esc(data.model || '')}　·　按客户信息（${esc((state.customer?.region) || '未知地区')}）调整了口吻</div>`;
+    out.innerHTML = html;
+    for (const b of out.querySelectorAll('.copy')) b.onclick = () => copyText(b.dataset.t, b);
+  } catch (e) {
+    out.innerHTML = '<div class="warn">翻译接口未连接</div>';
+  } finally {
+    if (goBtn) goBtn.disabled = false;
+  }
+}
+
+/* ---------------- AI 设置：7 个 AI，各管一件事 ----------------
+ *
+ * 界面上分两段（都按后端给的目录渲染，以后加 AI 用途不用改这里）：
+ *   一、「7 个 AI 分别干什么 + 现在用哪家」—— ④ 采纳后翻英文固定 GPT，不给改
+ *   二、「6 个服务商」—— 填接入地址 / API Key / 模型，每段都写清
+ *        用来干什么 + 去哪申请（点得开的地址）
+ */
+
+let aiSnap = null;   // 打开弹窗时读到的配置快照（用来判断哪些字段被改过）
+let aiCat = null;    // 后端给的目录：7 个 AI + 6 个服务商 + 说明
+
+const aiVal = (id) => ($(id)?.value || '').trim();
+const pv = (name, field) => $(`ai-p-${name}-${field}`);
+const pvVal = (name, field) => ($(`ai-p-${name}-${field}`)?.value || '').trim();
+
+function openAiModal() {
+  const m = $('ai-modal');
+  if (m) m.classList.remove('hidden');
+  loadAiConfigForm();
+}
+function closeAiModal() {
+  const m = $('ai-modal');
+  if (m) m.classList.add('hidden');
+}
+
+/* ============================================================
+   「AI 提示词」弹窗（顶栏按钮，就在 AI 状态灯左边）
+   看每个 AI 任务是拿什么话去干这件事的：提消息、翻消息、出建议、
+   翻英文、看图、听语音。
+   提示词由后端现取（和真跑用的是同一份 prompt* 函数），所以看到的就是真的。
+   ============================================================ */
+let prCat = null;       // 后端给的提示词目录
+let prCur = null;       // 当前选中的任务 key
+
+function openPrModal() {
+  const m = $('pr-modal');
+  if (!m) return;
+  m.classList.remove('hidden');
+  loadPrompts();
+}
+function closePrModal() {
+  const m = $('pr-modal');
+  if (m) m.classList.add('hidden');
+}
+
+async function loadPrompts() {
+  const side = $('pr-side');
+  const main = $('pr-main');
+  if (prCat) { renderPrSide(); renderPrMain(prCur || prCat.tasks[0].key); return; }
+  if (main) main.innerHTML = '<div class="hint">正在读取提示词…</div>';
+  try {
+    const r = await fetch('/api/ai/prompts').then((x) => x.json());
+    if (r && Array.isArray(r.tasks) && r.tasks.length) {
+      prCat = r;
+      renderPrSide();
+      renderPrMain(prCur || r.tasks[0].key);
+    } else if (main) {
+      main.innerHTML = `<div class="hint">读不到提示词：${esc((r && r.error) || '未知错误')}</div>`;
+    }
+  } catch (e) {
+    if (main) main.innerHTML = `<div class="hint">连不上本地服务：${esc((e && e.message) || e)}</div>`;
+  }
+}
+
+/** 左边一列：7 个 AI（＋内部任务 extract），点一下右边换内容 */
+function renderPrSide() {
+  const side = $('pr-side');
+  if (!side || !prCat) return;
+  const main7 = prCat.tasks.filter((t) => t.key !== 'extract');
+  const inner = prCat.tasks.filter((t) => t.key === 'extract');
+  const tabHtml = (t) => `
+    <button class="pr-tab${t.key === prCur ? ' on' : ''}" data-pr="${esc(t.key)}">
+      <span class="pr-tab-cn">${esc(t.cn)}</span>
+      <span class="pr-tab-sub">${esc(t.model || '')}${t.fixed ? ' · 固定 GPT' : ''}${t.wired === false ? ' · 未接' : ''}</span>
+    </button>`;
+  side.innerHTML = `
+    <div class="pr-tab-cap">7 个 AI（点一个看它的提示词）</div>
+    ${main7.map(tabHtml).join('')}
+    ${inner.length ? '<div class="pr-tab-cap">软件内部自己用的</div>' + inner.map(tabHtml).join('') : ''}`;
+}
+
+/** 右边：这个任务干什么 / 什么时候跑 / 系统提示词 / 发给它的内容 / 返回什么 / 注意点 */
+function renderPrMain(key) {
+  const main = $('pr-main');
+  if (!main || !prCat) return;
+  const t = prCat.tasks.find((x) => x.key === key) || prCat.tasks[0];
+  prCur = t.key;
+
+  const badges = [];
+  if (t.noAi) {
+    // ① 接收信息：采集环节，没有提示词、不用配 key
+    badges.push('<span class="ai-badge on">✋ 采集环节 · 不调用 AI</span>');
+    badges.push('<span class="ai-badge">用：不需要 —— 程序自己把消息抓下来入库</span>');
+  } else {
+    badges.push(`<span class="ai-badge ${t.ready ? 'on' : ''}">${t.ready ? '✓ 已配好' : '⚠ 还没配 key'}</span>`);
+    badges.push(`<span class="ai-badge">用：${esc(t.providerCn)}${t.model ? ' · ' + esc(t.model) : ''}</span>`);
+  }
+  if (t.fixed) badges.push('<span class="ai-badge on">按你的要求固定 GPT</span>');
+  if (t.wired === false) badges.push('<span class="ai-badge">接口已留 · 暂未接</span>');
+
+  const pre = (cls, text) => `<pre class="pr-pre ${cls}">${esc(text || '')}</pre>`;
+
+  const partsHtml = Array.isArray(t.parts) && t.parts.length
+    ? `<details class="pr-parts">
+         <summary>${esc(t.partsTitle || '提示词里还会拼进去的部分（点开看全文）')}</summary>
+         ${t.parts.map((p) => `<div class="pr-part-label">${esc(p.label)}</div>${pre('', p.text)}`).join('')}
+       </details>`
+    : '';
+
+  const notes = Array.isArray(t.notes) && t.notes.length
+    ? `<div class="pr-block">
+         <div class="pr-block-head">注意点</div>
+         <ul class="pr-notes">${t.notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>
+       </div>`
+    : '';
+
+  main.innerHTML = `
+    <div class="pr-title">${esc(t.cn)}</div>
+    <div class="pr-badges">${badges.join('')}</div>
+    <div class="pr-when">${esc(t.when || '')}</div>
+    <div class="pr-where">代码位置：<code>${esc(t.where || '')}</code></div>
+
+    <div class="pr-block">
+      <div class="pr-block-head">系统提示词（固定的规矩，每次都发）
+        <button class="mini copy pr-copy" data-pr-copy="system">复制</button>
+      </div>
+      ${pre('pr-sys', t.system)}
+    </div>
+
+    <div class="pr-block">
+      <div class="pr-block-head">发给它的内容（${esc(t.userLabel || '')}）
+        <button class="mini copy pr-copy" data-pr-copy="user">复制</button>
+      </div>
+      ${pre('pr-user', t.user)}
+    </div>
+
+    ${partsHtml}
+
+    <div class="pr-block">
+      <div class="pr-block-head">它会返回什么</div>
+      <div class="pr-out">${esc(t.output || '—')}</div>
+    </div>
+
+    ${notes}
+
+    <div class="pr-where" style="margin-top:10px">
+      想让建议更贴你，改的不是这段提示词，而是
+      <code>knowledge/persona.md</code>、<code>redlines.md</code>、<code>templates.md</code>、<code>playbook7d.md</code> ——
+      它们会被整段拼进「③ 回复建议」的系统提示词里。
+    </div>`;
+}
+
+function copyPrField(which, btn) {
+  const t = prCat && prCat.tasks.find((x) => x.key === prCur);
+  if (!t) return;
+  copyText(String(t[which] || ''), btn);
+}
+
+/** 服务商中文名（界面上到处要用：「混元 Hy3」而不是「hunyuan」） */
+function pvCn(name) {
+  const p = (aiCat?.providers || []).find((x) => x.key === name);
+  return p ? p.cn : name;
+}
+function taskCn(key) {
+  const t = (aiCat?.tasks || []).find((x) => x.key === key);
+  return t ? t.cn : key;
+}
+
+/** 把「7 个 AI」渲染成一张表：编号 + 干什么 + 用哪家 + 状态 */
+function renderAiTasks() {
+  const tasks = aiCat?.tasks || [];
+  const state0 = aiSnap?.taskState || {};
+  const rows = tasks.map((t) => {
+    const st = state0[t.key] || {};
+    const ready = !!st.ready;
+    const noAi = !!(t.noAi || st.noAi);
+    const badge = noAi
+      ? '<span class="ai-badge on" title="采集环节：程序自己抓消息入库，不调用 AI">不需要 AI</span>'
+      : `<span class="ai-badge ${ready ? 'on' : ''}" title="${esc(st.reason || (ready ? '已配好' : '还没配好'))}">${ready ? '已就绪' : '未配置'}</span>`;
+
+    let pick;
+    if (noAi) {
+      // ① 接收信息：抓消息这一步不调 AI，不给它下拉，免得以为要配 key
+      pick = '<span class="fixed-model">程序自己做 · 不用配</span>';
+    } else if (t.fixed) {
+      // 固定服务商（④ 固定 GPT）：只显示，不给改
+      pick = `<span class="fixed-model">${esc(pvCn(t.fixed))}（固定）</span>`;
+    } else {
+      const cur = st.provider || '';
+      const opts = (aiCat?.taskProviderChoices
+        || ['hunyuan', 'gpt', 'anthropic', 'deepseek', 'agnes', 'siliconflow', 'openrouter', 'vision', 'audio'])
+        .map((k) => `<option value="${k}" ${k === cur ? 'selected' : ''}>${esc(pvCn(k))}</option>`)
+        .join('');
+      pick = `<select class="ai-task-pick" data-task="${esc(t.key)}">${opts}</select>`;
+    }
+    const model = st.model ? `<span class="ai-cur-model">${esc(st.model)}</span>` : '';
+    const unwired = t.wired === false ? '<span class="ai-badge warn">接口已留 · 暂未接</span>' : '';
+
+    return `<div class="ai-task">
+      <div class="ai-task-top">
+        <span class="ai-task-cn">${esc(t.cn)}</span>
+        <span class="ai-task-right">${pick}${model}${badge}${unwired}</span>
+      </div>
+      <div class="ai-task-use">${esc(t.use)}</div>
+    </div>`;
+  }).join('');
+
+  const def = aiSnap?.tasks?.suggest?.provider || 'hunyuan';
+  const defOpts = (aiCat?.defaultProviderChoices
+    || ['hunyuan', 'gpt', 'anthropic', 'deepseek', 'agnes', 'siliconflow', 'openrouter'])
+    .map((k) => `<option value="${k}" ${k === def ? 'selected' : ''}>${esc(pvCn(k))}</option>`).join('');
+
+  return `
+    <div class="ai-lead">
+      <b>7 个 AI，各管一件事。</b>① 接收信息是<b>采集环节</b>（抓 WhatsApp 新消息入库），
+      不调用 AI、也不用判断语种 —— 中文消息不会被翻译，所以它不用配 key。
+      最少只填 <b>混元 Hy3</b> 一把 key，②③⑤ 就都能跑；想用 <b>DeepSeek</b> 代替混元做文字生成也行，
+      在下面填好 DeepSeek、再到「7 个 AI」里把 ②③ 指过去即可。
+      ④（挑好建议后翻英文）要单独填 <b>GPT</b>；⑥（听客户语音）要单独填一个语音转写服务商。
+      下面每个服务商填完点「测试连接」，绿灯了再点「保存」。
+    </div>
+    <div class="ai-tasks">
+      <div class="ai-tasks-head">一、7 个 AI 分别干什么 · 现在用哪家</div>
+      ${rows}
+      <div class="ai-pick">
+        <label>一套配好
+          <select id="ai-default">${defOpts}</select>
+        </label>
+        <span class="hint">想把 ②③ 一次都指到同一家，就在这里切（① 不用配、④ 固定 GPT、⑤ 跟视觉、⑥ 跟听觉，都不跟着变）</span>
+      </div>
+    </div>`;
+}
+
+/** 把「6 个服务商」渲染成可填的表单 */
+function renderAiProviders() {
+  const list = aiCat?.providers || [];
+  const prov = aiSnap?.providers || {};
+  return list.map((meta) => {
+    const p = prov[meta.key] || {};
+    const ok = !!(p.hasKey && p.baseUrl);
+    return `<div class="ai-sec">
+      <div class="ai-sec-head">${esc(meta.cn)}
+        ${meta.badge ? `<span class="ai-badge">${esc(meta.badge)}</span>` : ''}
+        <span class="ai-badge ${ok ? 'on' : ''}" id="ai-badge-${esc(meta.key)}">${ok ? '已填' : '未填'}</span>
+      </div>
+      <div class="ai-use">用来干：${esc(meta.applyTo)}</div>
+      <label>接入地址 baseUrl
+        <input id="ai-p-${esc(meta.key)}-baseUrl" placeholder="${esc(meta.sample)}">
+      </label>
+      <label>API Key
+        <input id="ai-p-${esc(meta.key)}-apiKey" type="password" autocomplete="off" placeholder="sk-...">
+      </label>
+      <label>模型名
+        <input id="ai-p-${esc(meta.key)}-model" placeholder="${esc(meta.modelSample)}">
+      </label>
+      <div class="ai-row">
+        <button class="mini" data-test="${esc(meta.key)}">测试连接</button>
+        <span class="ai-test" id="ai-test-${esc(meta.key)}"></span>
+      </div>
+      <div class="ai-apply">去哪申请：
+        <a href="${esc(meta.applyUrl)}" target="_blank" rel="noreferrer">${esc(meta.applyName)}</a>
+        <button class="mini copy" data-copy="${esc(meta.applyUrl)}">复制地址</button>
+      </div>
+      ${meta.note ? `<div class="ai-note">${esc(meta.note)}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+/** 「通用设置」：和 AI 无关、但属于软件设置的部分。目前只放「消息提取间隔」。 */
+function renderGeneral() {
+  const cur = Math.min(15, Math.max(2, Number(aiSnap?.extractInterval) || 5));
+  const opts = [];
+  for (let s = 2; s <= 15; s++) opts.push(`<option value="${s}" ${s === cur ? 'selected' : ''}>${s} 秒</option>`);
+  return `<div class="ai-prov-head">通用设置</div>
+    <div class="ai-sec ai-general">
+      <div class="ai-sec-head">消息提取间隔</div>
+      <div class="ai-use">
+        软件用 WhatsApp 网页版<b>实时监听</b>收消息（消息一发出就到，不是定时轮询、也不是一直空转扫描）。
+        这个间隔是<b>兜底重扫</b>：每隔这么久再核对一次最近对话，把实时推送偶尔漏掉的消息捞回来。
+        调小更不容易漏、但更费资源；调大更省、但偶发漏收的窗口更长。默认 5 秒。
+      </div>
+      <label>提取间隔
+        <select id="ai-extract">${opts.join('')}</select>
+      </label>
+    </div>`;
+}
+
+function renderAiBody() {
+  const body = $('ai-body');
+  if (!body) return;
+  body.innerHTML = renderGeneral() + renderAiTasks() + '<div class="ai-prov-head">二、6 个服务商：填地址和 key（填完点「测试连接」）</div>' + renderAiProviders();
+
+  // 把已保存的值灌进表单（key 只回显掩码，用户不动就不会被改写）
+  const prov = aiSnap?.providers || {};
+  for (const meta of aiCat?.providers || []) {
+    const p = prov[meta.key] || {};
+    const b = pv(meta.key, 'baseUrl');
+    const m = pv(meta.key, 'model');
+    const k = pv(meta.key, 'apiKey');
+    if (b) b.value = p.baseUrl || '';
+    if (m) m.value = p.model || '';
+    if (k) {
+      k.value = p.hasKey ? (p.keyHint || '••••') : '';
+      k.placeholder = p.hasKey ? '已填（想换就整个替换掉）' : 'sk-...';
+    }
+  }
+}
+
+/** 把后端当前配置填进表单（key 是掩码，用户不动它就不会被改写） */
+async function loadAiConfigForm() {
+  const hint = $('ai-hint');
+  try {
+    const snap = await api('/api/ai/config');
+    if (snap.error) {
+      if (hint) hint.textContent = snap.error;
+      return;
+    }
+    aiSnap = snap;
+    aiCat = snap.catalog || { tasks: [], providers: [] };
+    if ($('ai-file')) $('ai-file').textContent = snap.file || 'config.yaml';
+    renderAiBody();
+
+    const tasks = aiCat.tasks || [];
+    const notReady = tasks.filter((t) => !(snap.taskState || {})[t.key]?.ready && t.wired !== false);
+    if (hint) {
+      hint.textContent = notReady.length
+        ? `还有 ${notReady.length} 个 AI 没配好：${notReady.map((t) => t.cn).join('、')}`
+        : '7 个 AI 全部就绪。改完记得保存。';
+    }
+  } catch (e) {
+    if (hint) hint.textContent = '读不到配置：' + (e.message || e);
+  }
+}
+
+/** 保存：只提交真正被改过的字段，避免把没动过的地址清空 */
+async function saveAiConfig() {
+  if (!aiSnap || !aiCat) {
+    showNotice('warn', '配置还没读出来，等一下再保存');
+    return;
+  }
+  const btn = $('ai-save');
+  const hint = $('ai-hint');
+  const old = btn ? btn.textContent : '保存';
+  if (btn) { btn.disabled = true; btn.textContent = '保存中…'; }
+
+  const body = { providers: {}, tasks: {} };
+  for (const meta of aiCat.providers || []) {
+    const cur = aiSnap.providers?.[meta.key] || {};
+    const bag = {};
+    const base = pvVal(meta.key, 'baseUrl');
+    if (base !== (cur.baseUrl || '')) bag.baseUrl = base;
+    const model = pvVal(meta.key, 'model');
+    if (model !== (cur.model || '')) bag.model = model;
+    const key = ($(`ai-p-${meta.key}-apiKey`)?.value || '').trim();
+    if (key && !key.includes('•') && key !== (cur.keyHint || '')) bag.apiKey = key;
+    if (Object.keys(bag).length) body.providers[meta.key] = bag;
+  }
+
+  // 7 个 AI 各自指向哪家（固定 GPT 那个不在表单里，不发）
+  for (const t of aiCat.tasks || []) {
+    if (t.fixed) continue;
+    const sel = document.querySelector(`select.ai-task-pick[data-task="${t.key}"]`);
+    if (!sel) continue;
+    const want = sel.value;
+    if (want === (aiSnap.taskState?.[t.key]?.provider || '')) continue;
+    body.tasks[t.key] = { provider: want, model: pvVal(want, 'model') || '' };
+  }
+
+  const def = $('ai-default')?.value;
+  if (def && def !== (aiSnap.tasks?.suggest?.provider || '')) body.defaultProvider = def;
+
+  // 通用设置：提取间隔（秒）。和下拉当前值不同才发，避免无谓写盘
+  const extSel = $('ai-extract');
+  if (extSel) {
+    const want = Number(extSel.value);
+    if (isFinite(want) && want !== Number(aiSnap?.extractInterval || 5)) body.extractInterval = want;
+  }
+
+  try {
+    const r = await api('/api/ai/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (r.error) {
+      if (hint) hint.textContent = '保存失败：' + r.error;
+      showNotice('error', 'AI 配置没存上：' + r.error);
+      return;
+    }
+    if (!r.changed || !r.changed.length) {
+      if (hint) hint.textContent = '没有改动，什么都没写。';
+    } else {
+      if (hint) hint.textContent = `已保存 ${r.changed.length} 项，立即生效。`;
+      showNotice('ok', `AI 配置已保存（${r.changed.length} 项），点「测试连接」确认能通`);
+    }
+    if (r.snapshot) {
+      aiSnap = r.snapshot;
+      aiCat = r.snapshot.catalog || aiCat;
+      if ($('ai-file')) $('ai-file').textContent = r.snapshot.file || 'config.yaml';
+    }
+    await refreshState();
+    await loadAiConfigForm();   // 掩码 / 徽章 / 就绪状态重新回显
+  } catch (e) {
+    if (hint) hint.textContent = '保存失败：' + (e.message || e);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = old; }
+  }
+}
+
+/** 测试连接：拿表单里【正填着】的值真打一次请求（不用先保存） */
+async function testAiProvider(name) {
+  const el = $(`ai-test-${name}`);
+  if (el) { el.textContent = '测试中…'; el.className = 'ai-test'; }
+  const keyRaw = ($(`ai-p-${name}-apiKey`)?.value || '');
+  try {
+    const r = await api('/api/ai/test', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        provider: name,
+        model: pvVal(name, 'model'),
+        baseUrl: pvVal(name, 'baseUrl'),
+        apiKey: keyRaw.includes('•') ? '' : keyRaw.trim(),
+      }),
+    });
+    if (el) {
+      el.textContent = r.ok
+        ? `✓ 通了（${r.ms}ms · ${r.model}）${r.reply ? '：' + r.reply : ''}`
+        : `✗ ${r.error}`;
+      el.className = `ai-test ${r.ok ? 'ok' : 'err'}`;
+      // 真打了哪个地址也写出来 —— 404 的时候一眼能看出地址拼错在哪
+      if (r.url) {
+        const u = document.createElement('div');
+        u.className = 'ai-test-url';
+        u.textContent = '请求地址：' + r.url;
+        el.insertAdjacentElement('afterend', u);
+      }
+    }
+    showNotice(r.ok ? 'ok' : 'error', r.ok
+      ? `${pvCn(name)} 连接正常（${r.ms}ms）`
+      : `${pvCn(name)} 连不通：${r.error}`);
+  } catch (e) {
+    if (el) { el.textContent = '✗ ' + (e.message || e); el.className = 'ai-test err'; }
+  }
+}
+/* ---------------- 手动录入 ---------------- */
+
+function toggleIngest(show) {
+  const box = $('ingest');
+  if (!box) return;
+  const on = show ?? box.classList.contains('hidden');
+  box.classList.toggle('hidden', !on);
+  if (on) $('ig-ident')?.focus();
+}
+
+async function submitIngest() {
+  const ident = ($('ig-ident')?.value || '').trim();
+  const text = ($('ig-text')?.value || '').trim();
+  const hint = $('ig-hint');
+  if (!ident) {
+    hint.textContent = '先填客户标识——同一个人每次要填一样的，否则会拆成两个客户';
+    return;
+  }
+  if (!text) {
+    hint.textContent = '粘贴点内容再录入';
+    return;
+  }
+
+  const send = $('ig-send');
+  send.disabled = true;
+  hint.className = 'muted';
+  hint.textContent = '录入中…';
+  try {
+    const data = await api('/api/manual', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ident,
+        name: ($('ig-name')?.value || '').trim() || null,
+        region: ($('ig-region')?.value || '').trim() || null,
+        joinedAt: ($('ig-joined')?.value || '').trim() || null,
+        body: text,
+      }),
+    });
+
+    if (data.error) {
+      hint.className = 'muted err';
+      hint.textContent = '✗ ' + data.error;
+      showNotice('error', '录入失败：' + data.error);
+      return;
+    }
+
+    $('ig-text').value = '';
+    hint.className = 'muted';
+    hint.textContent = `✓ 已录入 ${data.count} 条 → 客户 ${data.code}${data.isNew ? '（新建）' : ''}`;
+    showNotice('ok', `已录入 ${data.count} 条 → ${data.code}，翻译在后台跑，稍等就出中文`);
+    await refreshState();
+    await refreshCustomers(data.code);   // 会顺带把这个客户打开
+  } catch (e) {
+    hint.className = 'muted err';
+    hint.textContent = '✗ 连不上本地服务，软件是不是没起来？';
+    showNotice('error', '连不上本地服务：' + (e.message || e));
+  } finally {
+    send.disabled = false;
+  }
+}
+
+/* ---------------- 实时推送 ---------------- */
+
+/* 一批消息同时在翻的时候，translated 会连着来好几条。
+   攒 180ms 一起重画，免得对话区闪来闪去。 */
+let rerenderTimer = null;
+function rerenderActiveSoon(code) {
+  clearTimeout(rerenderTimer);
+  rerenderTimer = setTimeout(() => {
+    if (state.activeCode === code) openCustomer(code, { keepSuggest: true });
+  }, 180);
+}
+
+function connectSSE() {
+  const es = new EventSource('/api/events');
+
+  es.addEventListener('new_message', (e) => {
+    const d = JSON.parse(e.data);
+    refreshState();
+    refreshCustomers();
+    refreshToday();   // 左栏「今日消息」立刻 +1
+    if (d.code === state.activeCode) {
+      // 正在看这个客户：直接把新消息显示出来（右边会标「等待翻译中…」）
+      openCustomer(d.code, { keepSuggest: true });
+      // 人就在看这个窗口，顺手当作"已经看过了"，别让左边一直挂着红数字
+      if (!document.hidden) markReadQuietly(d.code);
+    }
+    if (document.hidden) document.title = `新消息 · ${d.name || d.code}`;
+  });
+
+  // 翻译好了：重画一遍，右边「等待翻译中」自己就消掉了。
+  // 左栏也跟着刷一下——列表的预览用的就是译文。
+  es.addEventListener('translated', (e) => {
+    const d = JSON.parse(e.data);
+    refreshCustomers();
+    if (d.code === state.activeCode) rerenderActiveSoon(d.code);
+    if (d.error) showNotice('warn', `有条消息没翻出来：${d.error}`);
+  });
+
+  es.addEventListener('pending', () => {
+    refreshState();
+    refreshCustomers();
+    refreshToday();
+  });
+
+  es.addEventListener('account', (e) => {
+    const d = JSON.parse(e.data);
+    showNotice(d.status === 'online' ? 'ok' : 'warn', `账号 ${d.id}：${statusText(d.status)}`);
+    refreshState();
+  });
+
+  es.addEventListener('learned', () => refreshStats());
+
+  // 需要扫码：只把黄灯点亮 + 一行提示，界面上不显示二维码
+  // （扫码在 Chrome 窗口里做，不在主窗口里做——主窗口只管三栏工作区）
+  es.addEventListener('qr', (e) => {
+    const d = JSON.parse(e.data);
+    refreshState();
+    showNotice('warn', d.needScan
+      ? `账号 ${d.account} 需要扫码：点它右边的「浏览器」，在 Chrome 窗口里扫`
+      : `账号 ${d.account}：${d.status || '待扫码'}`);
+  });
+
+  // 登录成功：汇报历史同步进度
+  es.addEventListener('synced', (e) => {
+    const d = JSON.parse(e.data);
+    showNotice('ok', `账号 ${d.account} 已登录，历史同步完成，入库 ${d.count} 条`);
+    refreshState();
+    refreshCustomers();
+  });
+
+  es.addEventListener('notice', (e) => {
+    const d = JSON.parse(e.data);
+    showNotice(d.level || 'info', d.text || '');
+  });
+
+  es.onerror = () => {
+    const st = $('status');
+    st.textContent = '连接中断，正在重试…';
+    st.className = 'warn';
+  };
+  es.onopen = () => refreshState();
+}
+
+/* ---------------- 启动 ---------------- */
+
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) document.title = '蜜蜂信息采集';
+});
+
+// Esc 关掉客户档案弹窗（和点遮罩、点 × 一个效果）
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeProfileModal();
+});
+
+$('btn-suggest').onclick = generateSuggest;
+$('btn-replied').onclick = markReplied;
+
+/* 客户档案弹窗：关闭（右上 ×、点遮罩、按 Esc 都行）
+   「保存档案」按钮现在在弹窗**最上面**（index.html 的 .pf-topbar），是静态元素，
+   和关闭按钮一起绑在这里；「从对话里提取档案」在主界面客户行那一栏，绑在 paintCustomers。 */
+$('pf-close').onclick = closeProfileModal;
+$('pf-mask').onclick = closeProfileModal;
+$('pf-save').onclick = saveProfile;
+
+/* AI 设置：顶栏按钮 + 状态那条也能点（没配 key 时用户一眼就知道点哪） */
+$('btn-ai').onclick = openAiModal;
+$('status').onclick = openAiModal;
+$('ai-close').onclick = closeAiModal;
+$('ai-mask').onclick = closeAiModal;
+$('ai-save').onclick = saveAiConfig;
+
+/* AI 提示词：顶栏按钮（在 AI 状态灯左边）→ 左边选任务，右边看它实际发出去的提示词 */
+$('btn-prompts').onclick = openPrModal;
+$('pr-close').onclick = closePrModal;
+$('pr-mask').onclick = closePrModal;
+$('pr-side').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-pr]');
+  if (!b) return;
+  // 先切内容（renderPrMain 会把 prCur 更新成这个任务），再重画左边的高亮
+  renderPrMain(b.dataset.pr);
+  renderPrSide();
+});
+$('pr-main').addEventListener('click', (e) => {
+  const c = e.target.closest('button[data-pr-copy]');
+  if (c) copyPrField(c.dataset.prCopy, c);
+});
+// 弹窗内容是按后端目录动态渲染的，所以「测试连接 / 复制地址」用事件委托
+$('ai-body').addEventListener('click', (e) => {
+  const t = e.target.closest('button[data-test]');
+  if (t) { testAiProvider(t.dataset.test); return; }
+  const c = e.target.closest('button[data-copy]');
+  if (c) copyText(c.dataset.copy, c);
+});
+
+$('btn-ingest').onclick = () => toggleIngest();
+$('ig-close').onclick = () => toggleIngest(false);
+$('ig-send').onclick = submitIngest;
+// Ctrl/Cmd + Enter 直接录入
+$('ig-text').addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') submitIngest();
+});
+
+/* 翻译弹窗 */
+$('tr-close').onclick = closeTranslateModal;
+$('tr-mask').onclick = closeTranslateModal;
+$('tr-go').onclick = doTranslate;
+
+/**
+ * 顶栏品牌名后面那行极小的版本号（界面构建戳）。
+ * 用途：你怀疑「窗口里的界面和我改的不一样」时，看这一行就知道加载的是哪一份文件
+ * —— 它是 public/index.html、app.js、style.css 里最新那个文件的修改时间。
+ * 鼠标悬停还能看到 public 目录绝对路径和数据目录。
+ */
+async function loadBuild() {
+  try {
+    const v = await api('/api/version');
+    const el = $('build');
+    if (!el) return;
+    const stamp = String(v.build || '').replace(/^(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})$/, '$2-$3 $4:$5');
+    el.textContent = ` v${stamp || v.build || ''}`;
+    el.title = `界面版本 ${v.build}\n界面文件目录：${v.publicDir || ''}\n数据目录：${v.dataDir || ''}\n${v.node || ''}\n\n（这行数字 = public 三个界面文件里最新的修改时间。改完界面重开窗口，它必须跟着变；没变说明加载的还是旧文件，按 F5 强制刷新）`;
+  } catch (e) { /* 版本号拿不到不影响使用 */ }
+}
+
+refreshState();
+refreshCustomers();
+refreshStats();
+refreshToday();
+connectSSE();
+loadBuild();
+
+// 「今日消息」每分钟对一次（跨零点时上面那行日期和数据会自己归零）
+setInterval(refreshToday, 60000);
+
+/* ---------------- 模拟新消息（栏目1 的 🧪 按钮，2026-09-25 加） ----------------
+ *
+ * 给「想试软件，但没人隔着时差配合发消息」用：造一条假消息，喂给**真正的后端链路**。
+ * 后端 handleMessage 是同一份代码，所以界面表现和真客户发消息一模一样：
+ *   左栏跳出客户 + 红数字 → 右栏「⟳ 等待翻译中…」→ 译文补上 → 待处理 +1 → 档案文档写出来
+ * 不会发给任何人（软件本来就没有发送能力）；模拟客户带 is_sim 标记，可一键清空。
+ */
+
+function simLog(html, cls) {
+  const box = $('sim-log');
+  if (!box) return;
+  const hint = box.querySelector('.hint');
+  if (hint) box.innerHTML = '';
+  const d = document.createElement('div');
+  d.className = 'line' + (cls ? ' ' + cls : '');
+  d.innerHTML = html;
+  box.appendChild(d);
+  box.scrollTop = box.scrollHeight;
+}
+
+async function refreshSimCount() {
+  try {
+    const r = await api('/api/dev/simulate');
+    const el = $('sim-count');
+    if (el) el.textContent = `库里现有模拟客户 ${r.count || 0} 个`;
+    const sel = $('sim-acct');
+    if (sel && !sel.options.length && r.accounts && r.accounts.length) {
+      sel.innerHTML = r.accounts
+        .map((a) => `<option value="${a.id}">${a.id} 号 · ${esc(a.label || '')}</option>`)
+        .join('');
+    }
+  } catch (e) {
+    /* 拿不到不影响使用 */
+  }
+}
+
+function toggleSimPanel(force) {
+  const p = $('sim-panel');
+  if (!p) return;
+  const show = force === undefined ? p.classList.contains('hidden') : !!force;
+  p.classList.toggle('hidden', !show);
+  if (show) refreshSimCount();
+}
+
+/** 造一条模拟消息（direction=in 客户发给我 / out 我发给客户） */
+async function sendSimulated(direction) {
+  const text = ($('sim-text') && $('sim-text').value || '').trim();
+  if (!text) {
+    showNotice('warn', '先写一句客户会说的话，或点上面那四个现成句子');
+    return;
+  }
+  const payload = {
+    accountId: Number($('sim-acct') && $('sim-acct').value || 1),
+    name: ($('sim-name') && $('sim-name').value || '').trim(),
+    phone: ($('sim-phone') && $('sim-phone').value || '').trim(),
+    body: text,
+    direction,
+  };
+  try {
+    const r = await api('/api/dev/simulate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (r.error) {
+      simLog(`✗ ${esc(r.error)}`, 'bad');
+      showNotice('error', r.error);
+      return;
+    }
+    const who = direction === 'out' ? '我 → 客户' : '客户 → 我';
+    const cut = text.length > 42 ? text.slice(0, 42) + '…' : text;
+    simLog(`✓ ${who} · <b>${esc(r.code)}</b> ${esc(r.name)}：${esc(cut)}`, 'good');
+    refreshSimCount();
+    // 界面不用手动刷：后端已经通过 SSE 推了 new_message / pending 过来
+  } catch (e) {
+    simLog(`✗ 发送失败：${esc(e.message || e)}`, 'bad');
+  }
+}
+
+async function clearSimulatedData() {
+  try {
+    const r = await api('/api/dev/simulate/clear', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+    });
+    if (r.error) {
+      simLog(`✗ ${esc(r.error)}`, 'bad');
+      return;
+    }
+    simLog(`✓ 已清空：删掉 ${r.customers || 0} 个模拟客户、${r.messages || 0} 条消息（真实客户一条没碰）`, 'good');
+    refreshSimCount();
+    refreshCustomers();
+    refreshStats();
+    refreshToday();
+  } catch (e) {
+    simLog(`✗ 清空失败：${esc(e.message || e)}`, 'bad');
+  }
+}
+
+$('btn-sim').onclick = () => toggleSimPanel();
+$('sim-close').onclick = () => toggleSimPanel(false);
+$('sim-in').onclick = () => sendSimulated('in');
+$('sim-out').onclick = () => sendSimulated('out');
+$('sim-clear').onclick = clearSimulatedData;
+$('sim-text').addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') sendSimulated('in');
+});
+// 快捷英文句：点一下填进输入框，再点「客户发给我」就发出去
+$('sim-panel').addEventListener('click', (e) => {
+  const q = e.target.closest('button.sim-q');
+  if (q) {
+    $('sim-text').value = q.dataset.q;
+    $('sim-text').focus();
+  }
+});
+
+/* 模拟面板：可拖动 + 关闭后位置记下来，下次还在这
+   —— 用户要求「必须可以移动、可以关闭」。拖动只发生在顶栏（.sim-head），
+   点按钮（含关闭 ×）不触发拖动，免得误拖。 */
+(function enableSimDrag() {
+  const p = $('sim-panel');
+  const handle = p && p.querySelector('.sim-head');
+  if (!p || !handle) return;
+  const KEY = 'bee.simPanelPos';
+  try {
+    const saved = JSON.parse(localStorage.getItem(KEY) || 'null');
+    if (saved && typeof saved.left === 'number') {
+      p.style.right = 'auto';
+      p.style.left = saved.left + 'px';
+      p.style.top = saved.top + 'px';
+    }
+  } catch (e) { /* 读不到就走默认位置 */ }
+
+  let dragging = false, ox = 0, oy = 0;
+  function down(e) {
+    if (e.target.closest('button')) return; // 别挡着关闭/其它按钮
+    dragging = true;
+    const r = p.getBoundingClientRect();
+    p.style.right = 'auto';
+    p.style.left = r.left + 'px';
+    p.style.top = r.top + 'px';
+    ox = e.clientX - r.left;
+    oy = e.clientY - r.top;
+    e.preventDefault();
+    document.addEventListener('mousemove', move);
+    document.addEventListener('mouseup', up);
+  }
+  function move(e) {
+    if (!dragging) return;
+    let x = e.clientX - ox, y = e.clientY - oy;
+    x = Math.max(4, Math.min(window.innerWidth - p.offsetWidth - 4, x));
+    y = Math.max(4, Math.min(window.innerHeight - 44, y));
+    p.style.left = x + 'px';
+    p.style.top = y + 'px';
+  }
+  function up() {
+    if (!dragging) return;
+    dragging = false;
+    document.removeEventListener('mousemove', move);
+    document.removeEventListener('mouseup', up);
+    try {
+      localStorage.setItem(KEY, JSON.stringify({ left: parseInt(p.style.left, 10), top: parseInt(p.style.top, 10) }));
+    } catch (e) { /* 存不下无所谓 */ }
+  }
+  handle.addEventListener('mousedown', down);
+})();
+
+</script>
+<script>
+
+setTimeout(function () {
+  if (typeof openCustomer === 'function') openCustomer('1A00012');
+}, 500);
+setTimeout(function () {
+  var b = document.getElementById('btn-suggest');
+  if (b && typeof generateSuggest === 'function') generateSuggest();
+}, 1200);
+setTimeout(function () {
+  var t = document.querySelector('#suggest-out .tr');
+  if (t) t.click();
+  var go = document.getElementById('tr-count');
+  if (go) { go.value = '3'; }
+  var btn = document.getElementById('tr-go');
+  if (btn) btn.click();
+}, 2200);
+
+</script>
+</body>
+</html>

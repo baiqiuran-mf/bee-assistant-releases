@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>截图选区</title>
+  <link href="/style.css?v=__BUILD__" rel="stylesheet">
+  <style>
+    html, body { margin: 0; height: 100%; overflow: hidden; background: transparent; cursor: crosshair; user-select: none; }
+    #bg { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: fill; display: none; }
+    #sel {
+      position: fixed; left: 0; top: 0; width: 0; height: 0;
+      border: 1px solid #4da3ff; box-sizing: border-box; display: none;
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, .55);
+    }
+    #sel .handle {
+      position: absolute; right: -6px; bottom: -6px; width: 12px; height: 12px;
+      background: #4da3ff; border-radius: 2px; cursor: nwse-resize;
+    }
+    #info {
+      position: fixed; left: 50%; top: 14px; transform: translateX(-50%);
+      background: rgba(20, 22, 28, .85); color: #fff; font: 13px/1.4 system-ui, sans-serif;
+      padding: 6px 12px; border-radius: 6px; white-space: nowrap; pointer-events: none;
+    }
+    #info b { color: #4da3ff; }
+    #tip {
+      position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%);
+      color: #cfd3da; font: 12px system-ui, sans-serif; opacity: .85; pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <img id="bg" alt="">
+  <div id="sel"><span class="handle"></span></div>
+  <div id="info">拖拽选择要翻译的区域</div>
+  <div id="tip">Enter 确认 · Esc 取消</div>
+  <script src="/shotselect.js?v=__BUILD__"></script>
+</body>
+</html>

@@ -1,0 +1,670 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8">
+<title>Telegram 全量数据面报告</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;padding:24px;background:#eef1f5;color:#1f2933;font:14px/1.7 "Microsoft YaHei",system-ui,sans-serif}
+  h1{margin:0 0 4px;font-size:22px}
+  h2{margin:26px 0 10px;font-size:17px;padding-bottom:6px;border-bottom:2px solid #63bd93}
+  .sub{color:#5b6b7c;font-size:13px;margin-bottom:18px}
+  .card{background:#fff;border:1px solid #cfd8e3;border-radius:10px;padding:14px 18px;margin-bottom:14px}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:8px}
+  th{background:#f3f6fa;text-align:left;padding:6px 10px;border-bottom:1px solid #dde4ec;color:#5b6b7c;font-weight:600;white-space:nowrap}
+  td{padding:5px 10px;border-bottom:1px solid #eef2f6;vertical-align:top;word-break:break-word}
+  td.mono{font-family:Consolas,monospace;font-size:12px}
+  .dim{color:#7b8794}
+  .ok{color:#2d8a5f}
+  .bad{color:#c0392b}
+  section.cust{background:#fff;border:1px solid #cfd8e3;border-radius:10px;padding:16px 18px;margin-bottom:18px}
+  section.cust.void{opacity:.65;border-style:dashed}
+  header{display:flex;align-items:center;gap:10px;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid #63bd93}
+  .code{font-family:Consolas,monospace;font-weight:700;color:#1f6aa5;font-size:15px}
+  .name{font-size:16px;font-weight:700}
+  .badge{font-size:11px;padding:1px 8px;border-radius:10px}
+  .badge.void{background:#eee;color:#666}
+  .badge.pend{background:#fff3cd;color:#8a6d1f}
+  .badge.file{background:#d4edda;color:#155724}
+  .badge.nofile{background:#f6d7d7;color:#721c24}
+  table.kv th{width:130px}
+  table.kv td{width:34%}
+  .stat{background:#f5f8fb;border-radius:6px;padding:7px 12px;font-size:13px;margin:8px 0}
+  td.dir{font-weight:600;white-space:nowrap}
+  tr.out td.dir{color:#1f6aa5}
+  tr.in td.dir{color:#8a6d1f}
+  .zh{color:#1f6aa5;font-weight:600;font-size:12px;margin-top:2px}
+  .flag{white-space:nowrap;font-size:12px}
+  .note{background:#fff9e6;border-left:3px solid #eab308;padding:9px 13px;margin:8px 0;font-size:13px;border-radius:0 5px 5px 0}
+  ul{margin:6px 0;padding-left:22px}
+</style></head><body>
+<h1>Telegram 全量数据面报告</h1>
+<div class="sub">扫了 6 个面：数据库表 · 客户档案文件 · 会话凭证 · 号码注册表 · 翻译记忆 · 浏览器 profile　｜全部只读</div>
+
+<h2>① 账号（accounts表，channel='telegram'）</h2>
+<div class="card"><table><thead><tr><th>id</th><th>label</th><th>channel</th><th>phone</th><th>proxy</th><th>status</th><th>last_seen</th></tr></thead><tbody>
+<tr><td class="mono">7</td><td>Tele①</td><td>telegram</td><td>（空）</td><td>（空）</td><td>offline</td><td class="mono">—</td></tr><tr><td class="mono">8</td><td>Tele②</td><td>telegram</td><td>（空）</td><td>（空）</td><td>offline</td><td class="mono">—</td></tr><tr><td class="mono">9</td><td>Tele③</td><td>telegram</td><td>（空）</td><td>（空）</td><td>offline</td><td class="mono">—</td></tr>
+</tbody></table>
+<div class="note">三个账号的 <b>phone 全为空</b>—— 这是 MTProto 登录时没采集到自身号码，属已知缺口。<b>status 全是 offline</b>，说明采集器当前没在跑。</div>
+</div>
+
+<h2>② 客户档案全字段（数据库 vs 档案文件 对照）</h2>
+<section class="cust void">
+    <header>
+      <span class="code">7A00001</span>
+      <span class="name">wanyu lee</span>
+      <span class="badge void">已作废</span>
+      
+      <span class="badge file">档案文件存在</span>
+    </header>
+    <table class="kv">
+      <tr><th>数据库字段</th><th>值</th><th>档案文件（md）里的值</th></tr>
+      <tr><td class="mono dim">账号</td><td>account_id=7</td><td class="dim">所属账号 7 号</td></tr>
+      <tr><td class="mono dim">对话键wa_jid</td><td>tg:wanyu lee</td><td class="dim">—</td></tr>
+      <tr><td class="mono dim">TG 用户名</td><td>（无）</td><td class="dim">—</td></tr>
+      <tr><td class="mono dim">手机号</td><td>（无）</td><td class="dim">85256188141</td></tr>
+      <tr><td class="mono dim">地区</td><td>（无）</td><td class="dim">（未填写）</td></tr>
+      <tr><td class="mono dim">时区</td><td>（无）</td><td class="dim">（未识别）</td></tr>
+      <tr><td class="mono dim">阶段</td><td>Day 0</td><td class="dim">—</td></tr>
+      <tr><td class="mono dim">建档时间</td><td>2026-10-16 03:32:21</td><td class="dim">**2026-10-13 20:19**</td></tr>
+      <tr><td class="mono dim">最近联系</td><td>2026-10-16 03:32:21</td><td class="dim">—</td></tr>
+      <tr><td class="mono dim">建档来源</td><td>auto</td><td class="dim">系统自动</td></tr>
+      <tr><td class="mono dim">未读/待处理</td><td>0 / 0</td><td class="dim">—</td></tr>
+      <tr><td class="mono dim">is_sim</td><td>0</td><td class="dim">—</td></tr>
+      <tr><td class="mono dim">voided</td><td>1</td><td class="dim">—</td></tr>
+      <tr><td class="mono dim">作废原因</td><td>已合并进 7A00002（增量防裂）· 2026-10-16T03:32:22.154Z</td><td class="dim">—</td></tr>
+      <tr><td class="mono dim">profile_json</td><td>（空）</td><td class="dim">—</td></tr>
+      <tr><td class="mono dim">summary</td><td>（空）</td><td class="dim">—</td></tr>
+    </table>
+    <div class="stat">消息 <b>0</b> 条 ｜ 客户发 <b>0</b> · 我方发 <b>0</b>
+      ｜ <span class="ok">全干净</span></div>
+    <table><thead><tr><th>ID</th><th>方向</th><th>正文（界面实际显示）</th><th>时间</th><th>入库时刻</th><th>状态</th></tr></thead><tbody></tbody></table>
+  </section>
+<section class="cust">
+    <header>
+      <span class="code">7A00002</span>
+      <span class="name">wanyu lee</span>
+      
+      <span class="badge pend">待处理</span>
+      <span class="badge file">档案文件存在</span>
+    </header>
+    <table class="kv">
+      <tr><th>数据库字段</th><th>值</th><th>档案文件（md）里的值</th></tr>
+      <tr><td class="mono dim">账号</td><td>account_id=7</td><td class="dim">所属账号 7 号</td></tr>
+      <tr><td class="mono dim">对话键wa_jid</td><td>tg:8696576132</td><td class="dim">—</td></tr>
+      <tr><td class="mono dim">TG 用户名</td><td>（无）</td><td class="dim">—</td></tr>
+      <tr><td class="mono dim">手机号</td><td>（无）</td><td class="dim">（未知）</td></tr>
+      <tr><td class="mono dim">地区</td><td>（无）</td><td class="dim">（未填写）</td></tr>
+      <tr><td class="mono dim">时区</td><td>（无）</td><td class="dim">（未识别）</td></tr>
+      <tr><td class="mono dim">阶段</td><td>Day 0</td><td class="dim">—</td></tr>
+      <tr><td class="mono dim">建档时间</td><td>2026-10-16 03:32:22</td><td class="dim">**2026-10-16 11:32**</td></tr>
+      <tr><td class="mono dim">最近联系</td><td>2026-10-16 03:35:08</td><td class="dim">—</td></tr>
+      <tr><td class="mono dim">建档来源</td><td>auto</td><td class="dim">系统自动</td></tr>
+      <tr><td class="mono dim">未读/待处理</td><td>0 / 1</td><td class="dim">—</td></tr>
+      <tr><td class="mono dim">is_sim</td><td>0</td><td class="dim">—</td></tr>
+      <tr><td class="mono dim">voided</td><td>0</td><td class="dim">—</td></tr>
+      
+      <tr><td class="mono dim">profile_json</td><td>（空）</td><td class="dim">—</td></tr>
+      <tr><td class="mono dim">summary</td><td>（空）</td><td class="dim">—</td></tr>
+    </table>
+    <div class="stat">消息 <b>6</b> 条 ｜ 客户发 <b>4</b> · 我方发 <b>2</b>
+      ｜ <span class="ok">全干净</span></div>
+    <table><thead><tr><th>ID</th><th>方向</th><th>正文（界面实际显示）</th><th>时间</th><th>入库时刻</th><th>状态</th></tr></thead><tbody><tr class="in">
+      <td class="mono dim">#983</td>
+      <td class="dir">客户</td>
+      <td>October 14</td>
+      <td class="mono">—</td>
+      <td class="mono dim">2026-10-16 03:32:21</td>
+      <td class="flag"><span class="ok">干净</span></td>
+    </tr><tr class="in">
+      <td class="mono dim">#984</td>
+      <td class="dir">客户</td>
+      <td>Hi</td>
+      <td class="mono">18:32</td>
+      <td class="mono dim">2026-10-16 03:32:22</td>
+      <td class="flag"><span class="ok">干净</span></td>
+    </tr><tr class="out">
+      <td class="mono dim">#985</td>
+      <td class="dir">我方</td>
+      <td>hi</td>
+      <td class="mono">18:32</td>
+      <td class="mono dim">2026-10-16 03:32:22</td>
+      <td class="flag"><span class="ok">干净</span></td>
+    </tr><tr class="out">
+      <td class="mono dim">#986</td>
+      <td class="dir">我方</td>
+      <td>hai</td>
+      <td class="mono">18:38</td>
+      <td class="mono dim">2026-10-16 03:32:22</td>
+      <td class="flag"><span class="ok">干净</span></td>
+    </tr><tr class="in">
+      <td class="mono dim">#987</td>
+      <td class="dir">客户</td>
+      <td>C</td>
+      <td class="mono">22:25</td>
+      <td class="mono dim">2026-10-16 03:32:22</td>
+      <td class="flag"><span class="ok">干净</span></td>
+    </tr><tr class="in">
+      <td class="mono dim">#988</td>
+      <td class="dir">客户</td>
+      <td>October 9<div class="zh">译：10月9日</div></td>
+      <td class="mono">—</td>
+      <td class="mono dim">2026-10-16 03:35:08</td>
+      <td class="flag"><span class="ok">干净</span></td>
+    </tr></tbody></table>
+  </section>
+<section class="cust">
+    <header>
+      <span class="code">7A00003</span>
+      <span class="name">Eileen Lin</span>
+      
+      <span class="badge pend">待处理</span>
+      <span class="badge file">档案文件存在</span>
+    </header>
+    <table class="kv">
+      <tr><th>数据库字段</th><th>值</th><th>档案文件（md）里的值</th></tr>
+      <tr><td class="mono dim">账号</td><td>account_id=7</td><td class="dim">所属账号 7 号</td></tr>
+      <tr><td class="mono dim">对话键wa_jid</td><td>tg:Eileen Lin</td><td class="dim">—</td></tr>
+      <tr><td class="mono dim">TG 用户名</td><td>EileenLin09</td><td class="dim">—</td></tr>
+      <tr><td class="mono dim">手机号</td><td>（无）</td><td class="dim">（未知）</td></tr>
+      <tr><td class="mono dim">地区</td><td>（无）</td><td class="dim">（未填写）</td></tr>
+      <tr><td class="mono dim">时区</td><td>（无）</td><td class="dim">（未识别）</td></tr>
+      <tr><td class="mono dim">阶段</td><td>Day 0</td><td class="dim">—</td></tr>
+      <tr><td class="mono dim">建档时间</td><td>2026-10-16 03:35:09</td><td class="dim">**2026-10-16 11:35**</td></tr>
+      <tr><td class="mono dim">最近联系</td><td>2026-10-16 03:35:10</td><td class="dim">—</td></tr>
+      <tr><td class="mono dim">建档来源</td><td>auto</td><td class="dim">系统自动</td></tr>
+      <tr><td class="mono dim">未读/待处理</td><td>0 / 1</td><td class="dim">—</td></tr>
+      <tr><td class="mono dim">is_sim</td><td>0</td><td class="dim">—</td></tr>
+      <tr><td class="mono dim">voided</td><td>0</td><td class="dim">—</td></tr>
+      
+      <tr><td class="mono dim">profile_json</td><td>（空）</td><td class="dim">—</td></tr>
+      <tr><td class="mono dim">summary</td><td>（空）</td><td class="dim">—</td></tr>
+    </table>
+    <div class="stat">消息 <b>16</b> 条 ｜ 客户发 <b>13</b> · 我方发 <b>3</b>
+      ｜ <span class="ok">全干净</span></div>
+    <table><thead><tr><th>ID</th><th>方向</th><th>正文（界面实际显示）</th><th>时间</th><th>入库时刻</th><th>状态</th></tr></thead><tbody><tr class="in">
+      <td class="mono dim">#989</td>
+      <td class="dir">客户</td>
+      <td>198.87.177.142Thu198.87.177.142:8022:szezcdsxxz:oqwmwemoeemoyi
+https://198.87.177.142:8022/1</td>
+      <td class="mono">—</td>
+      <td class="mono dim">2026-10-16 03:35:09</td>
+      <td class="flag"><span class="ok">干净</span></td>
+    </tr><tr class="in">
+      <td class="mono dim">#990</td>
+      <td class="dir">客户</td>
+      <td>38.110.136.213Thu38.110.136.213:8022:sqeassqqdc:uwmoopmourmiou
+https://38.110.136.213:8022/3</td>
+      <td class="mono">—</td>
+      <td class="mono dim">2026-10-16 03:35:09</td>
+      <td class="flag"><span class="ok">干净</span></td>
+    </tr><tr class="in">
+      <td class="mono dim">#991</td>
+      <td class="dir">客户</td>
+      <td>206.163.2.100Thu206.163.2.100:8022:aercsezsce:iprmorumimopp
+https://206.163.2.100:8022/2</td>
+      <td class="mono">—</td>
+      <td class="mono dim">2026-10-16 03:35:09</td>
+      <td class="flag"><span class="ok">干净</span></td>
+    </tr><tr class="in">
+      <td class="mono dim">#992</td>
+      <td class="dir">客户</td>
+      <td>198.65.103.226Thu198.65.103.226:8022:qxdqaqqxze:oqwmrtmopumiir
+https://198.65.103.226:8022/1</td>
+      <td class="mono">—</td>
+      <td class="mono dim">2026-10-16 03:35:09</td>
+      <td class="flag"><span class="ok">干净</span></td>
+    </tr><tr class="in">
+      <td class="mono dim">#993</td>
+      <td class="dir">客户</td>
+      <td>198.65.67.111Thu198.65.67.111:8022:eewrqdddae:oqwmrtmremooo
+https://198.65.67.111:8022/1</td>
+      <td class="mono">—</td>
+      <td class="mono dim">2026-10-16 03:35:09</td>
+      <td class="flag"><span class="ok">干净</span></td>
+    </tr><tr class="in">
+      <td class="mono dim">#994</td>
+      <td class="dir">客户</td>
+      <td>platinum-vip.miyavip.vipMonplatinum-vip.miyavip.vip:8001:szezcdsxxz:oqwmwemoeemoyi
+https://platinum-vip.miyavip.vip:8001/p<div class="zh">译：platinum-vip.miyavip.vipMonplatinum-vip.miyavip.vip:8001:szezcdsxxz:oqwmwemoeemoyi
+https://platinum-vip.miyavip.vip:8001/p</div></td>
+      <td class="mono">—</td>
+      <td class="mono dim">2026-10-16 03:35:09</td>
+      <td class="flag"><span class="ok">干净</span></td>
+    </tr><tr class="in">
+      <td class="mono dim">#995</td>
+      <td class="dir">客户</td>
+      <td>platinum-vip.miyavip.vipMonplatinum-vip.miyavip.vip:8001:sqeassqqdc:uwmoopmourmiou
+https://platinum-vip.miyavip.vip:8001/p<div class="zh">译：platinum-vip.miyavip.vipMonplatinum-vip.miyavip.vip:8001:sqeassqqdc:uwmoopmourmiou
+https://platinum-vip.miyavip.vip:8001/p</div></td>
+      <td class="mono">—</td>
+      <td class="mono dim">2026-10-16 03:35:09</td>
+      <td class="flag"><span class="ok">干净</span></td>
+    </tr><tr class="in">
+      <td class="mono dim">#996</td>
+      <td class="dir">客户</td>
+      <td>platinum-vip.miyavip.vipMonplatinum-vip.miyavip.vip:8001:aercsezsce:iprmorumimopp
+https://platinum-vip.miyavip.vip:8001/p<div class="zh">译：platinum-vip.miyavip.vipMonplatinum-vip.miyavip.vip:8001:aercsezsce:iprmorumimopp
+https://platinum-vip.miyavip.vip:8001/p</div></td>
+      <td class="mono">—</td>
+      <td class="mono dim">2026-10-16 03:35:09</td>
+      <td class="flag"><span class="ok">干净</span></td>
+    </tr><tr class="in">
+      <td class="mono dim">#997</td>
+      <td class="dir">客户</td>
+      <td>platinum-vip.miyavip.vipMonplatinum-vip.miyavip.vip:8001:eewrqdddae:oqwmrtmremooo
+https://platinum-vip.miyavip.vip:8001/p<div class="zh">译：platinum-vip.miyavip.vipMonplatinum-vip.miyavip.vip:8001:eewrqdddae:oqwmrtmremooo
+https://platinum-vip.miyavip.vip:8001/p</div></td>
+      <td class="mono">—</td>
+      <td class="mono dim">2026-10-16 03:35:09</td>
+      <td class="flag"><span class="ok">干净</span></td>
+    </tr><tr class="in">
+      <td class="mono dim">#998</td>
+      <td class="dir">客户</td>
+      <td>platinum-vip.miyavip.vipOct 10platinum-vip.miyavip.vip:8001:qxdqaqqxze:oqwmrtmopumiir
+https://platinum-vip.miyavip.vip:8001/p<div class="zh">译：platinum-vip.miyavip.vipOct 10platinum-vip.miyavip.vip:8001:qxdqaqqxze:oqwmrtmopumiir
+https://platinum-vip.miyavip.vip:8001/p</div></td>
+      <td class="mono">—</td>
+      <td class="mono dim">2026-10-16 03:35:09</td>
+      <td class="flag"><span class="ok">干净</span></td>
+    </tr><tr class="out">
+      <td class="mono dim">#999</td>
+      <td class="dir">我方</td>
+      <td>He</td>
+      <td class="mono">23:00</td>
+      <td class="mono dim">2026-10-16 03:35:10</td>
+      <td class="flag"><span class="ok">干净</span></td>
+    </tr><tr class="in">
+      <td class="mono dim">#1000</td>
+      <td class="dir">客户</td>
+      <td>Thx</td>
+      <td class="mono">23:00</td>
+      <td class="mono dim">2026-10-16 03:35:10</td>
+      <td class="flag"><span class="ok">干净</span></td>
+    </tr><tr class="in">
+      <td class="mono dim">#1001</td>
+      <td class="dir">客户</td>
+      <td>Hi</td>
+      <td class="mono">23:03</td>
+      <td class="mono dim">2026-10-16 03:35:10</td>
+      <td class="flag"><span class="ok">干净</span></td>
+    </tr><tr class="in">
+      <td class="mono dim">#1002</td>
+      <td class="dir">客户</td>
+      <td>Hi</td>
+      <td class="mono">23:03</td>
+      <td class="mono dim">2026-10-16 03:35:10</td>
+      <td class="flag"><span class="ok">干净</span></td>
+    </tr><tr class="out">
+      <td class="mono dim">#1003</td>
+      <td class="dir">我方</td>
+      <td>Hi</td>
+      <td class="mono">23:04</td>
+      <td class="mono dim">2026-10-16 03:35:10</td>
+      <td class="flag"><span class="ok">干净</span></td>
+    </tr><tr class="out">
+      <td class="mono dim">#1004</td>
+      <td class="dir">我方</td>
+      <td>hello</td>
+      <td class="mono">04:25</td>
+      <td class="mono dim">2026-10-16 03:35:10</td>
+      <td class="flag"><span class="ok">干净</span></td>
+    </tr></tbody></table>
+  </section>
+<section class="cust">
+    <header>
+      <span class="code">7A00004</span>
+      <span class="name">Xue</span>
+      
+      <span class="badge pend">待处理</span>
+      <span class="badge file">档案文件存在</span>
+    </header>
+    <table class="kv">
+      <tr><th>数据库字段</th><th>值</th><th>档案文件（md）里的值</th></tr>
+      <tr><td class="mono dim">账号</td><td>account_id=7</td><td class="dim">所属账号 7 号</td></tr>
+      <tr><td class="mono dim">对话键wa_jid</td><td>tg:Xue</td><td class="dim">—</td></tr>
+      <tr><td class="mono dim">TG 用户名</td><td>wanfengzhiqiu</td><td class="dim">—</td></tr>
+      <tr><td class="mono dim">手机号</td><td>（无）</td><td class="dim">（未知）</td></tr>
+      <tr><td class="mono dim">地区</td><td>（无）</td><td class="dim">（未填写）</td></tr>
+      <tr><td class="mono dim">时区</td><td>（无）</td><td class="dim">（未识别）</td></tr>
+      <tr><td class="mono dim">阶段</td><td>Day 0</td><td class="dim">—</td></tr>
+      <tr><td class="mono dim">建档时间</td><td>2026-10-16 03:37:15</td><td class="dim">**2026-10-16 11:37**</td></tr>
+      <tr><td class="mono dim">最近联系</td><td>2026-10-16 06:08:12</td><td class="dim">—</td></tr>
+      <tr><td class="mono dim">建档来源</td><td>auto</td><td class="dim">系统自动</td></tr>
+      <tr><td class="mono dim">未读/待处理</td><td>0 / 1</td><td class="dim">—</td></tr>
+      <tr><td class="mono dim">is_sim</td><td>0</td><td class="dim">—</td></tr>
+      <tr><td class="mono dim">voided</td><td>0</td><td class="dim">—</td></tr>
+      
+      <tr><td class="mono dim">profile_json</td><td>（空）</td><td class="dim">—</td></tr>
+      <tr><td class="mono dim">summary</td><td>（空）</td><td class="dim">—</td></tr>
+    </table>
+    <div class="stat">消息 <b>22</b> 条 ｜ 客户发 <b>15</b> · 我方发 <b>7</b>
+      ｜ <b class="bad">5 条待洗</b></div>
+    <table><thead><tr><th>ID</th><th>方向</th><th>正文（界面实际显示）</th><th>时间</th><th>入库时刻</th><th>状态</th></tr></thead><tbody><tr class="in">
+      <td class="mono dim">#1005</td>
+      <td class="dir">客户</td>
+      <td>October 9<div class="zh">译：10月9日</div></td>
+      <td class="mono">—</td>
+      <td class="mono dim">2026-10-16 03:37:15</td>
+      <td class="flag"><span class="ok">干净</span></td>
+    </tr><tr class="out">
+      <td class="mono dim">#1006</td>
+      <td class="dir">我方</td>
+      <td>Hi</td>
+      <td class="mono">22:28</td>
+      <td class="mono dim">2026-10-16 03:37:16</td>
+      <td class="flag"><span class="ok">干净</span></td>
+    </tr><tr class="in">
+      <td class="mono dim">#1007</td>
+      <td class="dir">客户</td>
+      <td>你好</td>
+      <td class="mono">22:28</td>
+      <td class="mono dim">2026-10-16 03:37:16</td>
+      <td class="flag"><span class="ok">干净</span></td>
+    </tr><tr class="out">
+      <td class="mono dim">#1008</td>
+      <td class="dir">我方</td>
+      <td>Outgoing Call23:57, 24 seconds</td>
+      <td class="mono">—</td>
+      <td class="mono dim">2026-10-16 03:37:16</td>
+      <td class="flag"><span class="ok">干净</span></td>
+    </tr><tr class="in">
+      <td class="mono dim">#1009</td>
+      <td class="dir">客户</td>
+      <td>Hello</td>
+      <td class="mono">00:15</td>
+      <td class="mono dim">2026-10-16 03:37:16</td>
+      <td class="flag"><span class="ok">干净</span></td>
+    </tr><tr class="in">
+      <td class="mono dim">#1010</td>
+      <td class="dir">客户</td>
+      <td>&lt;i class=&quot;dim&quot;&gt;（空 · 只剩时间）&lt;/i&gt;</td>
+      <td class="mono">00:16</td>
+      <td class="mono dim">2026-10-16 03:37:16</td>
+      <td class="flag"><b class="bad">待洗</b></td>
+    </tr><tr class="in">
+      <td class="mono dim">#1011</td>
+      <td class="dir">客户</td>
+      <td>Y</td>
+      <td class="mono">20:24</td>
+      <td class="mono dim">2026-10-16 03:37:16</td>
+      <td class="flag"><span class="ok">干净</span></td>
+    </tr><tr class="in">
+      <td class="mono dim">#1012</td>
+      <td class="dir">客户</td>
+      <td>F</td>
+      <td class="mono">20:26</td>
+      <td class="mono dim">2026-10-16 03:37:16</td>
+      <td class="flag"><span class="ok">干净</span></td>
+    </tr><tr class="in">
+      <td class="mono dim">#1013</td>
+      <td class="dir">客户</td>
+      <td>Nilai</td>
+      <td class="mono">13:37</td>
+      <td class="mono dim">2026-10-16 03:37:16</td>
+      <td class="flag"><span class="ok">干净</span></td>
+    </tr><tr class="in">
+      <td class="mono dim">#1014</td>
+      <td class="dir">客户</td>
+      <td>Tf</td>
+      <td class="mono">14:01</td>
+      <td class="mono dim">2026-10-16 03:37:16</td>
+      <td class="flag"><span class="ok">干净</span></td>
+    </tr><tr class="in">
+      <td class="mono dim">#1015</td>
+      <td class="dir">客户</td>
+      <td>Fff</td>
+      <td class="mono">14:02</td>
+      <td class="mono dim">2026-10-16 03:37:16</td>
+      <td class="flag"><span class="ok">干净</span></td>
+    </tr><tr class="out">
+      <td class="mono dim">#1016</td>
+      <td class="dir">我方</td>
+      <td>j j j</td>
+      <td class="mono">14:02</td>
+      <td class="mono dim">2026-10-16 03:37:16</td>
+      <td class="flag"><span class="ok">干净</span></td>
+    </tr><tr class="in">
+      <td class="mono dim">#1017</td>
+      <td class="dir">客户</td>
+      <td>Hi</td>
+      <td class="mono">18:30</td>
+      <td class="mono dim">2026-10-16 03:37:16</td>
+      <td class="flag"><span class="ok">干净</span></td>
+    </tr><tr class="in">
+      <td class="mono dim">#1018</td>
+      <td class="dir">客户</td>
+      <td>Today<div class="zh">译：今天</div></td>
+      <td class="mono">—</td>
+      <td class="mono dim">2026-10-16 03:38:28</td>
+      <td class="flag"><span class="ok">干净</span></td>
+    </tr><tr class="in">
+      <td class="mono dim">#1019</td>
+      <td class="dir">客户</td>
+      <td>Hello</td>
+      <td class="mono">11:38</td>
+      <td class="mono dim">2026-10-16 03:38:28</td>
+      <td class="flag"><span class="ok">干净</span></td>
+    </tr><tr class="in">
+      <td class="mono dim">#1020</td>
+      <td class="dir">客户</td>
+      <td>Hi</td>
+      <td class="mono">11:38</td>
+      <td class="mono dim">2026-10-16 03:42:34</td>
+      <td class="flag"><span class="ok">干净</span></td>
+    </tr><tr class="out">
+      <td class="mono dim">#1021</td>
+      <td class="dir">我方</td>
+      <td>hi</td>
+      <td class="mono">12:10</td>
+      <td class="mono dim">2026-10-16 04:10:36</td>
+      <td class="flag"><span class="ok">干净</span></td>
+    </tr><tr class="out">
+      <td class="mono dim">#1022</td>
+      <td class="dir">我方</td>
+      <td>hi</td>
+      <td class="mono">12:10</td>
+      <td class="mono dim">2026-10-16 04:10:38</td>
+      <td class="flag"><span class="ok">干净</span></td>
+    </tr><tr class="in">
+      <td class="mono dim">#1039</td>
+      <td class="dir">客户</td>
+      <td>Hi</td>
+      <td class="mono">14:07</td>
+      <td class="mono dim">2026-10-16 06:08:12</td>
+      <td class="flag"><b class="bad">待洗</b></td>
+    </tr><tr class="in">
+      <td class="mono dim">#1040</td>
+      <td class="dir">客户</td>
+      <td>Hello</td>
+      <td class="mono">14:07</td>
+      <td class="mono dim">2026-10-16 06:08:12</td>
+      <td class="flag"><b class="bad">待洗</b></td>
+    </tr><tr class="out">
+      <td class="mono dim">#1041</td>
+      <td class="dir">我方</td>
+      <td>helo</td>
+      <td class="mono">14:09</td>
+      <td class="mono dim">2026-10-16 06:09:02</td>
+      <td class="flag"><b class="bad">待洗</b></td>
+    </tr><tr class="out">
+      <td class="mono dim">#1042</td>
+      <td class="dir">我方</td>
+      <td>helo</td>
+      <td class="mono">14:09</td>
+      <td class="mono dim">2026-10-16 06:09:04</td>
+      <td class="flag"><b class="bad">待洗</b></td>
+    </tr></tbody></table>
+  </section>
+
+<h2>③ ⚠️ 只存在于档案文件、库里已经没有的历史客户</h2>
+<div class="card">
+<div class="note">这批是<b>历史遗留</b>：档案 md 文件还在，但数据库 customers 表里没有对应行（多轮「删库重采」删掉了库、没删文件）。里面<b>有手机号</b>——这是库里查不到的信息。</div>
+<table><thead><tr><th>档案编号</th><th>姓名</th><th>档案里的手机号</th><th>建档时间</th><th>消息数</th><th>在库里?</th></tr></thead><tbody>
+<tr>
+  <td class="mono">7A00005</td><td>Eileen Lin</td>
+  <td class="mono"><span class="dim">（未知）</span></td>
+  <td class="mono dim">**2026-10-13 20:21**</td><td>11</td><td><span class="badge nofile">不在库里</span></td>
+</tr><tr>
+  <td class="mono">7A00006</td><td>Xue</td>
+  <td class="mono"><b>14324165473</b></td>
+  <td class="mono dim">**2026-10-13 20:23**</td><td>7</td><td><span class="badge nofile">不在库里</span></td>
+</tr><tr>
+  <td class="mono">7A00007</td><td>Richard Bennett</td>
+  <td class="mono"><span class="dim">（未知）</span></td>
+  <td class="mono dim">**2026-10-14 18:37**</td><td>3</td><td><span class="badge nofile">不在库里</span></td>
+</tr><tr>
+  <td class="mono">7A00008</td><td>Xue</td>
+  <td class="mono"><span class="dim">（未知）</span></td>
+  <td class="mono dim">**2026-10-14 18:37**</td><td>13</td><td><span class="badge nofile">不在库里</span></td>
+</tr><tr>
+  <td class="mono">7A00009</td><td>wanyu lee</td>
+  <td class="mono"><span class="dim">（未知）</span></td>
+  <td class="mono dim">**2026-10-14 18:37**</td><td>3</td><td><span class="badge nofile">不在库里</span></td>
+</tr><tr>
+  <td class="mono">7A00010</td><td>Eileen Lin</td>
+  <td class="mono"><span class="dim">（未知）</span></td>
+  <td class="mono dim">**2026-10-14 18:38**</td><td>21</td><td><span class="badge nofile">不在库里</span></td>
+</tr><tr>
+  <td class="mono">7A00011</td><td>Saved Messages</td>
+  <td class="mono"><span class="dim">（未知）</span></td>
+  <td class="mono dim">**2026-10-14 18:38**</td><td>3</td><td><span class="badge nofile">不在库里</span></td>
+</tr>
+</tbody></table>
+</div>
+
+<h2>④ 档案文件里「当前4 个客户」的完整对话（含库里没有的）</h2>
+<section class="cust">
+  <header><span class="code">7A00001</span><span class="name">Eileen Lin</span>
+  <span class="badge file">7A00001_Eileen Lin_85256188141.md</span></header>
+  <table><thead><tr><th>时间</th><th>方向</th><th>正文（档案文件里的原文）</th></tr></thead><tbody>
+  <tr class="in">
+    <td class="mono dim">2026-10-13 20:19</td><td class="dir">客户</td>
+    <td>hello</td></tr>
+  </tbody></table>
+  <div class="dim" style="font-size:12px;margin-top:6px">⚠️ 这里能看到<b>豆腐块的真身</b>：形如 <span class="mono">Hi␣18:32␣</span> 里的 ␣ 就是私用区字符 U+E901/E900/EA21/E918，界面上显示成方块。存档文件是「修复前」写的，所以还留着。</div>
+</section>
+<section class="cust">
+  <header><span class="code">7A00002</span><span class="name">wanyu lee</span>
+  <span class="badge file">7A00002_wanyu lee_未知电话.md</span></header>
+  <table><thead><tr><th>时间</th><th>方向</th><th>正文（档案文件里的原文）</th></tr></thead><tbody>
+  <tr class="in">
+    <td class="mono dim">2026-10-16 11:32</td><td class="dir">客户</td>
+    <td>October 14</td></tr><tr class="in">
+    <td class="mono dim">2026-10-16 11:32</td><td class="dir">客户</td>
+    <td>Hi18:32</td></tr><tr class="out">
+    <td class="mono dim">2026-10-16 11:32</td><td class="dir">我</td>
+    <td>hi18:32</td></tr><tr class="out">
+    <td class="mono dim">2026-10-16 11:32</td><td class="dir">我</td>
+    <td>hai18:38</td></tr><tr class="in">
+    <td class="mono dim">2026-10-16 11:32</td><td class="dir">客户</td>
+    <td>C22:25</td></tr><tr class="in">
+    <td class="mono dim">2026-10-16 11:35</td><td class="dir">客户</td>
+    <td>October 9</td></tr>
+  </tbody></table>
+  <div class="dim" style="font-size:12px;margin-top:6px">⚠️ 这里能看到<b>豆腐块的真身</b>：形如 <span class="mono">Hi␣18:32␣</span> 里的 ␣ 就是私用区字符 U+E901/E900/EA21/E918，界面上显示成方块。存档文件是「修复前」写的，所以还留着。</div>
+</section>
+<section class="cust">
+  <header><span class="code">7A00003</span><span class="name">Eileen Lin</span>
+  <span class="badge file">7A00003_Eileen Lin_未知电话.md</span></header>
+  <table><thead><tr><th>时间</th><th>方向</th><th>正文（档案文件里的原文）</th></tr></thead><tbody>
+  <tr class="in">
+    <td class="mono dim">2026-10-16 11:35</td><td class="dir">客户</td>
+    <td>198.87.177.142Thu198.87.177.142:8022:szezcdsxxz:oqwmwemoeemoyi https://198.87.177.142:8022/1</td></tr><tr class="in">
+    <td class="mono dim">2026-10-16 11:35</td><td class="dir">客户</td>
+    <td>38.110.136.213Thu38.110.136.213:8022:sqeassqqdc:uwmoopmourmiou https://38.110.136.213:8022/3</td></tr><tr class="in">
+    <td class="mono dim">2026-10-16 11:35</td><td class="dir">客户</td>
+    <td>206.163.2.100Thu206.163.2.100:8022:aercsezsce:iprmorumimopp https://206.163.2.100:8022/2</td></tr><tr class="in">
+    <td class="mono dim">2026-10-16 11:35</td><td class="dir">客户</td>
+    <td>198.65.103.226Thu198.65.103.226:8022:qxdqaqqxze:oqwmrtmopumiir https://198.65.103.226:8022/1</td></tr><tr class="in">
+    <td class="mono dim">2026-10-16 11:35</td><td class="dir">客户</td>
+    <td>198.65.67.111Thu198.65.67.111:8022:eewrqdddae:oqwmrtmremooo https://198.65.67.111:8022/1</td></tr><tr class="in">
+    <td class="mono dim">2026-10-16 11:35</td><td class="dir">客户</td>
+    <td>platinum-vip.miyavip.vipMonplatinum-vip.miyavip.vip:8001:szezcdsxxz:oqwmwemoeemoyi https://platinum-vip.miyavip.vip:8001/p</td></tr><tr class="in">
+    <td class="mono dim">2026-10-16 11:35</td><td class="dir">客户</td>
+    <td>platinum-vip.miyavip.vipMonplatinum-vip.miyavip.vip:8001:sqeassqqdc:uwmoopmourmiou https://platinum-vip.miyavip.vip:8001/p</td></tr><tr class="in">
+    <td class="mono dim">2026-10-16 11:35</td><td class="dir">客户</td>
+    <td>platinum-vip.miyavip.vipMonplatinum-vip.miyavip.vip:8001:aercsezsce:iprmorumimopp https://platinum-vip.miyavip.vip:8001/p</td></tr><tr class="in">
+    <td class="mono dim">2026-10-16 11:35</td><td class="dir">客户</td>
+    <td>platinum-vip.miyavip.vipMonplatinum-vip.miyavip.vip:8001:eewrqdddae:oqwmrtmremooo https://platinum-vip.miyavip.vip:8001/p</td></tr><tr class="in">
+    <td class="mono dim">2026-10-16 11:35</td><td class="dir">客户</td>
+    <td>platinum-vip.miyavip.vipOct 10platinum-vip.miyavip.vip:8001:qxdqaqqxze:oqwmrtmopumiir https://platinum-vip.miyavip.vip:8001/p</td></tr><tr class="out">
+    <td class="mono dim">2026-10-16 11:35</td><td class="dir">我</td>
+    <td>He23:00</td></tr><tr class="in">
+    <td class="mono dim">2026-10-16 11:35</td><td class="dir">客户</td>
+    <td>Thx23:00</td></tr><tr class="in">
+    <td class="mono dim">2026-10-16 11:35</td><td class="dir">客户</td>
+    <td>Hi23:03</td></tr><tr class="in">
+    <td class="mono dim">2026-10-16 11:35</td><td class="dir">客户</td>
+    <td>Hi23:03</td></tr><tr class="out">
+    <td class="mono dim">2026-10-16 11:35</td><td class="dir">我</td>
+    <td>Hi23:04</td></tr><tr class="out">
+    <td class="mono dim">2026-10-16 11:35</td><td class="dir">我</td>
+    <td>hello04:25</td></tr>
+  </tbody></table>
+  <div class="dim" style="font-size:12px;margin-top:6px">⚠️ 这里能看到<b>豆腐块的真身</b>：形如 <span class="mono">Hi␣18:32␣</span> 里的 ␣ 就是私用区字符 U+E901/E900/EA21/E918，界面上显示成方块。存档文件是「修复前」写的，所以还留着。</div>
+</section>
+<section class="cust">
+  <header><span class="code">7A00004</span><span class="name">Xue</span>
+  <span class="badge file">7A00004_Xue_未知电话.md</span></header>
+  <table><thead><tr><th>时间</th><th>方向</th><th>正文（档案文件里的原文）</th></tr></thead><tbody>
+  <tr class="in">
+    <td class="mono dim">2026-10-16 11:37</td><td class="dir">客户</td>
+    <td>October 9</td></tr><tr class="out">
+    <td class="mono dim">2026-10-16 11:37</td><td class="dir">我</td>
+    <td>Hi22:28</td></tr><tr class="in">
+    <td class="mono dim">2026-10-16 11:37</td><td class="dir">客户</td>
+    <td>你好22:28</td></tr><tr class="out">
+    <td class="mono dim">2026-10-16 11:37</td><td class="dir">我</td>
+    <td>Outgoing Call23:57, 24 seconds</td></tr><tr class="in">
+    <td class="mono dim">2026-10-16 11:37</td><td class="dir">客户</td>
+    <td>Hello00:15</td></tr><tr class="in">
+    <td class="mono dim">2026-10-16 11:37</td><td class="dir">客户</td>
+    <td>00:16</td></tr><tr class="in">
+    <td class="mono dim">2026-10-16 11:37</td><td class="dir">客户</td>
+    <td>Y20:24</td></tr><tr class="in">
+    <td class="mono dim">2026-10-16 11:37</td><td class="dir">客户</td>
+    <td>F20:26</td></tr><tr class="in">
+    <td class="mono dim">2026-10-16 11:37</td><td class="dir">客户</td>
+    <td>Nilai13:37</td></tr><tr class="in">
+    <td class="mono dim">2026-10-16 11:37</td><td class="dir">客户</td>
+    <td>Tf14:01</td></tr><tr class="in">
+    <td class="mono dim">2026-10-16 11:37</td><td class="dir">客户</td>
+    <td>Fff14:02</td></tr><tr class="out">
+    <td class="mono dim">2026-10-16 11:37</td><td class="dir">我</td>
+    <td>j j j14:02</td></tr><tr class="in">
+    <td class="mono dim">2026-10-16 11:37</td><td class="dir">客户</td>
+    <td>Hi18:30</td></tr><tr class="in">
+    <td class="mono dim">2026-10-16 11:38</td><td class="dir">客户</td>
+    <td>Today</td></tr>
+  </tbody></table>
+  <div class="dim" style="font-size:12px;margin-top:6px">⚠️ 这里能看到<b>豆腐块的真身</b>：形如 <span class="mono">Hi␣18:32␣</span> 里的 ␣ 就是私用区字符 U+E901/E900/EA21/E918，界面上显示成方块。存档文件是「修复前」写的，所以还留着。</div>
+</section>
+
+<h2>⑤ 会话凭证（只报元信息，不泄露密钥）</h2>
+<div class="card"><table><thead><tr><th>文件</th><th>大小</th><th>最后修改</th><th>说明</th></tr></thead><tbody>
+<tr><td class="mono">telegram-session-7.txt</td><td>369 字节</td><td class="mono">2026-10-12 16:48:49</td><td>MTProto 会话密钥（<b>不会展示内容</b>）</td></tr>
+</tbody></table>
+<div class="note">只有 <b>Tele①（7号）</b> 有会话凭证 → <b>Tele②、Tele③ 还没登录过</b>。这也解释了为什么库里客户全挂在 7 号账号下。</div>
+</div>
+
+<h2>⑥ 号码注册表（number_library.json）里的 Telegram 条目</h2>
+<div class="card"><table><thead><tr><th>号码</th><th>映射编号</th><th>当前该编号在库里?</th></tr></thead><tbody>
+<tr><td class="mono">85256188141</td><td class="mono">7A00001</td>
+  <td><span class="ok">在</span></td></tr><tr><td class="mono">14324165473</td><td class="mono">7A00006</td>
+  <td><span class="dim">不在（历史遗留）</span></td></tr>
+</tbody></table></div>
+
+<h2>⑦ 翻译记忆（translation_memory）命中 TG 原文的条目</h2>
+<div class="card">
+<table><thead><tr><th>原文</th><th>译文</th><th>命中次数</th></tr></thead><tbody>
+<tr><td class="mono">undefined</td><td>undefined</td><td>0</td></tr><tr><td class="mono">undefined</td><td>undefined</td><td>0</td></tr><tr><td class="mono">undefined</td><td>undefined</td><td>2</td></tr><tr><td class="mono">undefined</td><td>undefined</td><td>2</td></tr><tr><td class="mono">undefined</td><td>undefined</td><td>2</td></tr><tr><td class="mono">undefined</td><td>undefined</td><td>0</td></tr><tr><td class="mono">undefined</td><td>undefined</td><td>1</td></tr><tr><td class="mono">undefined</td><td>undefined</td><td>0</td></tr>
+</tbody></table>
+</div>
+
+<h2>⑧ 拿不到 / 拿不到的原因</h2>
+<div class="card"><ul>
+<li><b>手机号</b>：Telegram 默认不对外暴露手机号。4 个客户全无号码，只有 2 个有 TG 用户名。档案文件里那两个号码（85256188141 / 14324165473）是<b>早期测试时手工塞进去的测试值</b>，不是真实号码。</li>
+<li><b>地区 / 时区 / 客户档案的16 个字段</b>：全是空的 —— 需要 AI 从对话里提取，但 TG 这几段对话内容太少（多是「Hi」「C」「Y」），提取不出东西。</li>
+<li><b>群组 / 频道信息</b>：库里只有私聊，<code>wa_jid</code> 全是 <code>tg:显示名</code> 或 <code>tg:数字peerId</code>，没有群。</li>
+<li><b>Tele② / Tele③ 的数据</b>：两个账号从没登录过（无会话凭证），所以一条数据都没有。</li>
+<li><b>浏览器侧 TG profile</b>：<code>sessions/</code> 下只有 WA 的 <code>session-acc-1~5</code> 和 <code>chrome-acc-1</code>，<b>TG-PC1/2/3-CDP 不存在</b> —— 说明 TG 网页版那条采集路（外部 Chrome）还没真正跑起来，当前数据全部来自 MTProto。</li>
+</ul></div>
+</body></html>

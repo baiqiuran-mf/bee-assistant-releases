@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>蜜蜂信息采集</title>
+  <!-- ?v=__BUILD__：服务端会换成 public/ 三个文件的最新修改时间。
+       改过界面后地址就变，窗口不可能还加载旧的那份（防「界面和截图不一样」） -->
+  <link href="/style.css?v=__BUILD__" rel="stylesheet">
+</head>
+<body>
+  <!-- ==========================================================================
+       主界面栏目编号（2026-09-25 与用户约定，以后沟通定位都用这个号）
+         栏目1 = 顶栏           品牌 + 社交 LOGO（左） / AI 状态灯 + 手动录入 + 话术编排台 + ⚙ 设置（右）
+         栏目2 = 左栏           今日消息提示窗 + 客户列表
+         栏目3 = 中栏 · 档案头部  客户名 + 编号 + 加入时间（认识第 N 天）+ 客户当地时间 + 阶段 + 地区
+         栏目4 = 中栏 · 对话区    消息气泡（原文 + 中文译文 + 图片说明）
+         栏目5 = 中栏 · 底部操作条 ⚡ 生成建议 / ✓ 标记已回复
+         栏目6 = 右栏           中文回复建议
+       说「栏目3 的字太小」= 指中栏档案头部那块，不用再截图圈。
+       ========================================================================== -->
+
+  <!-- 系统标题栏改蓝（v2.6.1101）：主进程把原生白标题栏收起（titleBarStyle:'hidden'），
+       网页顶到窗口最上方，这条 .win-drag 就是新的蓝色标题栏 ——
+       ① 整条可拖动（跟着窗口走）② 左边画 🐝 + 应用名 ③ 右边留白给原生 ─ ▫ ✕ 叠上去。
+       高度必须和 electron/main.js 里 TITLEBAR.height 一致。 -->
+  <div class="win-drag">
+    <span class="wd-logo" aria-hidden="true">🐝</span>
+    <span class="wd-title">蜜蜂信息采集</span>
+  </div>
+
+  <header>
+    <!-- 栏目1：顶栏 -->
+    <!-- 2026-09-30 布局调整（用户配图）：① 去掉「待处理 N」和「数字：红=…」那两段文字；
+         ② 「＋手动录入 / 话术编排台 / ⚙设置」这一组整数靠右（连 AI 状态灯一起）；
+         ③ 社交平台 LOGO 靠左，紧跟品牌名。 -->
+    <div class="head-top">
+      <!-- 品牌名 + 版本号（v1.5.1020 起：版本号放在标题栏品牌名右边，红框位置） -->
+      <span class="brand">蜜蜂信息采集 <span class="ver" id="ver" title="版本号">v…</span></span>
+      <!-- 社交平台官网图标（2026-09-26 从账号条挪到第一行；2026-09-30 按用户要求改靠左，紧跟品牌名）。
+           纯展示、不可点；内容由 app.js 的 socialLogosHtml() 填。 -->
+      <span class="brand-logos" id="brand-logos" aria-label="社交平台官网图标"></span>
+      <!-- 构建戳：v1.5.1024 按样品图挪到左边（紧跟品牌名和平台图标之后）。
+           刻意做小做淡，只是给你辨认「界面是哪一版」。 -->
+      <span class="build" id="build" title="界面构建戳">…</span>
+      <!-- 右端一组（整体靠右）：AI 状态灯 + 手动录入 / 话术编排台 / ⚙ 设置（与样品图一致） -->
+      <span class="head-right">
+        <!-- AI 状态：只是一个"亮灯"小圆点（绿=已连上 / 红=没连上），不可点。
+             改 AI 配置去「⚙ 设置」→「AI 设置」页签（2026-09-30 起）。 -->
+        <span id="status" class="red" title="AI 情况">●</span>
+        <button id="btn-ingest" class="ghost">＋ 手动录入</button>
+        <button id="btn-board" class="ghost" title="打开「每日话术编排台」：按当天 Day 列出可聊的话题碎片，点开看英文话术、一键复制或预填进 WhatsApp">话术编排台</button>
+        <!-- 「⚙ 设置」图标按钮：点开一扇独立窗口「全局设置」，
+             里面装着 AI 设置 / AI 提示词 / 模拟新消息 三块。 -->
+        <button id="btn-settings" class="ghost" title="全局设置：AI 设置 · AI 提示词 · 云端 · 模拟新消息 · 软件更新 · 代理（打开一扇独立窗口）">⚙ 设置</button>
+      </span>
+    </div>
+    <!-- 第二行：左边五个账号（点账号名 = 开它的浏览器）。
+         2026-10-11 老板要求：去掉 Signal 启动器条（"不要乱加东西"），顶栏只保留一号~五号账号条。 -->
+    <div class="head-bottom">
+      <div class="acct-bar" id="accounts"></div>
+      <!-- 🔴 v2.6.1113 顶栏「T①/T②」按钮（老板 2026-10-14 17:31 报「按钮不见了」补回来）。
+           · 位置：紧挨一号~五号右边、S1~S3 左边
+           · 行为：点一下 = 那个号的 Telegram 浏览器没开就启动、开了就拉到前台；
+             走 telegramRead 单例锁，**重复点也只会唤起，不会多开**（老板报的重复多开 BUG 已修）
+           · 只显示 enabled 的 TG 账号（T② 在 config.yaml 里目前 enabled:false，所以现在只显示 T①） -->
+      <div id="tg-accounts" class="acct-bar tg-acct-bar"></div>
+      <!-- Signal 启动器条（v2.5.1029 补回）：S1~S3 三个 Signal 桌面端启动按钮，点一下开/关对应实例。
+           状态灯：绿=已启动并登录 / 黄=启动中或没登录 / 红=没启动。数据来自后端 /api/state 的 launchers。 -->
+      <div id="launcher-bar" class="launcher-bar"></div>
+      <div id="toast"></div>
+    </div>
+  </header>
+
+  <!-- 云端提示条（v1.0.1）：只在「配了云端地址但还没登录编号」时出现。
+       ⚠️ 铁律：不弹窗、不遮挡，点一下才去「全局设置 → 云端」登录；
+          没配云端地址的（纯单机用）永远不显示。 -->
+  <div id="cloud-bar" class="cloud-bar hidden">
+    <span class="cb-txt">☁ 还没登录云端编号 —— 编排台暂时用本地数据，你在编排台加的内容不会同步给后台。</span>
+    <button id="cb-login" class="cb-btn">点这里登录</button>
+    <span id="cb-note" class="cb-note"></span>
+  </div>
+
+  <!-- 🔴 v2.6.1116 配置文件漂移告警（老板 19:11 实机报「T② enabled:false」的真根因）
+       ·软件打包后读的是【用户目录】那份 config.yaml，不是项目里那份。
+       · 改错文件 → 改什么都不生效（老板原话「我明明改了怎么没反应」）。
+       · 所以把「两份不一致」直接亮在窗口顶部，一眼看见，不用猜。
+       · 只提示，绝不在这里自动改配置。 -->
+  <div id="config-drift-bar" class="config-drift-bar hidden">
+    <span class="cd-txt" id="cd-txt"></span>
+    <span class="cd-detail" id="cd-detail"></span>
+  </div>
+
+  <div id="ingest" class="ingest hidden">
+    <div class="ingest-inner">
+      <div class="row">
+        <label class="ig-field">
+          <span class="ig-label">客户标识 <em>必填</em></span>
+          <input id="ig-ident" placeholder="手机号 / 代号，如 14155550000 或 dio-farm">
+          <span class="ig-tip">用来认人。<b>同一个人每次必须填一样的</b>，填错会拆成两个客户。</span>
+        </label>
+        <label class="ig-field">
+          <span class="ig-label">姓名 <em>选填</em></span>
+          <input id="ig-name" placeholder="Dio">
+        </label>
+        <label class="ig-field">
+          <span class="ig-label">地区 <em>选填</em></span>
+          <input id="ig-region" placeholder="旧金山 / 俄勒冈">
+          <span class="ig-tip">填了会自动带出时区和时间差。</span>
+        </label>
+        <label class="ig-field">
+          <span class="ig-label">加入时间 <em>选填</em></span>
+          <input id="ig-joined" type="date">
+          <span class="ig-tip">老客户在这里补他真正加你的日期，不填就按今天算。</span>
+        </label>
+      </div>
+
+      <label class="ig-field ig-text-field">
+        <span class="ig-label">粘贴对话 <em>每行一条</em></span>
+        <!-- 红字说明（2026-09-30 用户要求在红框位置加，红字）：讲清手动录入是干嘛用的 -->
+        <span class="ig-note-red">这个添加别的平台的客户用来锁客，客户信息录入数据库</span>
+        <span class="ig-desc">
+          把聊天记录整段贴进来。<b>一行算一条消息</b>；以「<code>我:</code>」或「<code>me:</code>」开头的算<b>你发的</b>，其余全部算<b>客户发的</b>。
+        </span>
+        <textarea id="ig-text" rows="6" placeholder="Hi Sherry this is Dio from Facebook
+我: hi Dio, nice to meet you
+I live on a farm, I also have peaches, plums and pears
+我: four kinds? that's a lot of work in autumn"></textarea>
+        <span class="ig-tip">
+          录进去以后走的是同一条链路：翻译 → 写客户档案 → 出中文回复建议。
+          <b>Ctrl + Enter</b> 直接录入。重复粘贴同一段不会产生两份。
+        </span>
+      </label>
+
+      <div class="row">
+        <button class="primary" id="ig-send">录入</button>
+        <button id="ig-close">收起</button>
+        <span class="muted" id="ig-hint">不连 WhatsApp 也能用</span>
+      </div>
+    </div>
+  </div>
+  <!-- 「模拟新消息」「AI 设置」「AI 提示词」三块界面 2026-09-30 已搬到「全局设置」独立窗口：
+       页面 public/settings.html + public/settings.js，由顶栏最右边那个「⚙ 设置」按钮打开。 -->
+
+  <main>
+    <aside id="list">
+      <!-- 今日消息提示窗：只显示 ① ② ③ ④ ⑤ 各来几条（按账号拆）。
+           数字由 app.js 的 refreshToday() 从 /api/stats/today 取，来消息就刷。
+           （2026-09-30 用户配图：删掉「收到 / 已处理 / 待处理」三个数字格
+             与下方「①主号 … ⑤五号」图例，只留 ① ② ③ ④ ⑤ 那一行。） -->
+      <div id="today-box" class="today-box">
+        <div class="tb-head"><span>今日消息</span><span class="tb-date" id="tb-date">—</span></div>
+        <div class="tb-acct" id="tb-acct"></div>
+        <!-- v2.5.1084 实时收件箱：账号圈下方直接列出今日消息，点开进对应客户对话 -->
+        <div class="tb-list" id="tb-list"></div>
+      </div>
+      <!-- Telegram 采集状态提示已移到 Tele① 第三栏（#tg-status，放在「Telegram 日志」上方），见 mid-pane[data-mp="tele1"] -->
+      <!-- 账号圈数字 ① ② ③ ④ ⑤ 不在这里，而是挂在**每个客户行左端的红点位置**
+           （app.js 的 custNumHtml 渲染）：哪个账号来的新消息，就在那个客户那一行看。
+           红=有新消息、绿=看过还没处理完、处理完就消失。点那一行=打开这个客户。
+           客户行里**没有按钮**：整行点哪儿都是"打开这个客户"。
+           「客户档案 / 从对话里提取档案」两个按钮在中栏头部最右端（见下面 #chat-head）。 -->
+      <div id="list-body"></div>
+    </aside>
+
+    <section id="chat">
+      <!-- 2026-10-11 老板要求：去掉「通用」标签栏（不再用 mid-tabs / mid-pane 那套）。
+           ↳ 2026-10-11 老板推翻并恢复：还是放回「之前那个位置」，中栏重新挂两个页签：
+             · 通用   = 原来的消息框 / 聊天工作台（客户档案 / 提取档案 / 消息气泡 / 底部操作条），内容一点没变
+             · Tele①  = Telegram 内置浏览器（webview），**兜底方案**：MTProto 的 api_id/api_hash 拿不到、
+                        web.telegram.org 爬虫又不稳时，至少还能在软件里直接开 Telegram 网页版看消息、预填回复。
+             Tele①②③ 已并入一号/二号/三号（见 config.yaml telegram.waAccount），
+             消息仍走左栏；左栏 ∮∯∰ 标记保留。 -->
+      <!-- 中栏页签（独立 class .mtab，绝不复用右栏的 .ptab —— 那个被 switchPanelTab 全局绑死了） -->
+      <div class="mid-tabs">
+        <button class="mtab on" data-mp="general" title="原来的消息框：客户对话 + 回复建议">通用</button>
+        <button class="mtab" data-mp="tele1" title="Telegram 官方通道（T①）：好友对话 / 对话信息 / 客户资料 / 采集日志">Tele①</button>
+        <!-- 🔴 v2.6.1113 新增 Tele②（老板 2026-10-14 17:38 拍板）：
+             T② 独立账号，功能与 Tele① **完全一样**（好友对话 / 对话信息 / 客户资料 / 采集日志），
+             只是数据源是 T② 那个号。老板在Tele① 登 T①、在 Tele② 登 T②，两处登录态互不干扰。 -->
+        <button class="mtab" data-mp="tele2" title="Telegram 官方通道（T②）：功能与 Tele① 相同，数据来自 T② 账号">Tele②</button>
+        <!-- 🔴 v2.6.1094 老板拍板新增（QQ20261013 三方案真截图，选「方案一 · 内置浏览器」）：
+             WA① = WhatsApp 内置浏览器，形态与 Tele① 完全对称（老板原话「功能界面可以模仿Tele①」）。
+             partition 与 Tele① 分开，互不顶掉对方的登录态。 -->
+        <button class="mtab" data-mp="wa1" title="WhatsApp 内置浏览器（WA①）：在软件里直接开 WhatsApp 网页版">WA①</button>
+        <!-- 🔴 v2.6.1134 复刻 WA① → WA②~⑤（老板 2026-10-16 拍板）：五个内置浏览器页签，共用一套采集/气泡代码，仅参数化（partition / 账号号 / 编号段）。
+             每个页签各自独立分区、独立登录态、独立客户编号段（WA/WB/WD/WE/WF），互不影响互不踢。 -->
+        <button class="mtab" data-mp="wa2" title="WhatsApp 内置浏览器（WA②）：独立分区 persist:wa7，编号段 WB00001">WA②</button>
+        <button class="mtab" data-mp="wa3" title="WhatsApp 内置浏览器（WA③）：独立分区 persist:wa8，编号段 WD00001">WA③</button>
+        <button class="mtab" data-mp="wa4" title="WhatsApp 内置浏览器（WA④）：独立分区 persist:wa9，编号段 WE00001">WA④</button>
+        <button class="mtab" data-mp="wa5" title="WhatsApp 内置浏览器（WA⑤）：独立分区 persist:wa10，编号段 WF00001">WA⑤</button>
+      </div>
+
+      <!-- 页签1「通用」：原聊天工作台，整体搬进 pane 里，内部元素一个没删。
+
+           🔴 v2.6.1118（老板 21:45 看图 QQ20261014-214556.png 指名）：中栏要跟 Tele① 一样分栏。
+              老板原话：「跟红框内是一样的排版，上方也有对话信息标题，
+              就是通用这里不需要跟 Tele① 标签内『好友对话』栏」
+              ⇒ 做法：①整块包进 .gen-wrap（横向 flex，与 .tele-wrap 同款）
+                      ②左 = 对话区，顶部一条「对话信息」标题栏（复用 .tgc-head 样式）
+                      ③右 = 客户资料卡 300px（复用 .tg-conv-aside 那一档宽度）
+              **不含「好友对话」那栏**（那是 Tele 专有的 MTProto 好友选择）。
+              客户名/档案卡整体搬进右栏（老板 21:48 拍板），左边对话区只留对话。 -->
+      <div class="mid-pane" data-mp="general">
+       <div class="gen-wrap">
+        <!-- 左栏：对话区（顶部一条「对话信息」标题栏，与 Tele① 的 .tgc-head 同款） -->
+        <div class="gen-chat" id="gen-chat">
+          <div class="tgc-head">
+            <span class="tgc-title">对话信息</span>
+            <span class="tgc-sub" id="gen-chat-sub">选择一个客户，这里列他这段对话</span>
+          </div>
+          <div class="gen-chat-body" id="gen-chat-body">
+        <!-- 客户名 + 档案条：由 app.js 渲染。
+             v2.6.1118：客户名 + 档案卡已整体搬进**右栏资料卡**（.gen-aside），
+             这里只留「等待翻译中」提醒 + 消息气泡 + 底部操作条。 -->
+        <div id="chat-status" class="chat-status hidden"></div>
+        <div id="msgs"></div>
+        <!-- 滚到历史里看旧消息时，新来的消息不强行拽到底部，改点这里跳到最新（方案 C，2026-09-30） -->
+        <div id="msgs-new" class="msgs-new hidden">↓ <span id="msgs-new-n">0</span> 条新消息</div>
+        <!-- 栏目5：底部操作条（2026-09-26 用户规则）
+             · 「✓ 标记已回复」：**只有检测到我已经回复了**（对话里最新一条是我发的）才亮，
+               没回复就是灰的按不动；按下 → 左栏这一格收进「已处理」。
+             · 「⏭ 跳过消息」：不想回这条时用，作用跟"已回复"一样（也把消息框收起来）。 -->
+        <div id="chat-foot">
+          <button class="primary" id="btn-suggest" title="按人设 + 七天节奏，给三条中文回复建议">⚡ 生成建议</button>
+          <div class="foot-right">
+            <div class="foot-actions">
+              <button class="done" id="btn-replied" disabled
+                      title="这条算处理完了：左栏这一格会收进「已处理」">✓ 标记已回复</button>
+              <button class="skip" id="btn-skip" disabled
+                      title="不想回这条：也算处理完了，消息框同样收起来">⏭ 跳过消息</button>
+            </div>
+            <div class="foot-status" id="chat-foot-hint">点「生成建议」会在独立弹窗里出（可拖到主窗口外）</div>
+          </div>
+        </div>
+          </div>
+        </div>
+        <!-- 右栏：客户资料卡 300px（与 Tele① 的 .tg-conv-aside 同一个宽度档）。
+             🔴 容器 id 沿用旧的 #chat-head（不是新起一个）：这样 style.css 里既有的
+             `#chat-head .ch-card / .tv-head / .tv-actions` 与测试脚本那一整套选择器
+             **一个都不用改**，观感直接继承 Tele 档案卡那一档。
+             内容由 app.js renderChatHead() 渲染（.tv-card 竖排一栏 + 三个按钮在卡内底部）。 -->
+        <div class="tg-conv-aside gen-aside" id="chat-head">
+          <div class="tv-card ch-card" id="ch-head-slot"></div>
+        </div>
+       </div>
+      </div>
+
+      <!-- 页签2「Tele①」：Telegram 内置浏览器 + **右侧 Telegram 对话翻译面板**。
+           · partition="persist:tg-tele-7" = 独立 Cookie 分区，登录态存本机，关掉软件再开还在
+           · src 故意留空，第一次点这个页签时才由 app.js 的 switchMidTab() 填上（懒加载，启动不拖慢）
+           · 预填发送仍走 telegramRead.openOrFocus 的老路；这里**绝不自动发送**（铁律）
+
+           🔴 2026-10-11 老板看图纠正（QQ20261011-232614.png 红框）：
+              翻译面板**不在右栏**，要放在**Telegram 网页这块区域里、贴着右边**。
+              所以这里改成左右分栏：左 = Telegram 网页（webview），右 = 翻译面板（自绘）。
+              · 翻译面板按「一条一块」列出来：对方原话 → 中文译文（最新一条在最上面，最多 20 条）
+              · 另外顺手把译文**贴到 Telegram 每条气泡下方**（老板选的方案，见 app.js paintTgBubbles）
+              · 翻译对象**只看 Telegram**：去库里找「当前打开对话 / 最新有未读的那个对话」的客户档案。
+                如果最下面那个人的最新一条消息是你自己发的，那优先翻**上一个对话**（那就是要回的人）。 -->
+      <div class="mid-pane hidden" data-mp="tele1">
+        <div class="tele-wrap">
+          <!-- v2.6.1107 软件版「好友对话选择」：Tele① 页签左端一列，由 MTProto 官方通道喂数据。
+               没登录 / 没建档时显示占位提示；点一个好友 → 右侧资料卡 + 对话信息跟着切换。
+               主窗口最左栏的 Telegram 客户已不再出现（见 app.js paintCustomers），改由这里统一选择。 -->
+          <div class="tg-friends" id="tg-friends">
+            <div class="tgf-head">
+              <span>Telegram · 好友对话</span>
+              <!-- 🔴 v2.6.1112 老板拍板：「对话信息」列改成**可缩到 0 的弹性列**（QQ20261014-140415 红框）。
+                   窗口够宽自动占满剩余、主窗口收窄自动压到 0；这个按钮是**手动**开关，
+                   老板想主动收起 ③ 时点它，再点一次展开（与窗口宽度互不干扰）。 -->
+              <button class="tgf-toggle on" id="tg-chat-toggle"
+                      title="收起 / 展开「对话信息」列（快捷键 Alt+D）">对话 ▤</button>
+            </div>
+            <div class="tgf-list" id="tgf-list">
+              <div class="tv-empty">登录后这里列出你的 Telegram 对话</div>
+            </div>
+            <div class="tgf-foot">点一个好友 → 右边出他的资料卡和对话</div>
+          </div>
+          <!-- 🔴 v2.6.1108 老板看图拍板（QQ20261014-030311.png 红框 + 预览图确认）：
+               「对话信息」从资料卡底部**搬出来独立成列**，插在好友对话列和客户资料卡之间。
+               · 客户说的在左（灰气泡）、我自己的在右（蓝气泡）
+               · 双方消息只要不是中文，下面都跟一个「译」气泡（浅蓝底 + 深蓝 #1f6aa5 中文）
+               · 🔴 翻译铁律：中文不出「译」气泡；任何非中文（英/西/法/俄…）都译成中文
+               · 数据走 /api/customer/<code>（和旧 renderTgConvInfo 同一条路），实时新消息由
+                 onTelegramMessageLive 直接往 #tg-chat-body 追加
+               下面资料卡底部那块旧「对话信息」（.tv-conv / #tg-convinfo-body）已删除，不重复。 -->
+          <div class="tg-chat" id="tg-chat">
+            <div class="tgc-head">
+              <span class="tgc-title">对话信息</span>
+              <span class="tgc-sub" id="tg-chat-sub">点一个好友，这里列他这段对话</span>
+            </div>
+            <div class="tgc-body" id="tg-chat-body">
+              <div class="tv-empty">点一个好友，这里列他这段对话的原话 + 中文</div>
+            </div>
+          </div>
+          <!-- 🔴 v2.6.1093 老板拍板：Tele① 改回**真正的内置浏览器**（扫码登录）。
+               原生会话列表 / 原生气泡 / 回复框三块**全部删除**（读库那套在 v2.5.1085 换上的，
+               但它只是把库里已有的数据再画一遍，并不产生新数据 → 老板反馈"收不到信息"）。
+               现在左半 = 真的 Telegram 网页，你在网页里自己看、自己发、自己登录。
+
+               · partition="persist:tg-tele-7" = 独立 Cookie 分区，登录态存本机，关软件再开还在
+               · src 故意留空，第一次点这个页签时才由 app.js 的 switchMidTab() 填上（懒加载，启动不拖慢）
+               · 回复/发图/发视频都在网页里自己操作 —— 本软件**绝不自动发送**（铁律不变）
+
+               老板已确认删掉的三件：
+                 ① tele-left 读库会话列表   ② tg-conv 读库气泡区
+                 ③ tg-composer 回复框（发消息/图片/视频 —— 就是"unnamed、对方收不到"那个问题源）
+               保留的只有最右 .tg-conv-aside（客户资料卡 + 采集状态 + 日志），**一个字节不动**。 -->
+          <!-- 🔴 v2.6.1106 老板拍板（2026-10-14）：Tele① 改成「软件版」，**网页版内核整体删除**。
+               原来这一整块 .tele-browser（网址框 #tgb-url +「前往」#tgb-go + <webview id="tg-webview"
+               partition="persist:tg-tele-7">）已经整块拿掉 —— 软件里不再塞一个浏览器内核。
+
+               改由 MTProto 官方直连承担，只做四件事：
+                 ① 实时收新消息（startWatching + onMessages，官方推送，比网页版轮询快）
+                 ② 取客户档案：真实手机号 / username / 头像 / 在线状态（getUserProfile —— 网页版永远拿不到真实手机号）
+                 ③ 私聊 · 群组 · 频道都能读（getEntity 解析三种 Peer）
+                 ④ 登录一次长期复用（saveSession / loadSession，凭证落盘）
+               下面右侧的客户资料卡 + 对话信息原地保留，数据改由官方通道喂。 -->
+
+          <!-- 🔴 v2.6.1094 老板看图定稿（QQ20261013-150420.png）：
+               第三栏 = ① 客户资料卡（方案一·竖排单列，颜色全沿用「通用」那一套）
+                        ② 三个按钮（跳到聊天 / 客户档案 / 从对话里提取档案）
+                        ③ 对话信息（原「Telegram 日志」那块换掉的）
+               铁律：资料卡**只显示基本信息**；「客户档案」是**按钮**，点了才弹那个 16 项窗口。 -->
+          <div class="tg-conv-aside">
+            <!-- ① 客户资料卡：基本信息，竖排单列（方案一）。
+                 颜色沿用通用那边：加入时间红 / 认识第N天蓝 / Day紫 / 地区紫 / 当地时间绿 / 星黄。 -->
+            <div class="tv-card" id="tg-profile">
+              <div class="tv-body" id="tg-profile-body">
+                <div class="tv-empty">点左栏带 ∮ 的客户看资料</div>
+              </div>
+              <div class="tv-actions">
+                <!-- v2.6.1106：原「↗ 跳到聊天」（#tg-jump）随网页版一起删除 ——
+                     网页内核都没了，压根没有聊天窗口可跳。剩下两个按钮照旧。 -->
+                <button class="tv-btn tv-btn-blue" id="tg-profile-full" title="弹出这个客户的完整档案窗口（16 项）">客户档案</button>
+                <button class="tv-btn tv-btn-blue" id="tg-profile-extract" title="读整段对话，把能确认的档案字段抽出来补进档案">对话提档</button>
+              </div>
+            </div>
+
+            <!-- 采集状态提示：贴着资料卡下方（原来在日志上方，日志已换掉） -->
+            <div id="tg-status" class="tg-status hidden"></div>
+
+            <!-- 🔴 v2.6.1113 指令①：Tele①「Telegram 采集数据」日志（老板 2026-10-14 17:31 看图 QQ20261014-172911.png 指名）
+                 位置 = 老板图里那个**红框**（④ 资料卡下方、⑤ 右栏左边的空白区，撑满剩余高度）。
+                 内容要求（老板原话）：「展示放置 Telegram 采集数据，采集了哪些数据客户资料客户的信息，
+                 **哪怕没有采集到都需要展示在这里，当成日志**」→ 所以：
+                   · 每行一条：时间 + 账号(T①/T②) + 采到什么（手机号/用户名/在线/消息）
+                   · 采到了 →绿色；采不到 → 灰色写「未获取到」；失败 → 红色写原因
+                   · **一条都没有也要显示占位行**，绝不出现空白框（老板明确要求）
+                 复用历史遗留的 .tg-log 样式（CSS 一直都在，只是 HTML 被删过），不新发明排版。 -->
+            <div class="tg-log" id="tg-collect-log-tele1">
+              <div class="tg-log-head">Telegram 采集数据
+                <button class="mini tg-log-clear" id="tg-log-clear-tele1" title="清空这份日志">清空</button>
+              </div>
+              <div class="tg-log-body" id="tg-log-body-tele1">
+                <!-- 启动时由 app.js 灌入占位行：没采到也照样显示，不留白 -->
+                <div class="tg-log-line muted">等待采集…（每采到一条就往下记一条，没采到也会写明原因）</div>
+              </div>
+            </div>
+
+            <!-- 🔴 v2.6.1108：「对话信息」搬去中间独立列（见上面 .tg-chat），
+                 这块旧 .tv-conv / #tg-convinfo-body 已删除，不留第二份。 -->
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════ 页签3「WA①」：WhatsApp 内置浏览器（v2.6.1094 老板拍板） ══════════════
+           🔴 形态与 Tele① 完全对称（老板原话「功能界面可以模仿 Tele① 标签」）：
+              左半 = 真 WhatsApp 网页（地址栏 + webview，扫码登录，能看能发）
+              右半 = 客户资料卡（.tv-card）+ 三个按钮 + 对话信息（.tv-conv）——**直接复用 Tele① 的类**，
+                     不另发明排版、不另挑颜色，样式一个字节都没为 WA 新写。
+           🔴 partition 三条都互相独立，互不影响、互不踢：
+              persist:wa6       ← WA① 本页（**内置浏览器版，六号**）
+              persist:tg-tele-7 ← Tele①（Telegram）
+              外部 Chrome       ← 一号~五号（走 sessions\chrome-acc-N，不走 partition）
+           🔴 老板 v2.6.1095 定调：「WA① 不要跟一号一样，这个可以是另一个数据文件夹，
+              或者当成六号」→ 采纳**六号**：账号号 6、客户编号段 6A、数据夹 persist:wa6。
+              **WA① 是软件内置浏览器内核（webview），一号~五号是软件外独立 Chrome 进程，
+              两者不是同类**，顶栏账号条仍只显示一号~五号，六号不上去。
+           🔴 铁律不变：内置浏览器只是「看 + 手动预填」，**绝不自动发送**。
+           ⚠️ 「通用」和 Tele① 两块一个字节都没动。 -->
+      <div class="mid-pane hidden" data-mp="tele2">
+        <div class="tele-wrap">
+          <!-- v2.6.1107 软件版「好友对话选择」：Tele② 页签左端一列，由 MTProto 官方通道喂数据。
+               没登录 / 没建档时显示占位提示；点一个好友 → 右侧资料卡 + 对话信息跟着切换。
+               主窗口最左栏的 Telegram 客户已不再出现（见 app.js paintCustomers），改由这里统一选择。 -->
+          <div class="tg-friends" id="tg-friends-t2">
+            <div class="tgf-head">
+              <span>Telegram · 好友对话</span>
+              <!-- 🔴 v2.6.1112 老板拍板：「对话信息」列改成**可缩到 0 的弹性列**（QQ20261014-140415 红框）。
+                   窗口够宽自动占满剩余、主窗口收窄自动压到 0；这个按钮是**手动**开关，
+                   老板想主动收起 ③ 时点它，再点一次展开（与窗口宽度互不干扰）。 -->
+              <button class="tgf-toggle on" id="tg-chat-toggle-t2"
+                      title="收起 / 展开「对话信息」列（快捷键 Alt+D）">对话 ▤</button>
+            </div>
+            <div class="tgf-list" id="tgf-list-t2">
+              <div class="tv-empty">登录后这里列出你的 Telegram 对话</div>
+            </div>
+            <div class="tgf-foot">点一个好友 → 右边出他的资料卡和对话</div>
+          </div>
+          <!-- 🔴 v2.6.1108 老板看图拍板（QQ20261014-030311.png 红框 + 预览图确认）：
+               「对话信息」从资料卡底部**搬出来独立成列**，插在好友对话列和客户资料卡之间。
+               · 客户说的在左（灰气泡）、我自己的在右（蓝气泡）
+               · 双方消息只要不是中文，下面都跟一个「译」气泡（浅蓝底 + 深蓝 #1f6aa5 中文）
+               · 🔴 翻译铁律：中文不出「译」气泡；任何非中文（英/西/法/俄…）都译成中文
+               · 数据走 /api/customer/<code>（和旧 renderTgConvInfo 同一条路），实时新消息由
+                 onTelegramMessageLive 直接往 #tg-chat-body 追加
+               下面资料卡底部那块旧「对话信息」（.tv-conv / #tg-convinfo-body）已删除，不重复。 -->
+          <div class="tg-chat" id="tg-chat-t2">
+            <div class="tgc-head">
+              <span class="tgc-title">对话信息</span>
+              <span class="tgc-sub" id="tg-chat-sub-t2">点一个好友，这里列他这段对话</span>
+            </div>
+            <div class="tgc-body" id="tg-chat-body-t2">
+              <div class="tv-empty">点一个好友，这里列他这段对话的原话 + 中文</div>
+            </div>
+          </div>
+          <!-- 🔴 v2.6.1093 老板拍板：Tele② 改回**真正的内置浏览器**（扫码登录）。
+               原生会话列表 / 原生气泡 / 回复框三块**全部删除**（读库那套在 v2.5.1085 换上的，
+               但它只是把库里已有的数据再画一遍，并不产生新数据 → 老板反馈"收不到信息"）。
+               现在左半 = 真的 Telegram 网页，你在网页里自己看、自己发、自己登录。
+
+               · partition="persist:tg-tele-7" = 独立 Cookie 分区，登录态存本机，关软件再开还在
+               · src 故意留空，第一次点这个页签时才由 app.js 的 switchMidTab() 填上（懒加载，启动不拖慢）
+               · 回复/发图/发视频都在网页里自己操作 —— 本软件**绝不自动发送**（铁律不变）
+
+               老板已确认删掉的三件：
+                 ① tele-left 读库会话列表   ② tg-conv 读库气泡区
+                 ③ tg-composer 回复框（发消息/图片/视频 —— 就是"unnamed、对方收不到"那个问题源）
+               保留的只有最右 .tg-conv-aside（客户资料卡 + 采集状态 + 日志），**一个字节不动**。 -->
+          <!-- 🔴 v2.6.1106 老板拍板（2026-10-14）：Tele② 改成「软件版」，**网页版内核整体删除**。
+               原来这一整块 .tele-browser（网址框 #tgb-url +「前往」#tgb-go + <webview id="tg-webview"
+               partition="persist:tg-tele-7">）已经整块拿掉 —— 软件里不再塞一个浏览器内核。
+
+               改由 MTProto 官方直连承担，只做四件事：
+                 ① 实时收新消息（startWatching + onMessages，官方推送，比网页版轮询快）
+                 ② 取客户档案：真实手机号 / username / 头像 / 在线状态（getUserProfile —— 网页版永远拿不到真实手机号）
+                 ③ 私聊 · 群组 · 频道都能读（getEntity 解析三种 Peer）
+                 ④ 登录一次长期复用（saveSession / loadSession，凭证落盘）
+               下面右侧的客户资料卡 + 对话信息原地保留，数据改由官方通道喂。 -->
+
+          <!-- 🔴 v2.6.1094 老板看图定稿（QQ20261013-150420.png）：
+               第三栏 = ① 客户资料卡（方案一·竖排单列，颜色全沿用「通用」那一套）
+                        ② 三个按钮（跳到聊天 / 客户档案 / 从对话里提取档案）
+                        ③ 对话信息（原「Telegram 日志」那块换掉的）
+               铁律：资料卡**只显示基本信息**；「客户档案」是**按钮**，点了才弹那个 16 项窗口。 -->
+          <div class="tg-conv-aside">
+            <!-- ① 客户资料卡：基本信息，竖排单列（方案一）。
+                 颜色沿用通用那边：加入时间红 / 认识第N天蓝 / Day紫 / 地区紫 / 当地时间绿 / 星黄。 -->
+            <div class="tv-card" id="tg-profile-t2">
+              <div class="tv-body" id="tg-profile-body-t2">
+                <div class="tv-empty">点左栏带 ∮ 的客户看资料</div>
+              </div>
+              <div class="tv-actions">
+                <!-- v2.6.1106：原「↗ 跳到聊天」（#tg-jump）随网页版一起删除 ——
+                     网页内核都没了，压根没有聊天窗口可跳。剩下两个按钮照旧。 -->
+                <button class="tv-btn tv-btn-blue" id="tg-profile-full-t2" title="弹出这个客户的完整档案窗口（16 项）">客户档案</button>
+                <button class="tv-btn tv-btn-blue" id="tg-profile-extract-t2" title="读整段对话，把能确认的档案字段抽出来补进档案">对话提档</button>
+              </div>
+            </div>
+
+            <!-- 采集状态提示：贴着资料卡下方（原来在日志上方，日志已换掉） -->
+            <div id="tg-status-t2" class="tg-status hidden"></div>
+
+            <!-- 🔴 v2.6.1113 指令①：Tele②「Telegram 采集数据」日志（老板 2026-10-14 17:31 看图 QQ20261014-172911.png 指名）
+                 位置 = 老板图里那个**红框**（④ 资料卡下方、⑤ 右栏左边的空白区，撑满剩余高度）。
+                 内容要求（老板原话）：「展示放置 Telegram 采集数据，采集了哪些数据客户资料客户的信息，
+                 **哪怕没有采集到都需要展示在这里，当成日志**」→ 所以：
+                   · 每行一条：时间 + 账号(T①/T②) + 采到什么（手机号/用户名/在线/消息）
+                   · 采到了 →绿色；采不到 → 灰色写「未获取到」；失败 → 红色写原因
+                   · **一条都没有也要显示占位行**，绝不出现空白框（老板明确要求）
+                 复用历史遗留的 .tg-log 样式（CSS 一直都在，只是 HTML 被删过），不新发明排版。 -->
+            <div class="tg-log" id="tg-collect-log-t2">
+              <div class="tg-log-head">Telegram 采集数据
+                <button class="mini tg-log-clear" id="tg-log-clear-t2" title="清空这份日志">清空</button>
+              </div>
+              <div class="tg-log-body" id="tg-log-body-t2">
+                <!-- 启动时由 app.js 灌入占位行：没采到也照样显示，不留白 -->
+                <div class="tg-log-line muted">等待采集…（每采到一条就往下记一条，没采到也会写明原因）</div>
+              </div>
+            </div>
+
+            <!-- 🔴 v2.6.1108：「对话信息」搬去中间独立列（见上面 .tg-chat），
+                 这块旧 .tv-conv / #tg-convinfo-body 已删除，不留第二份。 -->
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════ 页签3「WA①」：WhatsApp 内置浏览器（v2.6.1094 老板拍板） ══════════════
+           🔴 形态与 Tele② 完全对称（老板原话「功能界面可以模仿 Tele② 标签」）：
+              左半 = 真 WhatsApp 网页（地址栏 + webview，扫码登录，能看能发）
+              右半 = 客户资料卡（.tv-card）+ 三个按钮 + 对话信息（.tv-conv）——**直接复用 Tele② 的类**，
+                     不另发明排版、不另挑颜色，样式一个字节都没为 WA 新写。
+           🔴 partition 三条都互相独立，互不影响、互不踢：
+              persist:wa6       ← WA① 本页（**内置浏览器版，六号**）
+              persist:tg-tele-7 ← Tele②（Telegram）
+              外部 Chrome       ← 一号~五号（走 sessions\chrome-acc-N，不走 partition）
+           🔴 老板 v2.6.1095 定调：「WA① 不要跟一号一样，这个可以是另一个数据文件夹，
+              或者当成六号」→ 采纳**六号**：账号号 6、客户编号段 6A、数据夹 persist:wa6。
+              **WA① 是软件内置浏览器内核（webview），一号~五号是软件外独立 Chrome 进程，
+              两者不是同类**，顶栏账号条仍只显示一号~五号，六号不上去。
+           🔴 铁律不变：内置浏览器只是「看 + 手动预填」，**绝不自动发送**。
+           ⚠️ 「通用」和 Tele② 两块一个字节都没动。 -->
+      <div class="mid-pane hidden" data-mp="wa1">
+        <div class="tele-wrap">
+          <div class="tele-browser">
+            <!-- 地址栏：形态与 Tele① 那条一模一样（网址框 + 前往），只换 id 前缀 -->
+            <div class="tgb-bar">
+              <input id="wa1-url" type="text" spellcheck="false" autocomplete="off"
+                     value="https://web.whatsapp.com"
+                     title="在这里填网址，按「前往」或回车就打开">
+              <button id="wa1-go" type="button">前往</button>
+            </div>
+            <webview id="wa1-webview"
+                     partition="persist:wa6"
+                     src=""
+                     allowpopups></webview>
+          </div>
+
+          <!-- 右半：客户资料卡 + 三按钮 + 对话信息（类名沿用 Tele① 那套 .tv-*） -->
+          <div class="tg-conv-aside">
+            <div class="tv-card">
+              <div class="tv-body" id="wa1-profile-body">
+                <div class="tv-empty">点左栏 WhatsApp 客户看资料</div>
+              </div>
+              <div class="tv-actions">
+                <button class="tv-btn tv-btn-blue" id="wa1-profile-full" title="弹出这个客户的完整档案窗口（16 项）">客户档案</button>
+                <button class="tv-btn tv-btn-blue" id="wa1-profile-extract" title="读整段对话，把能确认的档案字段抽出来补进档案">对话提档</button>
+              </div>
+            </div>
+
+            <!-- WA① 的采集状态提示：WA 账号跑没跑的红绿灯（跟 Tele① 的 tg-status 分开，互不干扰） -->
+            <div id="wa1-status" class="tg-status hidden"></div>
+
+            <div class="tv-conv">
+              <div class="tv-conv-head">对话信息
+              <button class="tv-repaint-btn" id="wa1-repaint" type="button" title="把网页上还没贴中文气泡的消息，按消息编号重新补上（emoji/空格差异都不怕）">↻ 补气泡</button>
+              <button class="tv-repaint-btn" id="wa1-mark-replied" type="button" title="把这个 WA① 客户从左栏收起（复用标记已回复，对话仍保留）">标记回复</button>
+            </div>
+              <div class="tv-conv-body" id="wa1-convinfo-body">
+                <div class="tv-empty">点左栏 WhatsApp 客户，这里列他这段对话的原话 + 中文</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════ 页签「WA②」：WhatsApp 内置浏览器（v2.6.1134 复刻自 WA①） ══════════════
+           🔴 与 WA① 完全对称，仅分区 / 账号号 / 编号段不同：
+              partition = persist:wa7（独立 Cookie 分区，登录态独立）
+              客户编号段 = WB00001（account_id=11）
+           🔴 铁律不变：内置浏览器只是「看 + 手动预填」，**绝不自动发送**。 -->
+      <div class="mid-pane hidden" data-mp="wa2">
+        <div class="tele-wrap">
+          <div class="tele-browser">
+            <div class="tgb-bar">
+              <input id="wa2-url" type="text" spellcheck="false" autocomplete="off"
+                     value="https://web.whatsapp.com"
+                     title="在这里填网址，按「前往」或回车就打开">
+              <button id="wa2-go" type="button">前往</button>
+            </div>
+            <webview id="wa2-webview"
+                     partition="persist:wa7"
+                     src=""
+                     allowpopups></webview>
+          </div>
+          <div class="tg-conv-aside">
+            <div class="tv-card">
+              <div class="tv-body" id="wa2-profile-body">
+                <div class="tv-empty">点左栏 WhatsApp 客户看资料</div>
+              </div>
+              <div class="tv-actions">
+                <button class="tv-btn tv-btn-blue" id="wa2-profile-full" title="弹出这个客户的完整档案窗口（16 项）">客户档案</button>
+                <button class="tv-btn tv-btn-blue" id="wa2-profile-extract" title="读整段对话，把能确认的档案字段抽出来补进档案">对话提档</button>
+              </div>
+            </div>
+            <div id="wa2-status" class="tg-status hidden"></div>
+            <div class="tv-conv">
+              <div class="tv-conv-head">对话信息
+              <button class="tv-repaint-btn" id="wa2-repaint" type="button" title="把网页上还没贴中文气泡的消息，按消息编号重新补上（emoji/空格差异都不怕）">↻ 补气泡</button>
+              <button class="tv-repaint-btn" id="wa2-mark-replied" type="button" title="把这个 WA② 客户从左栏收起（复用标记已回复，对话仍保留）">标记回复</button>
+            </div>
+              <div class="tv-conv-body" id="wa2-convinfo-body">
+                <div class="tv-empty">点左栏 WhatsApp 客户，这里列他这段对话的原话 + 中文</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════ 页签「WA③」：WhatsApp 内置浏览器（v2.6.1134 复刻自 WA①） ══════════════
+           🔴 partition = persist:wa8；客户编号段 = WD00001（account_id=12，⚠️ 跳过 WC，老板原话）。 -->
+      <div class="mid-pane hidden" data-mp="wa3">
+        <div class="tele-wrap">
+          <div class="tele-browser">
+            <div class="tgb-bar">
+              <input id="wa3-url" type="text" spellcheck="false" autocomplete="off"
+                     value="https://web.whatsapp.com"
+                     title="在这里填网址，按「前往」或回车就打开">
+              <button id="wa3-go" type="button">前往</button>
+            </div>
+            <webview id="wa3-webview"
+                     partition="persist:wa8"
+                     src=""
+                     allowpopups></webview>
+          </div>
+          <div class="tg-conv-aside">
+            <div class="tv-card">
+              <div class="tv-body" id="wa3-profile-body">
+                <div class="tv-empty">点左栏 WhatsApp 客户看资料</div>
+              </div>
+              <div class="tv-actions">
+                <button class="tv-btn tv-btn-blue" id="wa3-profile-full" title="弹出这个客户的完整档案窗口（16 项）">客户档案</button>
+                <button class="tv-btn tv-btn-blue" id="wa3-profile-extract" title="读整段对话，把能确认的档案字段抽出来补进档案">对话提档</button>
+              </div>
+            </div>
+            <div id="wa3-status" class="tg-status hidden"></div>
+            <div class="tv-conv">
+              <div class="tv-conv-head">对话信息
+              <button class="tv-repaint-btn" id="wa3-repaint" type="button" title="把网页上还没贴中文气泡的消息，按消息编号重新补上（emoji/空格差异都不怕）">↻ 补气泡</button>
+              <button class="tv-repaint-btn" id="wa3-mark-replied" type="button" title="把这个 WA③ 客户从左栏收起（复用标记已回复，对话仍保留）">标记回复</button>
+            </div>
+              <div class="tv-conv-body" id="wa3-convinfo-body">
+                <div class="tv-empty">点左栏 WhatsApp 客户，这里列他这段对话的原话 + 中文</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════ 页签「WA④」：WhatsApp 内置浏览器（v2.6.1134 复刻自 WA①） ══════════════
+           🔴 partition = persist:wa9；客户编号段 = WE00001（account_id=13）。 -->
+      <div class="mid-pane hidden" data-mp="wa4">
+        <div class="tele-wrap">
+          <div class="tele-browser">
+            <div class="tgb-bar">
+              <input id="wa4-url" type="text" spellcheck="false" autocomplete="off"
+                     value="https://web.whatsapp.com"
+                     title="在这里填网址，按「前往」或回车就打开">
+              <button id="wa4-go" type="button">前往</button>
+            </div>
+            <webview id="wa4-webview"
+                     partition="persist:wa9"
+                     src=""
+                     allowpopups></webview>
+          </div>
+          <div class="tg-conv-aside">
+            <div class="tv-card">
+              <div class="tv-body" id="wa4-profile-body">
+                <div class="tv-empty">点左栏 WhatsApp 客户看资料</div>
+              </div>
+              <div class="tv-actions">
+                <button class="tv-btn tv-btn-blue" id="wa4-profile-full" title="弹出这个客户的完整档案窗口（16 项）">客户档案</button>
+                <button class="tv-btn tv-btn-blue" id="wa4-profile-extract" title="读整段对话，把能确认的档案字段抽出来补进档案">对话提档</button>
+              </div>
+            </div>
+            <div id="wa4-status" class="tg-status hidden"></div>
+            <div class="tv-conv">
+              <div class="tv-conv-head">对话信息
+              <button class="tv-repaint-btn" id="wa4-repaint" type="button" title="把网页上还没贴中文气泡的消息，按消息编号重新补上（emoji/空格差异都不怕）">↻ 补气泡</button>
+              <button class="tv-repaint-btn" id="wa4-mark-replied" type="button" title="把这个 WA④ 客户从左栏收起（复用标记已回复，对话仍保留）">标记回复</button>
+            </div>
+              <div class="tv-conv-body" id="wa4-convinfo-body">
+                <div class="tv-empty">点左栏 WhatsApp 客户，这里列他这段对话的原话 + 中文</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════ 页签「WA⑤」：WhatsApp 内置浏览器（v2.6.1134 复刻自 WA①） ══════════════
+           🔴 partition = persist:wa10；客户编号段 = WF00001（account_id=14）。 -->
+      <div class="mid-pane hidden" data-mp="wa5">
+        <div class="tele-wrap">
+          <div class="tele-browser">
+            <div class="tgb-bar">
+              <input id="wa5-url" type="text" spellcheck="false" autocomplete="off"
+                     value="https://web.whatsapp.com"
+                     title="在这里填网址，按「前往」或回车就打开">
+              <button id="wa5-go" type="button">前往</button>
+            </div>
+            <webview id="wa5-webview"
+                     partition="persist:wa10"
+                     src=""
+                     allowpopups></webview>
+          </div>
+          <div class="tg-conv-aside">
+            <div class="tv-card">
+              <div class="tv-body" id="wa5-profile-body">
+                <div class="tv-empty">点左栏 WhatsApp 客户看资料</div>
+              </div>
+              <div class="tv-actions">
+                <button class="tv-btn tv-btn-blue" id="wa5-profile-full" title="弹出这个客户的完整档案窗口（16 项）">客户档案</button>
+                <button class="tv-btn tv-btn-blue" id="wa5-profile-extract" title="读整段对话，把能确认的档案字段抽出来补进档案">对话提档</button>
+              </div>
+            </div>
+            <div id="wa5-status" class="tg-status hidden"></div>
+            <div class="tv-conv">
+              <div class="tv-conv-head">对话信息
+              <button class="tv-repaint-btn" id="wa5-repaint" type="button" title="把网页上还没贴中文气泡的消息，按消息编号重新补上（emoji/空格差异都不怕）">↻ 补气泡</button>
+              <button class="tv-repaint-btn" id="wa5-mark-replied" type="button" title="把这个 WA⑤ 客户从左栏收起（复用标记已回复，对话仍保留）">标记回复</button>
+            </div>
+              <div class="tv-conv-body" id="wa5-convinfo-body">
+                <div class="tv-empty">点左栏 WhatsApp 客户，这里列他这段对话的原话 + 中文</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <aside id="panel">
+      <!-- 右栏两个页签（2026-10-09 老板要求）：
+             · 话术库        = 常用回复话术（场景 → 三种情绪：温柔甜 / 幽默俏皮 / 克制高冷），可增删改
+             · 手动自由翻译   = 输入中文翻成外文（3 情绪版本）/ 输入其他语言翻成中文
+                                （原「AI 建议」已改为独立浮窗，不再占右栏）
+           🔴 2026-10-11 老板看图纠正：「对话翻译」页签**已从这里删除**（位置错了），
+              改到中栏 Tele① 页签内、贴着 Telegram 网页右边（见上面 .tg-conv）。
+           客户档案已经改成弹窗（见下面的 #pf-modal），打开方式在中栏头部。 -->
+      <div class="panel-tabs">
+        <button class="ptab on" data-pt="lib">话术库</button>
+        <button class="ptab" data-pt="ft">手动自由翻译</button>
+        <!-- 🔴 v2.6.1112 老板拍板（QQ20261014-140415 后补要求）：
+             「如果宽度降到 1118 以下，右栏也需要收缩，在 400px 这个位置加个类似手动开关的自动开关」。
+             · 开关 = **自动**：开着时⑤ 随主窗口自动收缩（500 → 400 → 320 → 14px 窄条），主窗口拉宽又自己回来
+             · 关着时 ⑤ 永远 500 定宽，窗口再窄也不动（宁可挤爆也不动，行为可预期）
+             · 与 ③ 那个「对话 ▤」手动开关**互不干扰**，各管各的栏 -->
+        <button class="pt-auto on" id="panel-auto-toggle"
+                title="自动收缩：开着时主窗口变窄，右栏会跟着收（500→400→320→收起）">⇥ 自动</button>
+      </div>
+
+      <div class="card pbody" data-pb="lib">
+        <div class="lib-head">
+          <span class="lib-title">常用话术</span>
+          <span id="lib-src" class="lib-src"></span>
+          <span class="lib-spacer"></span>
+          <button id="btn-lib-add" class="mini">＋ 场景</button>
+          <button id="btn-lib-refresh" class="mini" title="重新拉取">⟳</button>
+        </div>
+        <!-- 新建场景：Electron 不支持 window.prompt（会直接抛错），改成页内输入条 -->
+        <div id="lib-new" class="lib-new hidden">
+          <input id="lib-new-name" class="lib-name" placeholder="新场景名字，如：客户夸漂亮" maxlength="60">
+          <button id="lib-new-ok" class="mini primary">保存</button>
+          <button id="lib-new-cancel" class="mini">取消</button>
+        </div>
+        <div id="reply-lib" class="reply-lib"></div>
+      </div>
+
+      <div class="card pbody hidden" data-pb="ft">
+        <div class="ft-head">
+          <div class="ft-modes">
+            <button class="ft-mode on" data-mode="zh2en">中文 → 外文</button>
+            <button class="ft-mode" data-mode="other2zh">外文 → 中文</button>
+          </div>
+        </div>
+        <div class="ft-lang" id="ft-lang-wrap">
+          <label>目标语言</label>
+          <select id="ft-lang">
+            <option value="英语">英语（默认）</option>
+            <option value="西班牙语">西班牙语</option>
+            <option value="法语">法语</option>
+            <option value="德语">德语</option>
+            <option value="日语">日语</option>
+            <option value="韩语">韩语</option>
+            <option value="俄语">俄语</option>
+            <option value="葡萄牙语">葡萄牙语</option>
+          </select>
+        </div>
+        <textarea id="ft-input" class="ft-input" placeholder="输入中文（翻成选中的外文、给 3 种情绪版本）；或输入其他语言（自动翻成中文）…"></textarea>
+        <div class="ft-actions">
+          <button id="ft-go" class="primary">翻译</button>
+          <span id="ft-provider" class="ft-prov"></span>
+        </div>
+        <div id="ft-out" class="ft-out"></div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- 客户档案弹窗：中栏头部最右端那个「客户档案」按钮打开它（2026-09-25 从右栏搬过来）。
+       内容还是原来那份档案表（人 / 动机 / 规格 / 状态 + 加入时间 / 姓名 / 地区 / 时区 / 阶段 / 情绪）。
+       两个动作按钮都在**窗口最上面**（2026-09-25 按用户要求把底部的「保存档案」抬到顶部）：
+         · 「保存档案」= 在这里；   · 「从对话里提取档案」= 在**中栏头部右端**、
+           和「客户档案」按钮上下叠放（见 app.js 的 renderChatHead / `.ch-doc-col`）。 -->
+  <div id="pf-modal" class="modal hidden">
+    <div class="modal-mask" id="pf-mask"></div>
+    <div class="modal-box pf-box">
+      <div class="modal-head">
+        <span id="pf-title">客户档案</span>
+        <!-- 2026-10-07 老板指定位置（截图红框）：标题右边、「文件路径」左边。
+             绿灯 = 已判定号码带 + 且区号合法（= 不用再抓）；红灯 = 空 / 缺加号 / 抓不到。 -->
+        <span class="pf-phone-tools">
+          <span id="pf-phone-light" class="pf-light gray" title="判断中…">●</span>
+          <button id="pf-phone-grab" class="mini" title="去 WhatsApp 里读这位客户的资料，把号码抓下来填进「电话号码」框（会补上国际区号 +）">📞 抓取</button>
+        </span>
+        <!-- 2026-09-29 用户要求：标题里那串又长又丑的绝对路径去掉，改成一个按钮。
+             点「文件路径」才弹出这条 .md 存在电脑里的完整位置（弹层里可一键复制）。 -->
+        <span class="pf-path-wrap">
+          <button id="pf-path" class="mini" title="这份客户档案存在电脑里的哪个位置（点开可复制完整路径）">文件路径</button>
+          <div id="pf-path-pop" class="pf-path-pop hidden"></div>
+        </span>
+        <button id="pf-close" class="x" title="关闭">×</button>
+      </div>
+      <div class="modal-body" id="pf-body">
+        <!-- 顶部按钮条：原来在最下面的「保存档案」挪到最上面（不用滚到底部才找到） -->
+        <div class="pf-topbar">
+          <button id="pf-save" class="primary" title="把手改过的字段存下来（阶段 / 情绪 / 档案表都一起存）">保存档案</button>
+          <!-- 2026-09-29 用户要求：按钮**旁边**就是这句红字提醒（自动抓取拿不到电话/姓名是常态，
+               别让用户以为是软件坏了）。灰字那句只是补充"怎么存"。 -->
+          <span class="pf-tip-red">电话和姓名需要手动添加，没获取到就空着</span>
+          <span class="pf-topbar-tip">改完点左边按钮即存，别编</span>
+        </div>
+        <div id="profile"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 翻译弹窗：选中某条中文建议 → 译成 2-3 个英文版本（按客户信息调口吻）
+       模型不写死：显示「AI 设置 → ④ 采纳后翻成英文」当前选的那家（DeepSeek / GPT / Agnes）。
+       「方式」可选自动翻译（开窗即翻）或手动翻译（点「翻译」才翻），选择记在本机。 -->
+  <div id="tr-modal" class="modal hidden">
+    <div class="modal-mask" id="tr-mask"></div>
+    <div class="modal-box">
+      <div class="modal-head">
+        <span>翻译建议 · 英文口语</span>
+        <button id="tr-close" class="x" title="关闭">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="tr-src">
+          <b>中文原文</b>
+          <div id="tr-src-text" class="zh-src"></div>
+        </div>
+        <div class="tr-bar">
+          <label>模型
+            <span class="tr-model" id="tr-provider-label" title="在「AI 设置 → ④ 采纳后翻成英文」里换">读取中…</span>
+          </label>
+          <label>版本数
+            <select id="tr-count">
+              <option value="2">2 个</option>
+              <option value="3">3 个</option>
+            </select>
+          </label>
+          <label>方式
+            <select id="tr-mode">
+              <option value="manual">手动翻译</option>
+              <option value="auto">自动翻译</option>
+            </select>
+          </label>
+          <button id="tr-go" class="primary">翻译</button>
+        </div>
+        <div id="tr-out" class="tr-out">
+          <div class="hint">点「翻译」后，会按这个客户的地区（比如美国人→美式口语）、到第几天、朋友关系口吻，给出 2-3 个英文版本，并附 AI 的整体建议。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- v2.5.1054：Telegram 应用内登录弹窗（替代 web.telegram.org 手动登录） -->
+  <div id="tg-login-modal" class="modal hidden">
+    <div class="modal-mask" id="tg-login-mask"></div>
+    <div class="modal-box tg-login-box">
+      <div class="modal-head">
+        <span>Telegram 登录 · <span id="tg-login-acct">—</span></span>
+        <button id="tg-login-close" class="x" title="关闭">×</button>
+      </div>
+      <div class="modal-body">
+        <div id="tg-login-status" class="tg-login-status">准备中…</div>
+
+        <div class="tg-login-step hidden" id="tg-step-phone">
+          <label>手机号（含国家码）</label>
+          <input id="tg-login-phone" type="text" placeholder="+8613800138000" autocomplete="off" />
+        </div>
+        <div class="tg-login-step hidden" id="tg-step-code">
+          <label>登录验证码</label>
+          <input id="tg-login-code" type="text" placeholder="Telegram 发来的验证码" autocomplete="off" />
+        </div>
+        <div class="tg-login-step hidden" id="tg-step-password">
+          <label>两步验证密码</label>
+          <input id="tg-login-password" type="password" placeholder="若账号开了两步验证才需要" autocomplete="off" />
+        </div>
+
+        <div class="tg-login-actions">
+          <button id="tg-login-next" class="primary">下一步</button>
+          <button id="tg-login-cancel" class="ghost">取消</button>
+        </div>
+        <div class="hint">登录的是你自己的 Telegram 号，只读取消息、绝不自动发送。验证码会由 Telegram 发到你的手机 / App。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 需求③：点某条客户消息后的「建议」按钮弹出的小窗，只针对那一条给 3 条回复建议。
+       和右侧主面板共用同一套「分组建议」渲染（renderGroups），采纳/翻译逻辑也复用。 -->
+  <div id="msg-suggest-modal" class="modal hidden">
+    <div class="modal-mask" id="msg-suggest-mask"></div>
+    <div class="modal-box msg-suggest-box">
+      <div class="modal-head">
+        <span>针对这条消息的建议</span>
+        <button id="msg-suggest-close" class="x" title="关闭">×</button>
+      </div>
+      <div class="modal-body">
+        <div id="msg-suggest-src" class="msg-suggest-src"></div>
+        <div id="msg-suggest-groups" class="suggest-out"></div>
+        <div class="again">
+          <button id="msg-suggest-again">都不行，换一批</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 每日话术编排台：右側浮動面板（非全屏遮罩，符合界面红线）。
+       打开方式：顶栏「话术编排台」按钮；软件启动后若已选客户会自动浮出一次。
+       左栏=Day 话题碎片（按本地时间静默划线）；右栏=选中碎片的对话卡片（英文+中文+修改/已发/复制/发送）。
+       数据来自 /api/board/:code，落盘在 <DATA>/board/<编号>.json。 -->
+  <div id="board-panel" class="board-panel hidden">
+    <div class="board-head">
+      <div class="board-title">每日话术编排台</div>
+      <div class="board-cust" id="board-cust"></div>
+      <button id="board-close" class="x" title="收起">×</button>
+    </div>
+    <div class="board-body">
+      <div class="board-left" id="board-left">
+        <div class="board-left-tip" id="board-left-tip">Day 1 话题碎片</div>
+        <div class="board-list" id="board-list"></div>
+        <div class="board-left-btns">
+          <button class="bp-btn bp-add" id="board-add" title="添加一个话题碎片">＋添加</button>
+          <button class="bp-btn" id="board-edit">改</button>
+          <button class="bp-btn bp-del" id="board-del">删</button>
+          <button class="bp-btn bp-v376 hidden" id="board-v376" title="把 V3.7.6.1 新增的话术碎片补进这份看板（只补没有的，不覆盖你改过的）">补全新话术</button>
+        </div>
+      </div>
+      <div class="board-right" id="board-right">
+        <div class="board-right-head">
+          <span class="board-frag-name" id="board-frag-name">—</span>
+          <button class="bp-btn" id="board-sentall" title="把当前话题里的对话一次标完「已发」（只记本机，不联网）">全部已发</button>
+          <button class="bp-btn bp-add" id="board-adddlg">+ 添加对话</button>
+          <button class="bp-btn bp-del" id="board-delfrag">删</button>
+          <!-- Day 分页（2026-09-30 用户指定位置）：按话术流程翻前一天/后一天的话题碎片 -->
+          <span class="bp-pager">
+            <button class="bp-btn" id="board-prev" title="上一页（前一天的话题碎片）">上一页</button>
+            <span class="bp-page" id="board-page">Day 1</span>
+            <button class="bp-btn" id="board-next" title="下一页（下一天的话题碎片）">下一页</button>
+          </span>
+        </div>
+        <div class="board-cards" id="board-cards">
+          <div class="board-empty">← 点左侧一个碎片查看对话</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 改碎片弹窗（名称 + 早上/晚上；都不选=通用） -->
+    <div class="board-pop hidden" id="board-pop-frag">
+      <div class="board-pop-box">
+        <div class="board-pop-title" id="bp-frag-title">修改碎片</div>
+        <label class="board-field">碎片名称
+          <input id="bp-frag-name" type="text" maxlength="40">
+        </label>
+        <label class="board-check"><input id="bp-frag-morning" type="checkbox"> 早上的对话</label>
+        <label class="board-check"><input id="bp-frag-evening" type="checkbox"> 这是晚上的对话</label>
+        <div class="board-check-tip">两个都不选 = 通用（早晚都能用）</div>
+        <div class="board-pop-btns">
+          <button class="bp-btn" id="bp-frag-cancel">取消</button>
+          <button class="bp-btn bp-primary" id="bp-frag-save">保存</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 添加/修改对话弹窗 -->
+    <div class="board-pop hidden" id="board-pop-dlg">
+      <div class="board-pop-box">
+        <div class="board-pop-title" id="bp-dlg-title">添加对话</div>
+        <label class="board-field">英文（发到 WhatsApp 的内容）
+          <textarea id="bp-dlg-en" rows="3"></textarea>
+        </label>
+        <label class="board-field">中文翻译（仅参考，不发）
+          <textarea id="bp-dlg-zh" rows="2"></textarea>
+        </label>
+        <div class="board-pop-btns">
+          <button class="bp-btn" id="bp-dlg-cancel">取消</button>
+          <button class="bp-btn bp-primary" id="bp-dlg-save">保存</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 删除碎片弹窗（密码 123456） -->
+    <div class="board-pop hidden" id="board-pop-del">
+      <div class="board-pop-box">
+        <div class="board-pop-title">删除碎片</div>
+        <p class="board-pop-warn">确定删除「<span id="bp-del-name"></span>」及其所有对话？此操作不可恢复。</p>
+        <label class="board-field">密码
+          <input id="bp-del-pwd" type="password" maxlength="20" placeholder="123456">
+        </label>
+        <div class="board-pop-btns">
+          <button class="bp-btn" id="bp-del-no">否</button>
+          <button class="bp-btn bp-danger" id="bp-del-yes">是</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 删除单条对话弹窗（右上角「删」：删右侧被点选的那条） -->
+    <div class="board-pop hidden" id="board-pop-del-dlg">
+      <div class="board-pop-box">
+        <div class="board-pop-title">删除这条对话</div>
+        <p class="board-pop-warn">确定删除右侧选中的这条对话？此操作不可恢复。</p>
+        <p class="board-pop-quote" id="bp-deldlg-text"></p>
+        <div class="board-pop-btns">
+          <button class="bp-btn" id="bp-deldlg-no">否</button>
+          <button class="bp-btn bp-danger" id="bp-deldlg-yes">是</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 启动登录浮层（v1.0.3）：打开软件先填编号 + 密码，登录并同步数据后进入主窗口。
+       和主窗口同个界面、一样大，刚好盖住主窗；登录加载成功后自动关闭。 -->
+  <div id="boot-login" class="boot-login">
+    <div class="boot-card">
+      <div class="boot-logo">🐝 蜜蜂信息采集</div>
+      <div class="boot-sub">登录编号后加载你的话术数据</div>
+
+      <form id="boot-form" class="boot-form" autocomplete="off">
+        <label class="boot-field">
+          <span>编号</span>
+          <!-- 2026-10-11 v2.5.1043 老板看图要求：编号框里不许有任何提示文字 -->
+          <input id="boot-code" type="text" autocomplete="off">
+        </label>
+        <label class="boot-field">
+          <span>密码</span>
+          <input id="boot-pass" type="password" placeholder="管理员给你的密码" autocomplete="off">
+        </label>
+        <div id="boot-err" class="boot-err"></div>
+        <button id="boot-go" type="submit" class="boot-go">登录并加载</button>
+      </form>
+
+      <div id="boot-loading" class="boot-loading hidden">
+        <div class="boot-progress"><div id="boot-bar" class="boot-bar"></div></div>
+        <div id="boot-status" class="boot-status">正在登录云端…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 关闭软件时的「数据保存中」进度条浮层（v2.6.1127 共享翻译记忆） -->
+  <div id="tm-sync-overlay" class="tm-sync-overlay">
+    <div class="tm-sync-card">
+      <div class="tm-sync-title">数据保存中…</div>
+      <div class="tm-sync-status" id="tm-sync-status">正在同步翻译记忆到后台数据库</div>
+      <div class="tm-sync-track"><div class="tm-sync-fill" id="tm-sync-fill"></div></div>
+      <div class="tm-sync-pct" id="tm-sync-pct">0%</div>
+      <div class="tm-sync-note">同步完成后自动退出，请勿关闭窗口</div>
+    </div>
+  </div>
+
+  <!-- 关闭确认浮层（v2.6.1133）：点 X 先弹这个，确定才走「备份+进度条→退出」 -->
+  <div id="close-confirm-overlay" class="close-confirm-overlay">
+    <div class="close-confirm-card">
+      <div class="close-confirm-title">确定关闭？</div>
+      <div class="close-confirm-text">关闭前会先把翻译记忆备份到云端数据库（已登录且在线时）。若当前离线，将记录为「上次未备份」，下次打开软件自动补传。</div>
+      <div class="close-confirm-actions">
+        <button id="close-cancel" class="close-cancel-btn" type="button">取消</button>
+        <button id="close-ok" class="close-ok-btn" type="button">确定关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/board.js?v=__BUILD__"></script>
+  <script src="/app.js?v=__BUILD__"></script>
+  <!-- 🔴 v2.6.1106 界面权限：放在 app.js **之后**，等首页初始化跑完再收权限，
+       这样「把人从受限页签挪走」这一步才压得住。规则全在 perm.js 里，这里只负责引入。 -->
+  <script src="/perm.js?v=__BUILD__"></script>
+</body>
+</html>

@@ -1,0 +1,117 @@
+# GitHub 发布 · 速查卡（边做边看）
+
+> 仓库：baiqiuran-mf / bee-assistant-releases（已存在、公开、**目前是空的**）
+> gh 已装好：2.102.0，路径 `C:\Program Files\GitHub CLI\gh.exe`
+
+---
+
+## 现在卡在哪一步
+
+`gh` 装好了，但**还没登录** —— 登录需要你本人在浏览器点授权，我做不了。
+
+我已经帮你把授权窗口弹出来了。你去浏览器里操作：
+
+### 登录（1 分钟）
+
+**方法 A：刚弹出的浏览器页面**
+1. 看浏览器有没有新标签页打开（标题是 "Sign in to GitHub"）
+2. 登录 `baiqiuran-mf` 账号
+3. 点绿色 **Authorize github** 按钮
+4. 回到命令行，会显示登录成功
+
+**方法 B：如果浏览器没自动打开，手动跑这条**
+打开「终端」或「命令提示符」，粘贴：
+```
+"C:\Program Files\GitHub CLI\gh.exe" auth login --hostname github.com --git-protocol https --web
+```
+然后按提示选：
+- `What account do you want to log into?` → 选 **GitHub.com**
+- `What is your preferred protocol?` → 选 **HTTPS**
+- `Authenticate Git with your GitHub credentials?` → 选 **Yes**
+- `How would you like to authenticate GitHub CLI?` → 选 **Login with a web browser**
+- 会显示一个一次性验证码（如 `XXXX-XXXX`）→ 复制
+- 浏览器打开 `https://github.com/login/device`，粘贴验证码 → Authorize
+
+**验证登录成功：**
+```
+"C:\Program Files\GitHub CLI\gh.exe" auth status
+```
+看到 `Logged in to github.com account baiqiuran-mf` 就成了。
+
+---
+
+## 登录成功后：发布 1.5.0（一条命令）
+
+```
+cd /d E:\WorkBuddy-Projects\wa-assistant
+
+"C:\Program Files\GitHub CLI\gh.exe" release create v1.5.0 ^
+  release\wa-assistant-setup-1.5.0.exe ^
+  release\wa-assistant-setup-1.5.0.exe.blockmap ^
+  release\latest.yml ^
+  --title "蜜蜂信息采集 v1.5.0" ^
+  --notes "Signal 真正开始采集新消息 + 图片解密打通 + 顶栏状态灯" ^
+  --latest
+```
+
+> **注意**：项目里已经有 1.5.0 的打包产物，**不用重新打包**，直接发就行。
+
+---
+
+## 验证
+
+```
+"C:\Program Files\GitHub CLI\gh.exe" release list
+```
+
+浏览器打开：
+```
+https://github.com/baiqiuran-mf/bee-assistant-releases/releases
+```
+
+再确认这个地址能通（返回 200）：
+```
+https://github.com/baiqiuran-mf/bee-assistant-releases/releases/latest/download/latest.yml
+```
+
+---
+
+## 如果报错
+
+| 报错 | 怎么办 |
+|---|---|
+| `HTTP 404` | 仓库名错了，或登录的账号不是 baiqiuran-mf |
+| `HTTP 403` | 权限不够，重新登录时确认选的是 baiqiuran-mf 账号 |
+| `release already exists` | 已经有 v1.5.0 了，加 `--clobber` 覆盖 |
+| `file not found` | 没 `cd` 到项目目录，或文件名拼错 |
+| 客户端说「已最新」但有新版 | Release 没勾 `--latest`，或 `latest.yml` 没传上去 |
+
+---
+
+## 以后的固定流程
+
+1. 改 `package.json` 的 `version`
+2. `rm -f dist/*.7z`
+3. `set ELECTRON_BUILDER_CACHE=E:/WorkBuddy-Projects/_builder-cache` + `npm run pack`
+4. `gh release create v1.6.0 ...`（版本号和三个文件名都换新）
+5. `gh release list` 确认
+
+---
+
+## 两个必须知道的坑
+
+1. **`latest.yml` 和 exe 必须是同一次打包的产物** —— yml 里记着 exe 的 sha512 校验值，
+   手工换 exe 不换 yml 会**校验失败**。
+2. **`latest.yml` 必须每次都传** —— 软件靠它知道最新版是哪个版本。漏了就更新不了。
+
+---
+
+## 顺便：文件位置
+
+| 东西 | 在哪 |
+|---|---|
+| 打包产物 | `E:\WorkBuddy-Projects\wa-assistant\release\` |
+| 版本号 | `package.json` 的 `version` |
+| 更新源配置 | `package.json` 的 `build.publish`（**已配好 github，不用改**） |
+| 更新代码 | `src/update.js` |
+| CHANGELOG（可当更新说明用） | `CHANGELOG.md` |

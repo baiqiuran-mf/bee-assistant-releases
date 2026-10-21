@@ -1,0 +1,7 @@
+{
+  "name": "titlebar-probe",
+  "version": "1.0.0",
+  "private": true,
+  "description": "仅用于验证「系统标题栏改蓝」（titleBarOverlay）效果的一次性探针，不参与打包。",
+  "main": "main.js"
+}

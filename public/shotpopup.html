@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>截图工具条</title>
+  <style>
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #1f2230; font: 13px/1 system-ui, sans-serif; }
+    .bar { display: flex; align-items: center; height: 30px; padding: 0 6px; gap: 6px; color: #e6e8ee; }
+    button {
+      height: 22px; line-height: 20px; padding: 0 12px; border: 1px solid #3a3f52;
+      background: #2a2e3e; color: #e6e8ee; border-radius: 5px; cursor: pointer; font-size: 13px;
+    }
+    button:hover { background: #343a4e; }
+    button.primary { background: #2f6df0; border-color: #2f6df0; }
+    button.primary:hover { background: #3f7bff; }
+    .spacer { flex: 1; }
+    .msg { color: #9aa3b2; font-size: 12px; max-width: 560px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .x { width: 22px; padding: 0; border-color: #3a3f52; background: transparent; color: #cfd3da; }
+  </style>
+</head>
+<body>
+  <div class="bar">
+    <button id="btn-translate" class="primary">翻译</button>
+    <button id="btn-save">保存图片</button>
+    <span class="spacer"></span>
+    <span id="msg" class="msg"></span>
+    <button id="btn-close" class="x" title="关闭">×</button>
+  </div>
+  <script src="/shotpopup.js?v=__BUILD__"></script>
+</body>
+</html>

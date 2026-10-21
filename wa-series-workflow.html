@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>蜜蜂信息采集 · WA 系列工作流程图</title>
+<style>
+  html,body{margin:0;background:#fafafa;font-family:"Microsoft YaHei","PingFang SC",sans-serif;}
+  .wrap{display:flex;justify-content:center;padding:24px;}
+  svg{background:#fff;border:1px solid #e3e3e3;border-radius:10px;box-shadow:0 2px 14px rgba(0,0,0,.06);max-width:100%;height:auto;}
+  text{font-family:"Microsoft YaHei","PingFang SC",sans-serif;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<svg viewBox="0 0 1300 1990" xmlns="http://www.w3.org/2000/svg" font-size="14">
+  <defs>
+    <marker id="arr" markerWidth="11" markerHeight="11" refX="8" refY="3.2" orient="auto">
+      <path d="M0,0 L9,3.2 L0,6.4 Z" fill="#63bd93"/>
+    </marker>
+    <marker id="arrO" markerWidth="11" markerHeight="11" refX="8" refY="3.2" orient="auto">
+      <path d="M0,0 L9,3.2 L0,6.4 Z" fill="#ecb27c"/>
+    </marker>
+    <marker id="arrP" markerWidth="11" markerHeight="11" refX="8" refY="3.2" orient="auto">
+      <path d="M0,0 L9,3.2 L0,6.4 Z" fill="#a795de"/>
+    </marker>
+    <style>
+      .stage{fill:#f5f0fc;stroke:#a795de;stroke-width:1.5;rx:12;}
+      .flow{fill:#fff;stroke:#63bd93;stroke-width:2;}
+      .ui{fill:#fff;stroke:#ecb27c;stroke-width:2;}
+      .mod{fill:#fff;stroke:#7e6cc4;stroke-width:2;}
+      .note{fill:#fff8ef;stroke:#ecb27c;stroke-width:1.2;stroke-dasharray:5 4;}
+      .th{fill:#3a2f5c;font-size:16px;font-weight:bold;}
+      .tt{fill:#15233b;font-size:14px;font-weight:bold;}
+      .t{fill:#222;font-size:13px;}
+      .ts{fill:#555;font-size:11.5px;}
+      .red{fill:#c0392b;font-size:13px;}
+    </style>
+  </defs>
+
+  <!-- Title -->
+  <text x="650" y="34" text-anchor="middle" class="th">蜜蜂信息采集 · WA 系列 功能与界面工作流程图</text>
+  <text x="650" y="58" text-anchor="middle" class="ts">v2.6.1144 · 2026-10-17 · WA①~⑤ 权限门槛已取消（所有人可见可用）· 三软件彻底分开</text>
+  <line x1="30" y1="74" x2="30" y2="1972" stroke="#63bd93" stroke-width="3" marker-end="url(#arr)"/>
+
+  <!-- ============ S1 启动加载 ============ -->
+  <rect class="stage" x="40" y="80" width="1220" height="252" rx="12"/>
+  <text x="60" y="106" class="tt">① 启动与加载（常驻保活，不依赖手点）</text>
+  <rect class="flow" x="80" y="128" width="320" height="72" rx="8"/>
+  <text x="240" y="156" text-anchor="middle" class="t">软件启动</text>
+  <text x="240" y="176" text-anchor="middle" class="ts">electron/main.js → src/main.js startCore</text>
+  <rect class="flow" x="470" y="128" width="350" height="72" rx="8"/>
+  <text x="645" y="156" text-anchor="middle" class="t">webIdentity 钉纯 Chrome UA</text>
+  <text x="645" y="176" text-anchor="middle" class="ts">无 Electron 令牌 · persist:wa6~wa10 · 开窗口前调用</text>
+  <rect class="flow" x="870" y="128" width="340" height="72" rx="8"/>
+  <text x="1040" y="156" text-anchor="middle" class="t">WA_PANES.forEach(ensureLoaded)</text>
+  <text x="1040" y="176" text-anchor="middle" class="ts">5 个 WA 网页常驻加载（wa-offscreen 移出屏幕保活）</text>
+  <line x1="400" y1="164" x2="468" y2="164" stroke="#63bd93" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="820" y1="164" x2="868" y2="164" stroke="#63bd93" stroke-width="2" marker-end="url(#arr)"/>
+  <rect class="note" x="80" y="216" width="1130" height="92" rx="8"/>
+  <text x="96" y="240" class="red">⚠️ A2 修复根因：原 WA 网页是「懒加载 + 隐藏态（display:none）卸载内核」→ 启动后没点页签 → findGuest 按不到页 →</text>
+  <text x="96" y="260" class="t">采集链 isStepReady 判 no-page 整轮跳过 → 后台 0 采集 → 左栏不出 Ⓦ 客户 + 未读角标。</text>
+  <text x="96" y="284" class="t">修法：① index.html 用 .wa-offscreen（left:-10000px 移出屏幕但渲染进程继续跑，绝不用 display:none）；② 启动即 eager-load。</text>
+
+  <!-- ============ S2 主窗口 ============ -->
+  <rect class="stage" x="40" y="352" width="1220" height="234" rx="12"/>
+  <text x="60" y="378" class="tt">② 主窗口：左栏客户列表 ＋ 中栏页签栏</text>
+  <rect class="ui" x="80" y="400" width="300" height="78" rx="8"/>
+  <text x="230" y="428" text-anchor="middle" class="t">左栏客户列表</text>
+  <text x="230" y="448" text-anchor="middle" class="ts">分组：待处理 / 已处理·N</text>
+  <text x="230" y="466" text-anchor="middle" class="ts">红=新消息 · 绿=看过</text>
+  <rect class="ui" x="410" y="400" width="320" height="78" rx="8"/>
+  <text x="570" y="428" text-anchor="middle" class="t">中栏页签栏</text>
+  <text x="570" y="448" text-anchor="middle" class="ts">通用 | Tele① | Tele② |</text>
+  <text x="570" y="466" text-anchor="middle" class="ts">WA① | WA② | WA③ | WA④ | WA⑤</text>
+  <rect class="flow" x="760" y="400" width="290" height="78" rx="8"/>
+  <text x="905" y="428" text-anchor="middle" class="t">WA①~⑤ 页签 = 所有人可见</text>
+  <text x="905" y="448" text-anchor="middle" class="ts">perm.js midTabs=[]</text>
+  <text x="905" y="466" text-anchor="middle" class="ts">功能同管理员（2026-10-17 取消门槛）</text>
+  <line x1="380" y1="439" x2="408" y2="439" stroke="#ecb27c" stroke-width="2" marker-end="url(#arrO)"/>
+  <line x1="730" y1="439" x2="758" y2="439" stroke="#63bd93" stroke-width="2" marker-end="url(#arr)"/>
+  <rect class="ui" x="80" y="500" width="1130" height="64" rx="8"/>
+  <text x="96" y="524" class="t">顶栏：⚙ 设置（独立窗口）—— AI 设置 · AI 提示词 · 云端 · 模拟新消息 · 软件更新 · 代理</text>
+  <text x="96" y="546" class="ts">设置页 6 页签（prompts / sim / proxy / screenshot 等）仍仅管理员可见（RULES.setTabs，未动）</text>
+
+  <!-- ============ S3 打开 WA 页签 ============ -->
+  <rect class="stage" x="40" y="614" width="1220" height="186" rx="12"/>
+  <text x="60" y="640" class="tt">③ 打开 WA 内置页签（交互入口）</text>
+  <rect class="ui" x="80" y="664" width="360" height="84" rx="8"/>
+  <text x="260" y="694" text-anchor="middle" class="t">点左栏 WA①~⑤ 客户</text>
+  <text x="260" y="714" text-anchor="middle" class="ts">isWhatsappWebCustomer</text>
+  <text x="260" y="732" text-anchor="middle" class="ts">channel='whatsapp-web'，编号形如 WA00001</text>
+  <rect class="ui" x="480" y="664" width="360" height="84" rx="8"/>
+  <text x="660" y="694" text-anchor="middle" class="t">或点中栏 WA①~⑤ 页签按钮</text>
+  <text x="660" y="714" text-anchor="middle" class="ts">→ 激活对应 webview</text>
+  <text x="660" y="732" text-anchor="middle" class="ts">partition=persist:wa6~wa10（登录态独立）</text>
+  <rect class="flow" x="880" y="664" width="340" height="84" rx="8"/>
+  <text x="1050" y="694" text-anchor="middle" class="t">未读 → 左栏冒 Ⓦ 客户</text>
+  <text x="1050" y="714" text-anchor="middle" class="ts">＋ 未读角标</text>
+  <text x="1050" y="732" text-anchor="middle" class="ts">（后台采集驱动，A2 修复）</text>
+  <line x1="440" y1="706" x2="478" y2="706" stroke="#ecb27c" stroke-width="2" marker-end="url(#arrO)"/>
+  <line x1="840" y1="706" x2="878" y2="706" stroke="#63bd93" stroke-width="2" marker-end="url(#arr)"/>
+
+  <!-- ============ S4 WA 页签内部界面 ============ -->
+  <rect class="stage" x="40" y="820" width="1220" height="332" rx="12"/>
+  <text x="60" y="846" class="tt">④ WA①~⑤ 页签内部界面（以 WA① 为例；WA②~⑤ 同构，仅分区 / 账号号 / 编号段不同）</text>
+
+  <!-- 左：浏览器 -->
+  <text x="250" y="876" text-anchor="middle" class="ts">— 左侧：WhatsApp 网页（看 + 手动预填，绝不自动发送）—</text>
+  <rect class="ui" x="80" y="892" width="340" height="56" rx="8"/>
+  <text x="250" y="916" text-anchor="middle" class="t">地址栏 wa1-url ＋「前往」</text>
+  <text x="250" y="934" text-anchor="middle" class="ts">value=web.whatsapp.com</text>
+  <rect class="flow" x="80" y="966" width="340" height="74" rx="8"/>
+  <text x="250" y="994" text-anchor="middle" class="t">webview#wa1-webview</text>
+  <text x="250" y="1014" text-anchor="middle" class="ts">partition=persist:wa6</text>
+  <text x="250" y="1032" text-anchor="middle" class="ts">（首屏「更新浏览器」按 UA 判定放行）</text>
+  <line x1="250" y1="948" x2="250" y2="964" stroke="#63bd93" stroke-width="2" marker-end="url(#arr)"/>
+
+  <!-- 右：面板 -->
+  <text x="760" y="876" text-anchor="middle" class="ts">— 右侧：资料卡 ＋ 对话信息（类名沿用 .tv-*）—</text>
+  <rect class="ui" x="470" y="892" width="340" height="56" rx="8"/>
+  <text x="640" y="916" text-anchor="middle" class="t">资料卡 wa1-profile-body</text>
+  <text x="640" y="934" text-anchor="middle" class="ts">点左栏客户加载档案</text>
+  <rect class="ui" x="470" y="962" width="165" height="50" rx="8"/>
+  <text x="552" y="982" text-anchor="middle" class="t">客户档案</text>
+  <text x="552" y="1000" text-anchor="middle" class="ts">→ 16 项完整窗口</text>
+  <rect class="ui" x="645" y="962" width="165" height="50" rx="8"/>
+  <text x="727" y="982" text-anchor="middle" class="t">对话提档</text>
+  <text x="727" y="1000" text-anchor="middle" class="ts">→ 抽字段补档案</text>
+  <rect class="flow" x="470" y="1026" width="340" height="46" rx="8"/>
+  <text x="640" y="1048" text-anchor="middle" class="t">wa1-status 采集红绿灯</text>
+  <text x="640" y="1066" text-anchor="middle" class="ts">（WA 账号跑没跑，与 Tele 分开）</text>
+
+  <rect class="ui" x="840" y="892" width="360" height="56" rx="8"/>
+  <text x="1020" y="916" text-anchor="middle" class="t">对话信息 wa1-convinfo-body</text>
+  <text x="1020" y="934" text-anchor="middle" class="ts">中文(深蓝, in左/out右) ＋ 英文(灰)</text>
+  <rect class="ui" x="840" y="962" width="175" height="50" rx="8"/>
+  <text x="927" y="982" text-anchor="middle" class="t">↻ 补气泡</text>
+  <text x="927" y="1000" text-anchor="middle" class="ts">→ repaintWaBubbles</text>
+  <rect class="ui" x="1025" y="962" width="175" height="50" rx="8"/>
+  <text x="1112" y="982" text-anchor="middle" class="t">标记回复</text>
+  <text x="1112" y="1000" text-anchor="middle" class="ts">→ 收进已处理(不删)</text>
+  <rect class="flow" x="840" y="1026" width="360" height="46" rx="8"/>
+  <text x="1020" y="1048" text-anchor="middle" class="t">每条未回复新 in 消息挂 💡 建议</text>
+  <text x="1020" y="1066" text-anchor="middle" class="ts">→ 生成 3 条中文回复建议</text>
+  <line x1="640" y1="948" x2="640" y2="960" stroke="#ecb27c" stroke-width="2" marker-end="url(#arrO)"/>
+  <line x1="1020" y1="948" x2="1020" y2="960" stroke="#ecb27c" stroke-width="2" marker-end="url(#arrO)"/>
+
+  <!-- ============ S5 后台采集流水线 ============ -->
+  <rect class="stage" x="40" y="1182" width="1220" height="378" rx="12"/>
+  <text x="60" y="1208" class="tt">⑤ 后台采集流水线（每实例独立，WA①~⑤ 同构；绝不自动发送）</text>
+
+  <rect class="flow" x="80" y="1244" width="300" height="92" rx="8"/>
+  <text x="230" y="1272" text-anchor="middle" class="t">waChain 串联调度链</text>
+  <text x="230" y="1292" text-anchor="middle" class="ts">WA①→②→③→④→⑤ 严格串联</text>
+  <text x="230" y="1310" text-anchor="middle" class="ts">一拍2秒 · 单步超时跳过</text>
+  <text x="230" y="1326" text-anchor="middle" class="ts">未加载快跳 + ≤5拍强制回探</text>
+
+  <rect class="mod" x="420" y="1244" width="350" height="64" rx="8"/>
+  <text x="595" y="1272" text-anchor="middle" class="t">whatsappRead 每实例</text>
+  <text x="595" y="1292" text-anchor="middle" class="ts">WA①: accId=10, persist:wa6, 段 WA00001</text>
+
+  <rect class="mod" x="820" y="1244" width="350" height="64" rx="8"/>
+  <text x="995" y="1272" text-anchor="middle" class="t">waBubble 每实例</text>
+  <text x="995" y="1292" text-anchor="middle" class="ts">中文气泡，吃库 body_zh</text>
+
+  <line x1="380" y1="1280" x2="418" y2="1280" stroke="#63bd93" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="770" y1="1280" x2="818" y2="1280" stroke="#63bd93" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="230" y1="1336" x2="230" y2="1430" stroke="#63bd93" stroke-width="2" marker-end="url(#arr)"/>
+
+  <!-- whatsappRead 子节点 -->
+  <rect class="flow" x="420" y="1344" width="250" height="54" rx="8"/>
+  <text x="545" y="1366" text-anchor="middle" class="t">probeInPage 只读</text>
+  <text x="545" y="1384" text-anchor="middle" class="ts">不点/不发送/不滚/不发请求</text>
+  <rect class="flow" x="700" y="1344" width="250" height="54" rx="8"/>
+  <text x="825" y="1366" text-anchor="middle" class="t">归一化 toMessage</text>
+  <text x="825" y="1384" text-anchor="middle" class="ts">@lid→真号 · 群/广播不收</text>
+  <rect class="flow" x="420" y="1424" width="250" height="54" rx="8"/>
+  <text x="545" y="1446" text-anchor="middle" class="t">tick 首轮回灌20条</text>
+  <text x="545" y="1464" text-anchor="middle" class="ts">建水位 + 增量采集</text>
+  <rect class="flow" x="700" y="1424" width="250" height="54" rx="8"/>
+  <text x="825" y="1446" text-anchor="middle" class="t">phoneOwnerOf 查重</text>
+  <text x="825" y="1464" text-anchor="middle" class="ts">→ 入库(不落两档案)</text>
+  <rect class="flow" x="420" y="1504" width="250" height="54" rx="8"/>
+  <text x="545" y="1526" text-anchor="middle" class="t">translationMemory</text>
+  <text x="545" y="1544" text-anchor="middle" class="ts">同句只翻一次</text>
+  <rect class="flow" x="700" y="1504" width="250" height="54" rx="8"/>
+  <text x="825" y="1526" text-anchor="middle" class="t">ai.js 中文建议</text>
+  <text x="825" y="1544" text-anchor="middle" class="ts">仅中文输出</text>
+
+  <!-- waBubble 子节点 -->
+  <rect class="flow" x="820" y="1344" width="350" height="54" rx="8"/>
+  <text x="995" y="1366" text-anchor="middle" class="t">按原文匹配库里译文</text>
+  <text x="995" y="1384" text-anchor="middle" class="ts">绝不重新翻</text>
+  <rect class="flow" x="820" y="1424" width="350" height="54" rx="8"/>
+  <text x="995" y="1446" text-anchor="middle" class="t">50/100 规则</text>
+  <text x="995" y="1464" text-anchor="middle" class="ts">paintInPage 幂等贴气泡</text>
+  <rect class="flow" x="820" y="1504" width="350" height="54" rx="8"/>
+  <text x="995" y="1526" text-anchor="middle" class="t">广播 wa_bubble_status</text>
+  <text x="995" y="1544" text-anchor="middle" class="ts">只读路由 /bubble/state,/probe</text>
+
+  <rect class="mod" x="80" y="1444" width="300" height="64" rx="8"/>
+  <text x="230" y="1472" text-anchor="middle" class="t">waweb_capture 抓图</text>
+  <text x="230" y="1492" text-anchor="middle" class="ts">真图抓/占位忽略/头像排除/去重</text>
+  <line x1="380" y1="1476" x2="418" y2="1476" stroke="#7e6cc4" stroke-width="2" marker-end="url(#arrP)"/>
+
+  <!-- ============ S6 支撑模块 ============ -->
+  <rect class="stage" x="40" y="1582" width="1220" height="138" rx="12"/>
+  <text x="60" y="1608" class="tt">⑥ 支撑模块</text>
+  <rect class="mod" x="80" y="1644" width="370" height="56" rx="8"/>
+  <text x="265" y="1668" text-anchor="middle" class="t">webviewProxy（wa1~wa5）</text>
+  <text x="265" y="1686" text-anchor="middle" class="ts">本机 gost 无密码中转（账密只交 gost）</text>
+  <rect class="mod" x="470" y="1644" width="370" height="56" rx="8"/>
+  <text x="655" y="1668" text-anchor="middle" class="t">perm.js 权限</text>
+  <text x="655" y="1686" text-anchor="middle" class="ts">midTabs=[] 所有人可见 / setTabs 仅 admin</text>
+  <rect class="mod" x="860" y="1644" width="350" height="56" rx="8"/>
+  <text x="1035" y="1674" text-anchor="middle" class="t">identity / ids / db</text>
+  <text x="1035" y="1692" text-anchor="middle" class="ts">电话查重 · 编号段 WA/WB/WD/WE/WF</text>
+
+  <!-- ============ S7 红线 ============ -->
+  <rect class="stage" x="40" y="1742" width="1220" height="210" rx="12"/>
+  <text x="60" y="1768" class="tt" fill="#c0392b">🔴 红线（最高优先，盖过一切）</text>
+  <text x="64" y="1800" class="red">① 一号到五号（外部 WA 账号）与 WA 标签系列（内置 webview）都登 WhatsApp，但二者「运作功能」绝不合并、绝不共用逻辑、各写各的。</text>
+  <text x="64" y="1832" class="red">② 三软件彻底分开：Signal / Telegram / WhatsApp 任一功能都按软件分开做；哪怕按钮名字一样，也绝不关联、绝不抽公共函数。</text>
+  <text x="64" y="1864" class="red">③ 绝不自动发送：发送 = 预填，永不按回车；WA 内置浏览器只「看 ＋ 手动预填」。</text>
+  <text x="64" y="1896" class="red">④ 改动范围严格限定：点名哪几个文件只改哪几个；Signal / Telegram / 设置页本次一个字没碰。</text>
+  <text x="64" y="1928" class="ts">注：WA①~⑤ 五套内置 webview 共用同一套代码、仅参数化（partition / accId / 编号段），但绝不与其他软件共用。</text>
+</svg>
+</div>
+</body>
+</html>

@@ -1,0 +1,57 @@
+# 依赖
+node_modules/
+
+# 你的客户数据，别进版本库
+data/
+sessions/
+
+# 本地调试
+*.log
+.DS_Store
+Thumbs.db
+
+# 跑测试时用的隔离数据目录（测试不会碰真实 data/）
+.tmp-test-data/
+
+# config.yaml 里有 API key 和代理密码，
+# 它必须留在这台机器上、不上传任何地方。
+# 只挡根目录那份（含密钥），子目录的 _lib/config.yaml 是测试夹具，不动。
+/config.yaml
+
+# 构建产物与安装包（体积大，不进版本库）
+dist/
+release/
+
+# 临时 / 过程文件（.tmp 开头的目录与文件，含测试快照）
+.tmp*
+**/.tmp*
+*.tmp
+
+# 测试/工具截图与临时快照（非源码，无前置点的 tmp_ 也不进版本库）
+test/preview/
+tools/*.png
+tmp_read/
+tmp_signal_official.svg
+
+# C# / 编译产物（settop、winhelper 是辅助工具，只留源码）
+tools/settop/obj/
+*.obj
+clog.txt
+
+# Chrome 配置目录（含登录态，体积巨大）
+WA-PC*-CDP/
+TG-PC*-CDP/
+cdp-profiles.json
+
+# 本地备份目录
+data-backup-*/
+
+# Python 缓存
+__pycache__/
+*.pyc
+
+# 二进制构建产物（gost / settop 等）
+bin/
+
+# 验证 / 参考过程截图（非源码）
+preview/*.png

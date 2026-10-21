@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI设置 · 拟改方案 v2（后台只读 + 三块合并 + 5家进下拉）</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif; background:#f4f5f7; color:#222; margin:0; padding:24px; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { color:#888; font-size:13px; margin-bottom:18px; }
+  .legend { display:flex; gap:14px; margin-bottom:18px; flex-wrap:wrap; font-size:12px; }
+  .legend span { display:inline-flex; align-items:center; gap:6px; }
+  .sw { width:14px; height:14px; border-radius:3px; display:inline-block; }
+  .sw.blue { background:#3b82f6; } .sw.red { background:#ef4444; } .sw.green { background:#22c55e; } .sw.orange { background:#f59e0b; }
+  .panel { background:#fff; border-radius:10px; padding:18px 20px; margin-bottom:18px; box-shadow:0 1px 3px rgba(0,0,0,.08); }
+  .panel h2 { font-size:15px; margin:0 0 12px; border-left:4px solid #3b82f6; padding-left:10px; }
+  .note { background:#fffbe6; border:1px solid #ffe58f; border-radius:8px; padding:10px 14px; font-size:13px; margin-bottom:18px; line-height:1.7; }
+  .note.red { background:#fdf2f2; border-color:#f5b5b5; }
+  .note.green { background:#eef7ee; border-color:#bbf7c4; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th, td { text-align:left; padding:8px 10px; border-bottom:1px solid #eee; vertical-align:top; }
+  th { background:#fafafa; color:#555; font-weight:600; }
+  select { padding:5px 8px; border:1px solid #ccc; border-radius:6px; min-width:200px; font-size:13px; }
+  .new-opt { color:#3b82f6; font-weight:600; }
+  .old-opt { color:#555; }
+  .tag { display:inline-block; font-size:11px; padding:1px 7px; border-radius:10px; margin-left:6px; }
+  .tag.blue { background:#e6f0ff; color:#1d4ed8; }
+  .tag.red { background:#fde8e8; color:#b91c1c; }
+  .tag.green { background:#e7f7ec; color:#15803d; }
+  .tag.orange { background:#fff3e0; color:#b45309; }
+  .redbox { border:3px solid #ef4444; border-radius:10px; padding:14px; position:relative; margin-top:6px; }
+  .redbox .rb-label { position:absolute; top:-12px; left:16px; background:#ef4444; color:#fff; font-size:12px; padding:2px 12px; border-radius:10px; }
+  .subhead { font-size:13px; font-weight:600; color:#444; margin:16px 0 6px; padding-left:8px; border-left:3px solid #f59e0b; }
+  .cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:12px; }
+  .card { border:1px solid #e2e2e2; border-radius:8px; padding:12px 14px; background:#fff; }
+  .card.new { border:2px solid #3b82f6; background:#f5f9ff; }
+  .card .name { font-weight:600; font-size:14px; margin-bottom:4px; }
+  .card .badge { font-size:11px; color:#1d4ed8; background:#e6f0ff; padding:1px 8px; border-radius:10px; }
+  .card .url { font-size:11px; color:#888; margin:6px 0; word-break:break-all; }
+  .card label { display:block; font-size:11px; color:#666; margin-top:6px; }
+  .card input { width:100%; border:1px solid #ddd; border-radius:5px; padding:4px 6px; font-size:12px; margin-top:2px; }
+  .adminlock { border:2px dashed #ef4444; border-radius:10px; padding:14px; background:#fff; position:relative; }
+  .adminlock .lockbar { position:absolute; top:-12px; left:16px; background:#ef4444; color:#fff; font-size:12px; padding:2px 12px; border-radius:10px; }
+  .adminlock .memhint { font-size:12px; color:#b91c1c; margin-top:8px; }
+  .q { background:#eef2ff; border-left:4px solid #6366f1; padding:10px 14px; border-radius:8px; font-size:13px; margin-top:12px; }
+  .mini-tab { display:inline-block; padding:5px 12px; border-radius:6px; background:#eef2ff; color:#1d4ed8; font-size:12px; margin-right:6px; }
+  .mini-tab.on { background:#3b82f6; color:#fff; }
+  .keybadge { color:#15803d; font-size:12px; }
+</style>
+</head>
+<body>
+  <h1>AI设置 · 拟改方案 v2（供确认，未动手）</h1>
+  <div class="sub">版本 2.6.1167 · 桌面客户端 AI设置 + 云端后台只读页 · 四模块采集逻辑零触碰</div>
+
+  <div class="legend">
+    <span><i class="sw blue"></i> 蓝色 = 本次新增</span>
+    <span><i class="sw red"></i> 红色 = 红框位置 / 仅管理员 / 回复建议不变</span>
+    <span><i class="sw orange"></i> 橙色 = 从别处搬过来的三块</span>
+    <span><i class="sw green"></i> 绿色 = 保持原样</span>
+  </div>
+
+  <!-- ================= A. 后台只读页 ================= -->
+  <div class="panel">
+    <h2>A. 云端后台（mingfengxx）新增「AI 设置（只读）」页</h2>
+    <div>
+      <span class="mini-tab">总览</span><span class="mini-tab">话题碎片</span><span class="mini-tab">常用话术</span><span class="mini-tab">编号管理</span><span class="mini-tab">电话登记表</span><span class="mini-tab">翻译词典</span><span class="mini-tab on">AI 设置（只读）</span><span class="mini-tab">设置</span>
+    </div>
+    <div class="note red" style="margin-top:14px;">
+      🔒 <b>只显示 3 列：服务商 / 接入地址 / 模型名。Key 永不显示、也永远不上传明文。</b><br>
+      原理：云端 <code>api_vault</code> 只存<b>密文</b>（VaultKey 只在内置客户端，后端解不开）。所以客户端点「同步 AI 设置」时，除密文外<b>额外上传一份不含 Key 的元数据</b>（服务商名 + 接入地址 + 模型名），后台单独存、只读展示。看到的「已配 key」只是布尔标记，不含 key 内容。
+    </div>
+    <table>
+      <thead><tr><th>服务商</th><th>接入地址（baseUrl）</th><th>模型名</th><th>Key 状态</th></tr></thead>
+      <tbody>
+        <tr><td>DeepSeek（深度求索）</td><td>https://api.deepseek.com/v1</td><td>deepseek-v4-flash</td><td><span class="keybadge">✓ 已配</span></td></tr>
+        <tr><td>Agnes</td><td>https://apihub.agnes-ai.com/v1</td><td>agnes-3.0-flash</td><td><span class="keybadge">✓ 已配</span></td></tr>
+        <tr><td>硅基流动</td><td>https://api.siliconflow.cn/v1</td><td>Qwen/Qwen2.5-72B-Instruct</td><td><span class="keybadge">✓ 已配</span></td></tr>
+        <tr><td>OpenRouter</td><td>https://openrouter.ai/api/v1</td><td>openai/gpt-4o-mini</td><td><span class="keybadge">✓ 已配</span></td></tr>
+        <tr><td>TikHub</td><td>https://ai.tikhub.io/v1</td><td>gpt-4o-mini</td><td><span class="keybadge">✓ 已配</span></td></tr>
+        <tr><td>阿里百炼</td><td>https://dashscope.aliyun.com/compatible-mode/v1</td><td>qwen-plus</td><td><span class="keybadge">✓ 已配</span></td></tr>
+        <tr><td>AstrBot</td><td>http://154.64.255.143:6185</td><td>（留空）</td><td><span class="keybadge">✓ 已配</span></td></tr>
+        <tr style="background:#f5f9ff;"><td><b>ChatAnyWhere</b> <span class="tag blue">新增</span></td><td>（客户端上传后显示）</td><td>（客户端上传后显示）</td><td>—</td></tr>
+        <tr style="background:#f5f9ff;"><td><b>API2GPT</b> <span class="tag blue">新增</span></td><td>（客户端上传后显示）</td><td>（客户端上传后显示）</td><td>—</td></tr>
+        <tr style="background:#f5f9ff;"><td><b>钱多多</b> <span class="tag blue">新增</span></td><td>（客户端上传后显示）</td><td>（客户端上传后显示）</td><td>—</td></tr>
+        <tr style="background:#f5f9ff;"><td><b>No.1 API-Pro</b> <span class="tag blue">新增</span></td><td>（客户端上传后显示）</td><td>（客户端上传后显示）</td><td>—</td></tr>
+        <tr style="background:#f5f9ff;"><td><b>智创聚合</b> <span class="tag blue">新增</span></td><td>（客户端上传后显示）</td><td>（客户端上传后显示）</td><td>—</td></tr>
+      </tbody>
+    </table>
+    <div class="q">后台这一页只读、只有管理员能进；数据来自管理员在桌面点「同步 AI 设置」时上传的元数据。第一次升级后需点一次同步，这里才会出现这 5 家的地址/模型名。</div>
+  </div>
+
+  <!-- ================= B. 桌面 AI设置 重排 ================= -->
+  <div class="panel">
+    <h2>B. 桌面「AI设置」重排：三块搬进红框，6+3 全在一起</h2>
+
+    <div class="redbox">
+      <div class="rb-label">📍 你红框的位置：一、6 个 AI 分别干什么 · 现在用哪家（三块搬到这里）</div>
+
+      <table>
+        <thead><tr><th>AI 任务</th><th>下拉选项（改动后）</th><th>状态</th></tr></thead>
+        <tbody>
+          <tr><td>① 接收信息</td><td><span class="old-opt">程序自己做 · 不用配</span></td><td><span class="tag green">不变</span></td></tr>
+          <tr>
+            <td>② 翻译收到的消息</td>
+            <td><select>
+              <option>DeepSeek</option><option>Agnes</option><option>硅基流动</option><option>OpenRouter</option><option>TikHub</option><option>阿里百炼</option><option>AstrBot</option>
+              <option class="new-opt">＋ ChatAnyWhere</option><option class="new-opt">＋ API2GPT</option><option class="new-opt">＋ 钱多多</option><option class="new-opt">＋ No.1 API-Pro</option><option class="new-opt">＋ 智创聚合</option>
+            </select></td>
+            <td><span class="tag blue">+5 新</span></td>
+          </tr>
+          <tr style="background:#fdf2f2;">
+            <td><b>③ 回复建议</b></td>
+            <td><select>
+              <option>DeepSeek</option><option>Agnes</option><option>硅基流动</option><option>OpenRouter</option><option>TikHub</option><option>阿里百炼</option><option>AstrBot</option>
+            </select><span class="tag red">不加新模型</span></td>
+            <td><span class="tag red">保持原样</span></td>
+          </tr>
+          <tr>
+            <td>④ 采纳后翻成英文</td>
+            <td><select>
+              <option>DeepSeek</option><option>Agnes</option><option>硅基流动</option><option>OpenRouter</option><option>TikHub</option><option>阿里百炼</option>
+              <option class="new-opt">＋ ChatAnyWhere</option><option class="new-opt">＋ API2GPT</option><option class="new-opt">＋ 钱多多</option><option class="new-opt">＋ No.1 API-Pro</option><option class="new-opt">＋ 智创聚合</option>
+            </select></td>
+            <td><span class="tag blue">+5 新</span></td>
+          </tr>
+          <tr>
+            <td>手动自由翻译</td>
+            <td><select>
+              <option>TikHub</option><option>DeepSeek</option><option>Agnes</option><option>硅基流动</option><option>OpenRouter</option><option>阿里百炼</option>
+              <option class="new-opt">＋ ChatAnyWhere</option><option class="new-opt">＋ API2GPT</option><option class="new-opt">＋ 钱多多</option><option class="new-opt">＋ No.1 API-Pro</option><option class="new-opt">＋ 智创聚合</option>
+            </select></td>
+            <td><span class="tag blue">+5 新</span></td>
+          </tr>
+          <tr>
+            <td>时差计算</td>
+            <td><select>
+              <option>DeepSeek</option><option>Agnes</option><option>硅基流动</option><option>OpenRouter</option><option>TikHub</option><option>阿里百炼</option>
+              <option class="new-opt">＋ ChatAnyWhere</option><option class="new-opt">＋ API2GPT</option><option class="new-opt">＋ 钱多多</option><option class="new-opt">＋ No.1 API-Pro</option><option class="new-opt">＋ 智创聚合</option>
+            </select></td>
+            <td><span class="tag blue">+5 新</span></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="subhead">专项 AI · 3 个（从「通用设置 / 顶部」搬到这里，橙色）</div>
+      <table>
+        <thead><tr><th>专项</th><th>下拉选项（改动后）</th><th>状态</th></tr></thead>
+        <tbody>
+          <tr style="background:#fffaf0;">
+            <td>从对话里提取档案 <span class="tag orange">搬来</span></td>
+            <td><select>
+              <option>DeepSeek</option><option>Agnes</option><option>TikHub</option>
+              <option class="new-opt">＋ ChatAnyWhere</option><option class="new-opt">＋ API2GPT</option><option class="new-opt">＋ 钱多多</option><option class="new-opt">＋ No.1 API-Pro</option><option class="new-opt">＋ 智创聚合</option>
+            </select></td>
+            <td><span class="tag blue">+5 新</span></td>
+          </tr>
+          <tr style="background:#fffaf0;">
+            <td>气泡翻译模型 <span class="tag orange">搬来</span></td>
+            <td><select>
+              <option>DeepSeek</option><option>硅基流动</option><option>OpenRouter</option><option>TikHub</option><option>阿里百炼</option>
+              <option class="new-opt">＋ ChatAnyWhere</option><option class="new-opt">＋ API2GPT</option><option class="new-opt">＋ 钱多多</option><option class="new-opt">＋ No.1 API-Pro</option><option class="new-opt">＋ 智创聚合</option>
+            </select></td>
+            <td><span class="tag blue">+5 新</span></td>
+          </tr>
+          <tr style="background:#fffaf0;">
+            <td>翻译词典用哪个 AI <span class="tag orange">搬来</span></td>
+            <td><select>
+              <option>DeepSeek</option><option>硅基流动</option><option>TikHub</option><option>阿里百炼</option>
+              <option class="new-opt">＋ ChatAnyWhere</option><option class="new-opt">＋ API2GPT</option><option class="new-opt">＋ 钱多多</option><option class="new-opt">＋ No.1 API-Pro</option><option class="new-opt">＋ 智创聚合</option>
+            </select></td>
+            <td><span class="tag blue">+5 新</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="q">「消息提取间隔」「跨消息翻译记忆统计」这两块<b>不动</b>，留在通用设置区。只有上面三个「选 AI」的块搬进红框。</div>
+  </div>
+
+  <!-- ================= C. 服务商 key 管理员可见 ================= -->
+  <div class="panel">
+    <h2>C. 服务商：填地址和 key（仅管理员可见 · 会员隐藏）</h2>
+    <div class="adminlock">
+      <div class="lockbar">🔒 本区块仅管理员可见 · 会员自动隐藏</div>
+      <div class="cards">
+        <div class="card"><div class="name">DeepSeek</div><div class="url">https://api.deepseek.com/v1</div>
+          <label>接入地址<input value="https://api.deepseek.com/v1"></label><label>API Key<input type="password" value="sk-..."></label><label>模型名<input value="deepseek-v4-flash"></label></div>
+        <div class="card"><div class="name">Agnes</div><div class="url">https://apihub.agnes-ai.com/v1</div>
+          <label>接入地址<input></label><label>API Key<input type="password"></label><label>模型名<input></label></div>
+        <div class="card"><div class="name">硅基流动</div><div class="url">https://api.siliconflow.cn/v1</div>
+          <label>接入地址<input></label><label>API Key<input type="password"></label><label>模型名<input></label></div>
+        <div class="card"><div class="name">OpenRouter</div><div class="url">https://openrouter.ai/api/v1</div>
+          <label>接入地址<input></label><label>API Key<input type="password"></label><label>模型名<input></label></div>
+        <div class="card"><div class="name">TikHub</div><div class="url">https://ai.tikhub.io/v1</div>
+          <label>接入地址<input></label><label>API Key<input type="password"></label><label>模型名<input></label></div>
+        <div class="card"><div class="name">阿里百炼</div><div class="url">https://dashscope.aliyun.com/compatible-mode/v1</div>
+          <label>接入地址<input></label><label>API Key<input type="password"></label><label>模型名<input></label></div>
+        <div class="card"><div class="name">AstrBot</div><div class="url">http://154.64.255.143:6185</div>
+          <label>接入地址<input></label><label>API Key<input type="password"></label><label>模型名<input placeholder="留空"></label></div>
+
+        <div class="card new"><div class="name">ChatAnyWhere <span class="badge">新增</span></div><div class="url">教程：https://docs.chatanywhere.tech/</div>
+          <label>接入地址<input placeholder="填 baseUrl"></label><label>API Key<input type="password"></label><label>模型名<input placeholder="如 gpt-4o / claude-..."></label></div>
+        <div class="card new"><div class="name">API2GPT <span class="badge">新增</span></div><div class="url">教程：https://dashboard.api2gpt.com/cn/dashboard/apps</div>
+          <label>接入地址<input placeholder="填 baseUrl"></label><label>API Key<input type="password"></label><label>模型名<input></label></div>
+        <div class="card new"><div class="name">钱多多 <span class="badge">新增</span></div><div class="url">教程：https://api2.aigcbest.top/dashboard/overview</div>
+          <label>接入地址<input placeholder="填 baseUrl"></label><label>API Key<input type="password"></label><label>模型名<input></label></div>
+        <div class="card new"><div class="name">No.1 API-Pro <span class="badge">新增</span></div><div class="url">教程：https://platform.rcouyi.com/</div>
+          <label>接入地址<input placeholder="填 baseUrl"></label><label>API Key<input type="password"></label><label>模型名<input></label></div>
+        <div class="card new"><div class="name">智创聚合 <span class="badge">新增</span></div><div class="url">教程：https://lconai.apifox.cn/399018200e0</div>
+          <label>接入地址<input placeholder="填 baseUrl"></label><label>API Key<input type="password"></label><label>模型名<input></label></div>
+      </div>
+      <div class="memhint">⚠️ 会员视角：整个「C」区块不渲染；会员只看到「一、6+3 个 AI 用哪家」。管理员登录后才出现并可填 / 上传。</div>
+    </div>
+  </div>
+
+  <div class="note green">
+    <b>落地清单（确认后执行）：</b><br>
+    1. <code>wa-assistant/src/ai.js</code>：<code>PROVIDER_CATALOG</code> +5 家（OpenAI 兼容，含 applyUrl/note）；<code>taskProviderChoices</code>/<code>defaultProviderChoices</code> +5 key。<br>
+    2. <code>TASK_CATALOG</code>：②④/自由翻译/时差计算 显式加 5 新；<b>③回复建议 显式锁旧 6 家（不含新）</b>。<br>
+    3. <code>public/settings.js</code>：把 <code>renderExtractPicker / renderBubbleModelPicker / renderMemoryModelPicker</code> 三块搬进 <code>renderAiTasks</code> 的红框位置；三处下拉各 +5 新；<code>renderAiProviders()</code> 外包 <code>if (BeePerm.isAdmin())</code>（会员返回空）。<br>
+    4. <code>wa-assistant/src/aiVault.js + cloud.js</code>：push 时多带一份 <code>meta</code>（服务商/地址/模型名，无 Key）。<br>
+    5. <code>wa-cloud/src/worker.js</code>：PUT /api/settings 收 meta 存 <code>api_vault_meta</code>；新增 <code>GET /api/admin/ai-settings</code>（admin 只读）。<br>
+    6. <code>wa-cloud/admin/index.html + app.js</code>：左栏加「AI 设置（只读）」tab + 三列表格。<br>
+    7. 重新打包 2.6.1167 + 部署 wa-cloud（部署是生产动作，需你点头）；asar 内抽证 5 家 key 都在、③回复建议无新项。
+  </div>
+</body>
+</html>

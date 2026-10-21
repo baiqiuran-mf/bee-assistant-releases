@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>软件更新流程改造 · 参考图（v2.6.1168+）</title>
+<style>
+  :root{
+    --accent:#2f6fe0; --accent-d:#1d4ed8;
+    --line:#e6e6e6; --muted:#7a8aa0;
+    --ln-green:#63bd93; --ln-purple:#a795de; --ln-orange:#ecb27c;
+    --bg:#f5f7fa; --card:#fff;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:#1d2733;}
+  .wrap{max-width:1080px;margin:0 auto;padding:24px 20px 60px;}
+  h1{font-size:19px;margin:0 0 4px;}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:18px;}
+  .demo-bar{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 16px;display:flex;gap:10px;align-items:center;margin-bottom:22px;}
+  .demo-bar button{background:var(--accent);color:#fff;border:none;border-radius:7px;padding:8px 16px;font-size:13px;cursor:pointer;}
+  .demo-bar button.ghost{background:#eef3ff;color:var(--accent);}
+  .demo-bar .hint{color:var(--muted);font-size:12.5px;margin-left:auto;}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+  @media(max-width:860px){.grid{grid-template-columns:1fr;}}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;}
+  .panel-h{background:#fafbfd;border-bottom:1px solid var(--line);padding:10px 14px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;}
+  .panel-h .tag{margin-left:auto;font-weight:500;font-size:11.5px;padding:2px 9px;border-radius:20px;}
+  .tag.new{background:#e8f7ef;color:#1f9d63;}
+  .tag.old{background:#fdecec;color:#c0392b;}
+  .panel-b{padding:16px 16px 18px;}
+
+  /* ---- 设置窗外壳 ---- */
+  .win{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff;}
+  .win-top{background:#f0f3f8;padding:8px 12px;font-size:12.5px;color:#445;display:flex;align-items:center;gap:8px;}
+  .win-top .dot{width:9px;height:9px;border-radius:50%;background:#cdd6e3;}
+  .win-body{display:flex;min-height:300px;}
+  .win-side{width:150px;border-right:1px solid var(--line);padding:10px 0;background:#fafbfd;}
+  .win-side .t{padding:7px 14px;font-size:12.5px;color:#556;cursor:default;}
+  .win-side .t.on{background:#eef3ff;color:var(--accent);font-weight:600;border-left:3px solid var(--accent);}
+  .win-main{flex:1;padding:16px;}
+
+  .up-row{display:flex;align-items:center;gap:12px;margin-bottom:10px;font-size:13px;}
+  .cl-lbl{width:72px;color:var(--muted);flex:0 0 auto;}
+  .up-ver strong{font-size:14px;}
+  .up-actions{display:flex;gap:10px;align-items:center;margin:14px 0 6px;}
+  button.primary{background:var(--accent);border:1px solid var(--accent);color:#fff;border-radius:7px;padding:8px 18px;font-size:13px;cursor:pointer;}
+  button.primary:hover{background:var(--accent-d);}
+  button.ghost{background:#fff;border:1px solid #cfd8e3;border-radius:7px;padding:8px 16px;font-size:13px;color:#445;cursor:pointer;}
+  .muted{color:var(--muted);font-size:12px;}
+
+  .up-bar{height:8px;border-radius:4px;background:#e3e8ee;overflow:hidden;margin:12px 0 8px;}
+  .up-bar-fill{height:100%;width:0;border-radius:4px;background:var(--accent);transition:width .25s linear;}
+  .up-state{font-size:13px;line-height:1.7;min-height:22px;color:#334;}
+  .up-hist{margin-top:18px;border-top:1px solid var(--line);padding-top:10px;font-size:12.5px;color:var(--muted);}
+  .up-hist-t{margin-bottom:6px;}
+
+  /* ---- 安装中遮罩（重点改动）---- */
+  .cover{position:relative;border:1px dashed var(--accent);border-radius:10px;height:300px;background:rgba(245,247,250,.96);display:flex;align-items:center;justify-content:center;margin-top:0;}
+  .cover-box{width:320px;max-width:86%;text-align:center;}
+  .cover-bar{height:8px;border-radius:4px;background:#e3e8ee;overflow:hidden;margin-bottom:14px;}
+  .cover-bar-fill{height:100%;width:35%;border-radius:4px;background:var(--accent);}
+  /* 方案A：不确定进度（走马灯） */
+  .indet .cover-bar-fill{width:40%;animation:slide 1.3s ease-in-out infinite;}
+  @keyframes slide{0%{margin-left:-40%;}100%{margin-left:100%;}}
+  .cover-t{font-size:14px;font-weight:600;margin-bottom:6px;}
+  .cover-sub{font-size:12px;color:var(--muted);line-height:1.6;}
+  .ok-badge{display:inline-block;margin-top:10px;background:#e8f7ef;color:#1f9d63;font-size:12px;padding:3px 10px;border-radius:20px;}
+
+  /* ---- 主页面（装完自动进入）---- */
+  .main{display:flex;height:300px;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff;}
+  .m-side{width:188px;border-right:1px solid var(--line);background:#fafbfd;padding:10px 0;}
+  .m-side .grp{font-size:11.5px;color:var(--muted);padding:6px 14px;}
+  .m-side .cust{display:flex;align-items:center;gap:8px;padding:7px 14px;font-size:12.5px;}
+  .m-side .cust .code{font-size:10.5px;color:var(--muted);}
+  .m-side .cust.on{background:#eef3ff;}
+  .m-side .cust .dot{width:8px;height:8px;border-radius:50%;background:var(--ln-green);flex:0 0 auto;}
+  .m-main{flex:1;padding:16px;display:flex;flex-direction:column;}
+  .m-head{font-weight:600;font-size:14px;margin-bottom:4px;}
+  .m-bubble{background:#f0f3f8;border-radius:10px;padding:9px 12px;font-size:13px;align-self:flex-start;max-width:80%;margin-bottom:8px;}
+  .m-ai{background:#eef3ff;border-radius:10px;padding:9px 12px;font-size:13px;align-self:flex-end;max-width:80%;color:#223;}
+  .login-flag{margin-top:auto;font-size:11.5px;color:var(--ln-green);}
+
+  .notes{background:#fffdf5;border:1px solid #f0e2b8;border-radius:10px;padding:14px 16px;margin-top:22px;font-size:13px;line-height:1.85;}
+  .notes b{color:#a05a00;}
+  .notes li{margin-bottom:3px;}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;margin:8px 0 0;font-size:12px;color:var(--muted);}
+  .legend span{display:inline-flex;align-items:center;gap:6px;}
+  .sw{width:12px;height:12px;border-radius:3px;display:inline-block;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>软件更新流程改造 · 参考图</h1>
+  <div class="sub">基于真实「⚙ 设置 → 🔄 软件更新」页样式绘制。左侧=现状，右侧=改造后（你要的那套）。点右上「▶ 演示一遍新流程」可看自动跳装效果。</div>
+
+  <div class="demo-bar">
+    <button onclick="runDemo()">▶ 演示一遍新流程</button>
+    <button class="ghost" onclick="resetDemo()">重置</button>
+    <span class="hint">演示：检查更新 → 下载(真进度) → <b>下载完自动跳安装遮罩</b> → 装完自动进主页面</span>
+  </div>
+
+  <div class="grid">
+    <!-- ============ 现状 ============ -->
+    <div class="panel">
+      <div class="panel-h">现状（v2.6.1168）<span class="tag old">要改</span></div>
+      <div class="panel-b">
+        <div class="win">
+          <div class="win-top"><span class="dot"></span>⚙ 设置</div>
+          <div class="win-body">
+            <div class="win-side">
+              <div class="t">AI 设置</div>
+              <div class="t">云端</div>
+              <div class="t on">🔄 软件更新</div>
+              <div class="t">代理</div>
+              <div class="t">Telegram</div>
+            </div>
+            <div class="win-main">
+              <div class="up-row"><label class="cl-lbl">当前版本</label><div class="up-ver"><strong>2.6.1168</strong></div></div>
+              <div class="up-row"><label class="cl-lbl">更新源</label><div>GitHub · bee-assistant-releases</div></div>
+              <div class="up-actions">
+                <button class="primary" onclick="alert('这是现状示意')">检查更新</button>
+                <button class="ghost">下载完成，点这里安装</button>
+              </div>
+              <div class="up-bar"><div class="up-bar-fill" style="width:62%"></div></div>
+              <div class="up-state">已下载完成。👉 弹出「是否立即重启安装」弹窗，要你<b>手动点「立即安装并重启」</b>才会装。</div>
+              <div class="up-hist"><div class="up-hist-t">更新记录</div>2.6.1168 安装成功</div>
+            </div>
+          </div>
+        </div>
+        <p class="muted" style="margin-top:12px;">问题：下载完还要人点一下；点完弹 NSIS 向导（像初次装软件），可能要账号密码；装完才重启。</p>
+      </div>
+    </div>
+
+    <!-- ============ 改造后 ============ -->
+    <div class="panel">
+      <div class="panel-h">改造后（你要的那套）<span class="tag new">目标</span></div>
+      <div class="panel-b">
+        <div class="win">
+          <div class="win-top"><span class="dot"></span>⚙ 设置</div>
+          <div class="win-body">
+            <div class="win-side">
+              <div class="t">AI 设置</div>
+              <div class="t">云端</div>
+              <div class="t on">🔄 软件更新</div>
+              <div class="t">代理</div>
+              <div class="t">Telegram</div>
+            </div>
+            <div class="win-main" id="newMain">
+              <div class="up-row"><label class="cl-lbl">当前版本</label><div class="up-ver"><strong>2.6.1168</strong></div></div>
+              <div class="up-row"><label class="cl-lbl">更新源</label><div>GitHub · bee-assistant-releases</div></div>
+              <div class="up-actions">
+                <button class="primary" id="newCheck">检查更新</button>
+              </div>
+              <div class="up-bar" id="newBar"><div class="up-bar-fill" id="newFill"></div></div>
+              <div class="up-state" id="newState">点「检查更新」看看有没有新版本。</div>
+              <div class="up-hist"><div class="up-hist-t">更新记录</div>2.6.1168 安装成功</div>
+            </div>
+          </div>
+        </div>
+        <p class="muted" style="margin-top:12px;">改动：下载完<b>不再弹确认框</b>，直接进安装遮罩；静默装到默认位置；装完自动回主页面。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 安装遮罩（重点） ============ -->
+  <div class="panel" style="margin-top:20px;">
+    <div class="panel-h">安装中遮罩（改造后自动出现）<span class="tag new">进度条=方案A 走马灯</span></div>
+    <div class="panel-b">
+      <div class="cover indet" id="coverDemo">
+        <div class="cover-box">
+          <div class="cover-bar"><div class="cover-bar-fill"></div></div>
+          <div class="cover-t">正在安装更新…</div>
+          <div class="cover-sub">正在静默安装到默认位置，无需任何操作。<br>安装完成后软件会自动重新打开并进入主页面，<b>无需重新登录</b>。</div>
+          <div class="ok-badge" id="coverOk" style="display:none;">✓ 安装完成，正在进入主页面…</div>
+        </div>
+      </div>
+      <div class="legend">
+        <span><i class="sw" style="background:var(--accent)"></i>进度条（不确定动画，表示「在装、没卡死」）</span>
+        <span><i class="sw" style="background:var(--ln-green)"></i>装完免登录回主页面</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 主页面（装完进入） ============ -->
+  <div class="panel" style="margin-top:20px;">
+    <div class="panel-h">安装完成后自动进入的主页面（已登录）<span class="tag new">目标效果</span></div>
+    <div class="panel-b">
+      <div class="main">
+        <div class="m-side">
+          <div class="grp">待处理</div>
+          <div class="cust on"><span class="dot"></span><div>Dio <div class="code">1A00004</div></div></div>
+          <div class="cust"><span class="dot" style="background:var(--ln-orange)"></span><div>Emma <div class="code">1A00007</div></div></div>
+          <div class="grp">已处理 · 2</div>
+          <div class="cust"><span class="dot" style="background:#cdd6e3"></span><div>Tom <div class="code">1A00002</div></div></div>
+        </div>
+        <div class="m-main">
+          <div class="m-head">Dio · 俄勒冈农场</div>
+          <div class="m-bubble">Hi Wanqiu, do you have a pet portrait ready sample?</div>
+          <div class="m-ai">嗨 Dio！我画过一只拿破仑矮脚猫叫土豆，腿短短的走路一扭一扭的，特别可爱～ 您可以看看我之前的宠物肖像作品。</div>
+          <div class="login-flag">● 已登录（数据在 D 盘，更新不丢登录态）</div>
+        </div>
+      </div>
+      <p class="muted" style="margin-top:12px;">因为数据全在 D 盘、登录态（Chrome cookie）保留，静默重装后直接就是这页，不用再输账号密码。</p>
+    </div>
+  </div>
+
+  <div class="notes">
+    <b>这次改造的改动点（确认后我就动手）：</b>
+    <ol style="margin:6px 0 0;padding-left:20px;">
+      <li><b>下载完自动跳安装</b>：去掉「是否立即重启」确认弹窗，下载完成空闲时直接进安装遮罩（保留「正在采集时不自动重启」的保护）。</li>
+      <li><b>静默装到默认位置</b>：<code>quitAndInstall(true,true)</code> —— NSIS 以 <code>/S</code> 静默跑，不弹向导、不要求账号密码。</li>
+      <li><b>安装进度条</b>：遮罩里用「走马灯」不确定进度条（方案A，简单稳）；若要真百分比需改 NSIS 脚本（方案B，复杂）。</li>
+      <li><b>装完自动进主页面、免登录</b>：<code>autoRunAppAfterInstall=true</code> 已设好 + 数据在 D 盘，重装后直接回到上图主页面。</li>
+    </ol>
+  </div>
+</div>
+
+<script>
+  let timer=null;
+  function resetDemo(){
+    clearInterval(timer);
+    document.getElementById('newFill').style.width='0%';
+    document.getElementById('newState').textContent='点「检查更新」看看有没有新版本。';
+    const bar=document.getElementById('newBar'); bar.querySelector('.up-bar-fill').style.width='0%';
+    document.getElementById('coverOk').style.display='none';
+    document.getElementById('newCheck').disabled=false;
+  }
+  function runDemo(){
+    resetDemo();
+    const fill=document.getElementById('newFill');
+    const state=document.getElementById('newState');
+    // 1. 检查
+    state.textContent='正在检查更新…';
+    setTimeout(()=>{ state.textContent='发现新版本 2.6.1169，正在下载…'; },700);
+    // 2. 下载（真进度）
+    let p=0;
+    timer=setInterval(()=>{
+      p+=Math.random()*9; if(p>100)p=100;
+      fill.style.width=p+'%';
+      if(p>=100){
+        clearInterval(timer);
+        // 3. 下载完自动跳安装
+        state.textContent='下载完成，正在自动安装…（无需操作）';
+        const cover=document.getElementById('coverDemo');
+        cover.scrollIntoView({behavior:'smooth',block:'center'});
+        setTimeout(()=>{
+          document.getElementById('coverOk').style.display='inline-block';
+          document.querySelector('#coverDemo .cover-t').textContent='安装完成';
+          // 4. 模拟自动进主页面
+          setTimeout(()=>{
+            document.getElementById('newState').textContent='已更新到 2.6.1169，已进入主页面。';
+          },1500);
+        },2600);
+      }
+    },260);
+  }
+  document.getElementById('newCheck').onclick=runDemo;
+</script>
+</body>
+</html>

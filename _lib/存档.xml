@@ -1,0 +1,1449 @@
+---
+title: WhatsApp客户助理_对话存档
+---
+
+<Heading id="EpYb2dunP6WgGKfZivXQHU" level="1">
+  WhatsApp 客户助理软件 · 完整对话存档
+</Heading>
+
+<BlockQuote id="dYNHEUgzOuPxIUrB2NlcDP">
+  <Paragraph id="9q1lEvIXCdrk7qPtXZJHFw">
+    整理时间：2026-09-23\
+    用途：把本项目中所有讨论、决策、确定的规则固化成一份可查阅的档案\
+    关联代码目录：`/workspace/wa-assistant/`
+  </Paragraph>
+</BlockQuote>
+
+<Divider id="fVXDBUwzxfIOEgxyvrnpKv" />
+
+<Heading id="fAviPcdx98Jerl7EUY5NnV" level="2">
+  〇、项目缘起
+</Heading>
+
+<Paragraph id="GapgEjgHtakebLwtEE5Hea">
+  用户是独立定制油画卖家（美国客户为主），经营"7 天朋友式销售对话体系"。\
+  想做一款软件：<Mark bold>同时监控多个 WhatsApp 网页窗口 → 读取每个客户的聊天记录 → 自动翻译成中文并存到本地 → 调 AI 按每个客户独立生成中文回复建议 → 用户自己翻译英文、手动发送</Mark>。
+</Paragraph>
+
+<Paragraph id="VLt8cyf2R5DWEi5gtQSyZM">
+  核心诉求：软件只给建议、<Mark bold>永不自动发送</Mark>；数据全部本地存储；用越便宜的 AI 越好（最终锁定腾讯混元 Hy3）。
+</Paragraph>
+
+<Divider id="nwlD92ZPBUQnhZlfG77hQJ" />
+
+<Heading id="9MxK6WurvpIHdET5On7S9Q" level="2">
+  一、逐轮对话纪要（含关键结论）
+</Heading>
+
+<Heading id="YYno8wJJMZwvoRrQyDhfEI" level="3">
+  第 1 轮｜能否做"多窗口监控 + 自动按客户出回复建议"的软件？
+</Heading>
+
+<Paragraph id="79PkckZnmXn34My1odlBxZ">
+  <Mark bold>结论：能。</Mark> 三条路线：
+</Paragraph>
+
+<BulletedList id="mfMCdOTujJ5VDlpO6K7ZTA">
+  A. 人工工作台（手动贴记录出建议）—— 零封号风险，先验证价值
+</BulletedList>
+
+<BulletedList id="rhJXSdgoinM8ff6DI6yiss">
+  B. 本地监听助手（多隔离浏览器会话，实时读消息出建议）—— 中风险（违反 WhatsApp ToS）
+</BulletedList>
+
+<BulletedList id="yGSXtb2YYYS2yb5IiirPo3">
+  C. 官方 Cloud API —— 合规但接管不了个人号历史，做不了朋友式
+</BulletedList>
+
+<Paragraph id="xkgxvWTieS7xnbwJRSbpoK">
+  <Mark bold>推荐：先 A 档验证建议好不好用，再上 B 档。</Mark> B 档五层架构：采集层 → 存储层 → 上下文层 → 建议层 → 审核层。
+</Paragraph>
+
+<Heading id="M6rEY0HeT8z4i52twueBhW" level="3">
+  第 2 轮｜存储层主要存什么？
+</Heading>
+
+<Paragraph id="3JVHhXjZv2vAojzNyY9LFr">
+  <Mark bold>结论：存的不是聊天备份，而是"每个客户的记忆"。</Mark> 六类数据：
+</Paragraph>
+
+<NumberedList id="ZDUfvLLmmE0fpbijKGkxBW">
+  账号元信息（手机号、代理、状态）
+</NumberedList>
+
+<NumberedList id="RWcqd3Ge0I1r0A8INDPMqg">
+  消息原文（方向、时间、图片路径）
+</NumberedList>
+
+<NumberedList id="tRzdx7OuWWWuda8KvNXS6Z">
+  客户档案（抽取的结构化事实，最核心）
+</NumberedList>
+
+<NumberedList id="73F4SR19hwbEqUgufnL4lo">
+  节奏状态（Day 几、时区、是否待回复）
+</NumberedList>
+
+<NumberedList id="Ztk1HAhXUURA9mDeT93id4">
+  建议与采纳反馈（用于迭代话术）
+</NumberedList>
+
+<NumberedList id="5b826duwxBFlMwLu64Tstc">
+  成交结果
+</NumberedList>
+
+<Paragraph id="eIx5J8OOuUV3KvR9wQs8G0">
+  客户档案字段示例：宠物名/品种/是否在世、进度信号、承诺过的报价与工期、客户时区、情绪、共同话题、禁忌。
+</Paragraph>
+
+<Heading id="LduTNO1mbcWKdiIEhc6KeO" level="3">
+  第 3 轮｜本地存数据 + AI 能读吗？监视网页新信息怎么做？
+</Heading>
+
+<Paragraph id="YPY6I8NOQ7vUPhLN1IJMYv">
+  <Mark bold>结论：用"数据世界"工作，不靠"激活窗口看屏幕"。</Mark> 真实触发链路（3–8 秒）：\
+  监听新消息 → 入库 → 更新档案 → 组装上下文 → 调 AI → 桌面弹窗 → 用户手动发。
+</Paragraph>
+
+<Paragraph id="iDpyFJGNaFsklo2LmQml34">
+  <Mark bold>关键纠正：AI 不会自己去翻电脑。</Mark> 是软件查 SQLite 只挑这一个客户的资料打包发给 API，精确控制 AI 看到什么。跨客户物理隔离。
+</Paragraph>
+
+<Heading id="RCFZiV5dCOIMFfmI90IoBp" level="3">
+  第 4 轮｜用 Chrome 打开的网页版能获取聊天记录吗？图片能压吗？本地存储？
+</Heading>
+
+<Paragraph id="KZq9OXpiePCQJqBGnBtsMq">
+  <Mark bold>结论：三问皆"能"。</Mark> 要点：
+</Paragraph>
+
+<BulletedList id="NZ7Z3ZdspBqdutLFl9fRG5">
+  工具的浏览器（Puppeteer 自开 Chromium）与用户日常 Chrome 不是一回事，首次需扫码登录，登录态存本地
+</BulletedList>
+
+<BulletedList id="mflAUrWiVAlZXalmaG9S1q">
+  文本全量可拉（含历史）；已撤回消息拿不到；语音需额外转写
+</BulletedList>
+
+<BulletedList id="SPaup7uG8Z2SJNm4Hx9ZJC">
+  图片能下载 + 压缩（最长边 1024px、质量 80、转 WebP），3–5MB → 约 150KB
+</BulletedList>
+
+<BulletedList id="bZL115JYm5fRChesh0hNr6">
+  本地存储方案：`D:\WAAssistant\` 下分 data / media / sessions / backup
+</BulletedList>
+
+<BulletedList id="35fnlg7IGrlZQFC3NsEzgA">
+  美国客户数据不出本机，备份整个目录到移动硬盘即可
+</BulletedList>
+
+<Heading id="0SkQfgB09u1qyDRA8GklLp" level="3">
+  第 5 轮｜接管现有 Chrome 麻烦吗？人性化 AI 用哪个？用 API 接管？能智能回答不同客户吗？
+</Heading>
+
+<Paragraph id="3Mb95ierrQBLc2NJMVNmAe">
+  <Mark bold>结论：</Mark>
+</Paragraph>
+
+<BulletedList id="adzj82lalvxYXKxF2G4YZP">
+  <Mark bold>接管 Chrome 不推荐</Mark>（profile 冲突需复制几 GB、调试端口裸奔、连接脆弱、扩展干扰）。扫码是一次性成本，干净实例基本免维护。
+</BulletedList>
+
+<BulletedList id="rNGMYZYEzpgIX3nAuI1SPx">
+  <Mark bold>聊天最人性化 AI：Claude（文本自然度最佳）</Mark>；国产模型英文"本地人味"差一档；本地部署质量明显下降。
+</BulletedList>
+
+<BulletedList id="ROcdCPlwXd7aW4PkhrcSVC">
+  <Mark bold>纠正概念：AI 没有"接管"，每次调用都是无记忆的演员。</Mark> "记住每个客户"是软件在 SQLite 做的事。智能化靠：固定人设 prompt + 每个客户不同的上下文段 + 塞真实回复范例 + 采纳反馈闭环。
+</BulletedList>
+
+<Heading id="Y2TYcCGRb3mr4DO9WPSuYY" level="3">
+  第 6 轮｜用腾讯的（混元）行不行？自己开浏览器 IP 不对怎么办？装插件隔离？
+</Heading>
+
+<Paragraph id="AxGbygdIEFeGLLHwVhFo55">
+  <Mark bold>结论：</Mark>
+</Paragraph>
+
+<BulletedList id="YvPeREVZB1H5eHIeOXcyxa">
+  混元现名 <Mark bold>Hy3</Mark>（7 月发布、8 月全球开放），纯文本、不支持图片、价格极低（约 $0.063/百万输入 token）。用户要中文建议时它反成首选。
+</BulletedList>
+
+<BulletedList id="U88iKMUZ3DFq4Izcb0KO2o">
+  自己开浏览器 IP 反而可控：每实例单独配代理，比接管更干净。代理账密要用 `page.authenticate`，且 Node 调 API 的请求要单独配代理。
+</BulletedList>
+
+<BulletedList id="CuUyGhTus1V5AOQpUoCDIP">
+  <Mark bold>别装浏览器扩展做隔离</Mark>（无头不支持、扩展本身是特征）。用 `puppeteer-extra-plugin-stealth`（Node 包，不是扩展）消除自动化痕迹。
+</BulletedList>
+
+<Heading id="2DX9MD5FKVg9ydApSkg8Gl" level="3">
+  第 7 轮｜Hy3 不够用换什么？自己开浏览器不装插件怎么处理？内核是什么？
+</Heading>
+
+<Paragraph id="qI3PK1hDhAqMoKvymVeZG1">
+  <Mark bold>结论：</Mark>
+</Paragraph>
+
+<BulletedList id="FQO9OwetoLPxDcVxj470wg">
+  上 <Mark bold>Claude Sonnet 5</Mark>（日常主力）/ <Mark bold>Opus 5</Mark>（关键节点）。分活干：Haiku 干杂活、Sonnet 出话术、Opus 打关键局。
+</BulletedList>
+
+<BulletedList id="cwAj9ADDhdz5kmA1OdJQLA">
+  反检测四层：stealth + 启动参数 + 时区语言对齐代理 IP + 行为拟人。建议用有头模式（窗口挪到屏外）。
+</BulletedList>
+
+<BulletedList id="Pnb48bCADMzOgfEI3KXg5g">
+  <Mark bold>内核就是谷歌的 Chromium</Mark>（Blink + V8）。推荐用 <Mark bold>Chrome for Testing</Mark>（真 Chrome 指纹 + 版本锁死不自动更新）。
+</BulletedList>
+
+<Heading id="ebsFKwq6wltxr7Jd80C5l4" level="3">
+  第 8 轮｜读取+提醒+存库简单，越便宜 AI 越好；翻译成中文记录；界面显示客户信息；编号 1-5 开头，1 号第一个客户 1A00001
+</Heading>
+
+<Paragraph id="0TtveoW6LWR3pUfD9HORbN">
+  <Mark bold>结论：Hy3 成首选（中文主场）。</Mark> 界面三栏草图确认。待确认：编号里 A 的含义、自动清理已回复、只翻客户发来的。
+</Paragraph>
+
+<Heading id="FxHSloiSolvQ5thi6r6Rdv" level="3">
+  第 9 轮｜A 是 99999 用完用 B；自动清理已回复；Hy3 不好？有没有好的？
+</Heading>
+
+<Paragraph id="rmgLA9PVsBMhehqTJHrIBW">
+  <Mark bold>结论：</Mark>
+</Paragraph>
+
+<BulletedList id="gH8Tl4nHS5dnaZ2e9tPVfp">
+  <Mark bold>编号规则锁定</Mark>：账号 1 → `1A00001`~`1A99999` → `1B00001`；账号 2 → `2A00001`…
+</BulletedList>
+
+<BulletedList id="bWcX1Nriw6sBj718GZBZ3i">
+  已回复：自动检测清除 + 手动兜底
+</BulletedList>
+
+<BulletedList id="U1drMAe2HOyccDWIqIP9qF">
+  纠正"Hy3 不好"不准确——问题只在英文语感，用户要中文则很能打。推荐 <Mark bold>Hy3 翻译+抽取 + Sonnet 5 出中文建议</Mark>，做成可插拔。知识库按需加载（不一股脑全塞）。
+</BulletedList>
+
+<Heading id="sQgvFyvavSQcuYK2gQIaQC" level="3">
+  第 10 轮｜混元有没有其他版本？
+</Heading>
+
+<Paragraph id="m4F6EJSeKg473Ahh5QiZr4">
+  <Mark bold>结论：有，更正——混元有能看图的版本。</Mark> 完整产品线：
+</Paragraph>
+
+<Table id="G7ygRT09iaEd88dUutxMZJ" readonly rowHeader>
+  <TableRow id="Lv9AlVafaVx8U8jXBSvOn6">
+    <TableCell id="wcA64f0d7WTrL1CWEaOTpE">
+      <Paragraph id="pPtQ2yNz7Na8xv9UrD9aIz">
+        类别
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="XgijkLt0kL3OZDIPVhhiUI">
+      <Paragraph id="uGPXah5YWVrJ7lhm8W2WQF">
+        版本
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+
+  <TableRow id="ySFJG5MDCHCewuiTn76nFM">
+    <TableCell id="0PreiFIZLl4FPoRtGyHvWZ">
+      <Paragraph id="5IhgVFfsTGiylt4xCqEKg6">
+        语言
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="2mJ8An66IBljiyI4yjHjhg">
+      <Paragraph id="lSzpQ94urFDVNpX30OFvjK">
+        Hy4 preview（8 月更新）、Hy3（当前主力）、Hy2.0（别用）
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+
+  <TableRow id="JQP8gSUBILFAuLOzPpzeiy">
+    <TableCell id="BqEfxyNL7yakAN6LZq8ugx">
+      <Paragraph id="ADbCQKwdyQEVGZ01yl7mgN">
+        翻译
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="gTmcMTAG4bSUExWzfXMY0m">
+      <Paragraph id="xbA5lAqG6oj71aZFciAA6w">
+        Hy-MT2（专用翻译，更准更便宜）
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+
+  <TableRow id="7bf6zVMXNmaRVaZ7gbDSvE">
+    <TableCell id="PsFoY1o1YaXclNWp9PYe2c">
+      <Paragraph id="1keof5UAmIY00QGkWqhCM2">
+        视觉理解
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="73XUZPLgmlDe1MwRnLl599">
+      <Paragraph id="62G35jo8GIUYuqsA58orQD">
+        Hy Vision 2.0（能看图，宠物照可用）
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+
+  <TableRow id="fv727HVTB78u0yR83QmvSb">
+    <TableCell id="d3G7ilrJIKwZNYoOT5dHH6">
+      <Paragraph id="qAnEsnCXjlh8NUX6R9UfOz">
+        图像生成
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="4D49uon4ELcd0snCn6DEYc">
+      <Paragraph id="qtOSFadRJQlL06VUmkqv3b">
+        HY Image 3.0/3.5（用不上）
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+
+  <TableRow id="1DOTrs9VdSlUgakIERYLaG">
+    <TableCell id="NvBfYqv9huomAW4hsnaQL9">
+      <Paragraph id="5nOFGL2DedUCh0hRN6QhEh">
+        语音识别
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="A7DZbfLYaNXIeldyv7fMu0">
+      <Paragraph id="dfrBX2LJiryXZrAhAdOvJv">
+        Hy ASR 3.0 preview
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+</Table>
+
+<Heading id="M4cDbLy43IfSmdSydeXkpd" level="3">
+  第 11 轮｜1A00001 编号绑定客户，信息过来还跳提示 001 的信息和新消息
+</Heading>
+
+<Paragraph id="XhohfedvDWMaXCZTXtvMXv">
+  <Mark bold>结论：</Mark> 编号绑定\*\*对方 WhatsApp 号码（JID）\*\*不是昵称。第一次收到消息自动分配，之后永远同一编号。提示窗口突出编号。三规则：编号永不回收；跨账号查重提示；地区自动猜测时区。
+</Paragraph>
+
+<Heading id="oIG39ZMEvcTTvRmvSgzKzo" level="3">
+  第 12 轮｜（代码开发启动）
+</Heading>
+
+<Paragraph id="0WeDEJ9xevunDYzEId0po2">
+  <Mark bold>交付：</Mark> 编号生成器 `ids.js`（进位逻辑测试通过）、数据库 `db.js`（双驱动：better-sqlite3 优先 / Node 内置 node:sqlite 兜底）、`ai.js`（可插拔客户端）、`knowledge.js`（按需加载）、知识库五份文档、浏览器会话 `session.js`、HTTP 服务 `server.js`、主入口 `main.js`、三栏界面 `public/`、配置 `config.yaml`、测试。30+ 项自测通过。
+</Paragraph>
+
+<Heading id="U7WbFfZapvO5eX1Nr70JIC" level="3">
+  第 13 轮｜模型统一走 Hy3；客户档案改成每客户一份文档（名称\_地区\_编号.md，开头固定信息头）
+</Heading>
+
+<Paragraph id="zaL2s3NurB2cRXbD4nP8Zb">
+  <Mark bold>结论：</Mark> 新增 `customerDoc.js`，生成每客户一个 Markdown 文档。Mike 例子实测：旧金山 3 号第 50 位 → `3A00050`，文档开头含名称/地区/编号/时间差/电话/加好友时间。改名自动重命名、编号不变。70 项测试通过。
+</Paragraph>
+
+<Heading id="FdzyYlpE2VSfgd6BKr0Y8C" level="3">
+  第 14 轮｜所有细节给三个策略，列总架构
+</Heading>
+
+<Paragraph id="m90XEztU7VrIqw74TFQjP2">
+  <Mark bold>结论：</Mark> 22 个决策点，每个三条路，见下方"系统总架构"。
+</Paragraph>
+
+<Divider id="MPdkSrSJMGfhSwvSNOu0fU" />
+
+<Heading id="S9MJ02ippd3WthW8UpO9ig" level="2">
+  二、最终锁定的关键规则
+</Heading>
+
+<Heading id="CyhRypZMvCx9KJ8iWcKZDT" level="3">
+  1. 客户编号规则
+</Heading>
+
+<BulletedList id="Gyum845EeCtlETOeHLYusV">
+  5 个 WhatsApp 账号，编号前缀 `1`~`5`
+</BulletedList>
+
+<BulletedList id="FVOuyvNj5keq5xrDXl3Jcg">
+  格式：`{账号}{字母}{5位序号}`，如账号 1 第 1 位 = `1A00001`
+</BulletedList>
+
+<BulletedList id="4ykgTQwbrhtfX9B9iuDo0X">
+  字母 `A` 满 99999 后用 `B`（`1A99999` → `1B00001`），逐位进位
+</BulletedList>
+
+<BulletedList id="jLHx36F4DhD3UJmdXmyfG7">
+  编号绑定<Mark bold>对方号码（JID）</Mark>，不是昵称；一经分配<Mark bold>永不回收</Mark>
+</BulletedList>
+
+<BulletedList id="Mt8Lpu6fbXzm8Kto52WZgG">
+  例：Mike / 旧金山 / +1534685245 / 3 号账号第 50 位 = <Mark bold>`3A00050`</Mark>
+</BulletedList>
+
+<Heading id="kxLxIpGPZbdG0aF0FMNn8V" level="3">
+  2. 客户档案文档
+</Heading>
+
+<BulletedList id="D8p5geYFENrxZ6Ceezall2">
+  文件名：`名称_地区_编号.md`，如 `Mike_旧金山_3A00050.md`
+</BulletedList>
+
+<BulletedList id="CuIHjGWgj8Yz8pJ9OlSAah">
+  路径：`data/customers/`
+</BulletedList>
+
+<BulletedList id="9wQAcA3mnEvc9ngKVsOHu8">
+  开头固定信息头（六必填）：
+</BulletedList>
+
+<Code id="AM6PpZQ1vraWe79jNyntPL" language="markdown">
+  ```markdown
+  # Mike · 旧金山 · 3A00050
+
+  | 项目 | 内容 |
+  |---|---|
+  | 编号 | **3A00050** |
+  | 姓名 | Mike |
+  | 地区 | 旧金山 |
+  | 时间差 | 当地时间比北京时间晚 15 小时（当地 UTC-7） |
+  | 时区 | America/Los_Angeles |
+  | 电话号码 | 1534685245 |
+  | 加好友时间 | 2026-09-23 03:11 |
+  | 所属 WhatsApp 账号 | 3 号 |
+  | 当前阶段 | Day 2 |
+  | 情绪 | 有兴趣 |
+  ```
+</Code>
+
+<BulletedList id="jX79EsR49cG9nZ45AeWCmn">
+  时差自动按时区推算（夏令时自动变）；改名自动重命名文件、编号不变
+</BulletedList>
+
+<BulletedList id="Npehy5YdPoOoyj2AhbiVGa">
+  头部下方：客户档案（AI 抽取）+ 完整对话记录（英文原文 + 中文翻译）
+</BulletedList>
+
+<Heading id="J6OhQhRk934ZVLyFK3mCVP" level="3">
+  3. AI 模型配置（config.yaml，默认全混元）
+</Heading>
+
+<Table id="kQmu6O5fLFVD7ObP3SXs6A" readonly rowHeader>
+  <TableRow id="Q7JLa6o6FkYFebENMldc4N">
+    <TableCell id="pYdakIYahisWYPOlrJbdMO">
+      <Paragraph id="sFRDYRX29YsPxBUlb9f8kp">
+        环节
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="Hz83kjHkGepWRzvwWw5AOs">
+      <Paragraph id="75SFeukFLBpWUZuEFkBZFe">
+        模型
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+
+  <TableRow id="j3BMuCiALeVtOVNjQCaf77">
+    <TableCell id="EzueRCLTf38Wtjg0qB7bus">
+      <Paragraph id="oemOb43rtnd8H54I5LBoKO">
+        翻译（英→中）
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="tgbYAXX8xKRL8JZEQE5jmh">
+      <Paragraph id="NM3bEik6zs9W4s3Wy2pK4P">
+        hy3（量大可换 hy-mt2）
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+
+  <TableRow id="FC47vYGLyZslFtPlIrRa0g">
+    <TableCell id="yrugFzabvMVJfnGJvUSGj6">
+      <Paragraph id="E8k3eR1hSB4fRs5zvzmkrI">
+        事实抽取 / 档案更新
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="XAaWoLjRjlGZqXO3lWUxKl">
+      <Paragraph id="MIg8jS7kyoIkP9Ewls8V23">
+        hy3
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+
+  <TableRow id="3KJaEuoNTLzQ8IAP9mZL5q">
+    <TableCell id="Iq0NQteMITuKehQGgR3Lt4">
+      <Paragraph id="OoQMNrs6MWkf9GoIekl5V0">
+        中文建议生成
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="nY9RRBAb9Hz4zwg72SyUjR">
+      <Paragraph id="ZittdyZZJwu0gasOxcvKxc">
+        hy3（可一行切 claude-sonnet-5 对比）
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+
+  <TableRow id="kHduiArV8urx8TUNTCQpnH">
+    <TableCell id="cU9N0z8rd6Yc7kMAN2DXgR">
+      <Paragraph id="3UwuUTPDrXGOZOnxdIAtw2">
+        看宠物照片
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="dYF2oizX3Ycio3Qoud2qjY">
+      <Paragraph id="yjVcm17CaVuhUlG5vrCozz">
+        hy-vision-2.0
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+
+  <TableRow id="UiAyKIreuNuyK7w547qesq">
+    <TableCell id="5KeDDnRREeVisUD2R0P4Jd">
+      <Paragraph id="1WXcVM73mevsrXoOoDun9v">
+        语音转文字
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="FxeNK4DY6mmgwepScMq1Zy">
+      <Paragraph id="5GZiusXmGNMlTVEH98wpq4">
+        hy-asr-3.0-preview
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+</Table>
+
+<Heading id="HiOmJY9V2cBdypI6BcKHhG" level="3">
+  4. 行为红线
+</Heading>
+
+<BulletedList id="0Jyr5CzA2MlswkJ8hhoWYW">
+  只给建议，<Mark bold>代码里没有自动发送接口</Mark>
+</BulletedList>
+
+<BulletedList id="P0MBtfNjVIMkjz9nTRqQAp">
+  只翻译客户发来的消息（省一半成本）
+</BulletedList>
+
+<BulletedList id="GhtIguhzUSmr3nBm3qMnnE">
+  已回复：自动检测（你在别处回了也清红点）+ 手动"标记已回复"兜底
+</BulletedList>
+
+<BulletedList id="FJq1sFxkQSlplGqsiK5ibb">
+  新消息：桌面弹窗 + 界面红点
+</BulletedList>
+
+<BulletedList id="fA3lsghgirLtnA8aq2GNlX">
+  建议呈现：三条候选（保守 / 中性 / 推进）+ 理由 + 越界自查
+</BulletedList>
+
+<Divider id="g6E3nkfoGolSB6ntdHo2AA" />
+
+<Heading id="lk3u9x3lOaJe3P0qoDDpHB" level="2">
+  三、系统总架构（22 决策点）
+</Heading>
+
+<BlockQuote id="5NSiXuIzE3fUJnTeic6uLG">
+  <Paragraph id="n1H8QKHBWWKI5ujxlqIJRE">
+    加粗项为已采用的推荐项。
+  </Paragraph>
+</BlockQuote>
+
+<Heading id="AfsirN6FBDD9Ly8YjPOygv" level="3">
+  形态与节奏
+</Heading>
+
+<Table id="U937QbgnYoZTbHBE8uenw8" readonly rowHeader>
+  <TableRow id="SMRig5m7ARLZznVwCjhTH2">
+    <TableCell id="eWztDTkp19aXIHP9VDmgz1">
+      <Paragraph id="ujHRhvUoKodjgpNmkpeRB9">
+        决策
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="YVXgNKKR8IxqEsjOfilJs3">
+      <Paragraph id="1otw8oE3sMld3Zp8ZajhgF">
+        选项
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="B4NJ3mFQn523SeWDm48NeW">
+      <Paragraph id="Gz53CiljP62Fk8khMqsxL8">
+        采用
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+
+  <TableRow id="v9xb0po7sopICp6N684Wth">
+    <TableCell id="MatAbvzmwkzsaI2yN9pkTN">
+      <Paragraph id="oUXIlo9kSPubKSWr0ndDGl">
+        交付形态
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="ht5SecOjOmYRqS7GObYY3l">
+      <Paragraph id="XTXTqqaCdWQx8M0lMgVryW">
+        本地网页(8787) / Electron / 纯终端
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="VKopjqiB1GrcYBI1MjfbZG">
+      <Paragraph id="IF6xabz4rpcDJPNJeRcMuy">
+        <Mark bold>本地网页</Mark>
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+
+  <TableRow id="FLpUuEJZ92ILcGoyYLAnNI">
+    <TableCell id="sIssHCkd6Wg7AGe7hqYkR2">
+      <Paragraph id="eNzo8UldnatBKK0bGfFRBo">
+        功能节奏
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="NwGh1VsT5KIlGJKuvsddOS">
+      <Paragraph id="Khk1kONJR0Blq3fIwFPNTK">
+        一次做完 / <Mark bold>分阶段</Mark> / 纯手工验证
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="oEioe4OFAewDhT5XfbxaeX">
+      <Paragraph id="vQfBByPmlSUXIKUhbxdXHb">
+        <Mark bold>分阶段</Mark>
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+
+  <TableRow id="aK2ZJjIMwBAobrW6HF9meO">
+    <TableCell id="AYTHPIrQNHc8Ugi9RjxCgc">
+      <Paragraph id="6KY6RxTi0Zl92mOiRyncOU">
+        账号推进
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="eC5IZE8Fkx0n0AqNKcWHU8">
+      <Paragraph id="WU9GzE4c6lheCpTHXDjX7I">
+        5 个一起 / <Mark bold>先 1 号</Mark> / 永远单号
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="WerkO09xaeTniE0llj84qA">
+      <Paragraph id="JoOkXihkHm1OwZLkS7uRnp">
+        <Mark bold>先 1 号</Mark>
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+</Table>
+
+<Heading id="kZ61wCbXGuQzmNzfsxSLPn" level="3">
+  采集层
+</Heading>
+
+<Table id="elyVk5V0s6YNfR1vJqPRH0" readonly rowHeader>
+  <TableRow id="GEiJi5akseka7EZ8mN5GpL">
+    <TableCell id="Lgr5SCJYsffMRsklUw1JLf">
+      <Paragraph id="23KTmlol5XCKZWi2N9ivF1">
+        决策
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="qg1Hge5AGZEtG6iBGbExVU">
+      <Paragraph id="Urr7UvRfoEgTAfa1gUA2US">
+        选项
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="jX1GJbGmqgAfcs2AzWxPuj">
+      <Paragraph id="LScHmYz1GopqP8udUBLOqd">
+        采用
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+
+  <TableRow id="7geTAFN6BaDIHJ348CYyCJ">
+    <TableCell id="y2aJnezYUArgQoIrp2s0PX">
+      <Paragraph id="WVfTGSlHZefkPD9AzmOAFi">
+        浏览器内核
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="W8ASt5evr1oehD2IELTWSb">
+      <Paragraph id="7DLMhJTKq5aRPOOb85pzMn">
+        Puppeteer 自带 / <Mark bold>Chrome for Testing</Mark> / 系统 Chrome
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="5nos779Q94Z7YT7OiDQ0uO">
+      <Paragraph id="i0PVToHK0wJBsTXcxxiSNi">
+        <Mark bold>Chrome for Testing</Mark>
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+
+  <TableRow id="HOf4qYEiOI7Uir14cgyLQT">
+    <TableCell id="J6cyg1S0ikppx2TwzE8G2S">
+      <Paragraph id="sMFMALKw4J6YqbHtSF6ij3">
+        登录方式
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="IFor244bjHtv36QHSty8wd">
+      <Paragraph id="7eKlsdx1hX6GyrP3a8ikez">
+        <Mark bold>扫码存本地</Mark> / 接管现有 Chrome / 每次重扫
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="n9FD5AbDsB7QkNaBep6LnG">
+      <Paragraph id="yTddyRtw6B1VQI8NyS5FEK">
+        <Mark bold>扫码</Mark>
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+
+  <TableRow id="w4F8CqPzP0imFeJbWwosAR">
+    <TableCell id="tNootLgjlXZQrFwRa9QsS4">
+      <Paragraph id="po4Amv6RHfJ04DYqRv8jrQ">
+        反检测
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="iXDxH0C5aIhDmijky4Wunr">
+      <Paragraph id="vyzSJmFLRZnVHLrBF7USVw">
+        <Mark bold>puppeteer-extra + stealth</Mark> / +指纹库 / 商业指纹浏览器
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="n7bmso39ZERPaz40tS9QLi">
+      <Paragraph id="S5PqeMCID9LYgSDKX5XcPs">
+        <Mark bold>stealth</Mark>
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+
+  <TableRow id="SfYqSRLmfs9389TpGy2dkJ">
+    <TableCell id="800Gy0txPMI74vWD4ham3S">
+      <Paragraph id="gXPW9MpuZtiDTgSGxWNsCe">
+        代理
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="1gfJ5PzoT4ue0kN1sBQ4jZ">
+      <Paragraph id="83zO3O8JkJ5MZN5wFejU3n">
+        不用 / <Mark bold>每号独立住宅代理</Mark> / 共用
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="1wDDewbEYlwBdjsVvuLYp7">
+      <Paragraph id="EHEfBwIFVtiLrSSTXWJyVK">
+        <Mark bold>每号独立</Mark>
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+
+  <TableRow id="hKbH0Z0CWknznRR9jhNKYA">
+    <TableCell id="Paav6amnCISTd3PWZZ7tmr">
+      <Paragraph id="h3xTGoAJhXytvcOfASiCIq">
+        历史消息
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="xUszjVqeVrBtiH5TkVxUxo">
+      <Paragraph id="nMqPgAekrJfJHHAdHv7P7J">
+        不同步 / <Mark bold>同步 30 对话×50 条</Mark> / 全量
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="Cyzk2Mo5nQcK9xXVb4wfsz">
+      <Paragraph id="Z5jAKqxYlIQNPs68rxo7tj">
+        <Mark bold>30×50</Mark>
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+</Table>
+
+<Heading id="BFncXsys6D1LLSaAULpawf" level="3">
+  存储层
+</Heading>
+
+<Table id="3NMLFGNl1zbwkYqrj9HPJW" readonly rowHeader>
+  <TableRow id="P0weBEwy3NHzkDXVCJKiQL">
+    <TableCell id="UZh0MDmezpcbaIO0vkEMaj">
+      <Paragraph id="MWPTrcpTigo2FwIwXiA0ln">
+        决策
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="AyBJITIphkoXgW4Y1D50iP">
+      <Paragraph id="TE32vA1eykF2jMiOQFtxQf">
+        选项
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="m7G9g1shalDgQbp0XNStIX">
+      <Paragraph id="w5GNAlpDzLKM4Ri2MCIntH">
+        采用
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+
+  <TableRow id="tQsO85MNfWZrW7xHePnWHg">
+    <TableCell id="HxLtCGDbXqNIhg2wAXzDvK">
+      <Paragraph id="eif2V1d3oMACJYuuaCyQr1">
+        主存储
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="ETmcKPt9p2nH9q3lj8uIx3">
+      <Paragraph id="ZDUb2BpfNd2j8VO6JsBbNr">
+        <Mark bold>SQLite</Mark> / 纯 MD / 云库
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="aMYBg5IQX0HBV4jM22JvDs">
+      <Paragraph id="vwkyuE465Xd2pquZTIpuDG">
+        <Mark bold>SQLite</Mark>
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+
+  <TableRow id="YscT2k1mzr5M8D0tjsJGFt">
+    <TableCell id="RRnVM7Vv2VItcnWxmbWmt8">
+      <Paragraph id="TqmC4JTeOyfgfwUJQWplU0">
+        客户档案
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="tk5vIKjsXCYFrn9Hf3p2qH">
+      <Paragraph id="OCz2pHZhW17SleKj90j6LM">
+        <Mark bold>DB + 每客户一份 .md 双写</Mark> / 只 DB / 只 MD
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="9GFAMMrbH0o1Btf5fDFH0o">
+      <Paragraph id="uH2Rx2b00aBA9uhLN30itM">
+        <Mark bold>双写</Mark>
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+
+  <TableRow id="hqZIbporcxbkfHh61xlwKC">
+    <TableCell id="lwUIWctfGrgR6xuaYMui6I">
+      <Paragraph id="qQ2jvS5v1Marokkzy0IV8Q">
+        图片
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="LAdr84a3TKmQRCSG7qwF39">
+      <Paragraph id="asmb538bbZnS7R9x8Al4YV">
+        不存 / <Mark bold>压到 1024px 存</Mark> / 原图+压缩
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="jhukhRMtoOc79jEFxkyKJX">
+      <Paragraph id="ruh9MgYvPORydACz1U8ajq">
+        <Mark bold>压缩存</Mark>
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+
+  <TableRow id="DIOTE4gx93x8ugh69TqYeR">
+    <TableCell id="I5bvVOl1qnZF8gGSBI5lMB">
+      <Paragraph id="ts8rk3adEelX268yXK7xWK">
+        备份
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="7vKKJNJ0QF2b7H5ILHW10m">
+      <Paragraph id="RgNW6ahRITYjYbL3YJMDKA">
+        手动 / <Mark bold>每天自动复制第二盘</Mark> / 云同步
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="XGVGKw2auLMMffGcNA8Nc4">
+      <Paragraph id="m4khzdSdhsZeMzkCtxnObS">
+        <Mark bold>自动本地</Mark>
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+</Table>
+
+<Heading id="gDsfc0GWdRUjIzcaMNuEmz" level="3">
+  AI 层
+</Heading>
+
+<Table id="GncrY9lQHCoqzRgh51H75n" readonly rowHeader>
+  <TableRow id="68Xnp9vW621Vkn4fIGmqyL">
+    <TableCell id="oLXmIG7HwEoHQ9loI1T3Yy">
+      <Paragraph id="JRQOOVYrZPXgHV4WkKnLVG">
+        决策
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="LyQo5yBLwtLxD70qjyD5QO">
+      <Paragraph id="rbw8VtMXPXuHj0dk1fulHZ">
+        选项
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="awGKJgxsKWlsLR9i1nOSW5">
+      <Paragraph id="fuwYwZJrVHjW0MNRYt5LRg">
+        采用
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+
+  <TableRow id="ge2WZR62qza30I2n0GORMz">
+    <TableCell id="wjbTyGXcxYkigaTWh3HUjb">
+      <Paragraph id="GHQ8RT46Zgb2fzmy4MmxRf">
+        模型
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="Vi59osh9QxetGLfWQye9pB">
+      <Paragraph id="2twwiLxyzbMJ38Q5mmAwzK">
+        <Mark bold>全 Hy3</Mark> / Hy3+Claude / 全 Claude
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="wovZI71XrDWfIgZmsx5GXl">
+      <Paragraph id="fW9ov30OvdkV4DRY5bTZov">
+        <Mark bold>全 Hy3</Mark>
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+
+  <TableRow id="LZ7QCpLJpHuL5ViKZaQk9R">
+    <TableCell id="8oKqF1XHuIo8dEWOxXTOcO">
+      <Paragraph id="4h4BAZjYqeGvdy2enT7IJu">
+        翻译时机
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="4XERlRl2e0hYvLWfANsdWe">
+      <Paragraph id="UdKqHtdbpelmfiCh0285zi">
+        <Mark bold>新消息实时翻</Mark> / 批量 / 手动
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="9JzXPQ3k9LwOib3He7IMUG">
+      <Paragraph id="2ZWBV8M0RH6V6aPqli05cX">
+        <Mark bold>实时</Mark>
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+
+  <TableRow id="zYxGQKpDqUmjocQTXfzK3B">
+    <TableCell id="qXg4WkwIGQUQLEYajBUI2a">
+      <Paragraph id="PAjz04NqOe219rTkfe5JRM">
+        翻译范围
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="dAjrk3kejUWHJrqa3VtonH">
+      <Paragraph id="zyW16ykRazLQg0L4yViYx0">
+        <Mark bold>只翻客户发来</Mark> / 双向 / 不翻
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="asrR9jOcAlnoRVPSnXuSM4">
+      <Paragraph id="24cqhTyu4fClWntbDb65s2">
+        <Mark bold>只翻客户</Mark>
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+
+  <TableRow id="k8o4Ffruu9Xn6oRm5lYGMw">
+    <TableCell id="yRXr6LvciYdObEpdof63ys">
+      <Paragraph id="hOnB7qcddsq19iPjh58BHE">
+        建议触发
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="U1aouU0daCwkIehu4RAyY4">
+      <Paragraph id="tY0v4wPyzXTSnYEkGhU3qM">
+        <Mark bold>手动点按钮</Mark> / 自动生成 / 定时批量
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="KcDdyMQJTWuqyCUKcppGW9">
+      <Paragraph id="y1jUwvF0JP1NWxuBFKYLHX">
+        <Mark bold>手动</Mark>
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+
+  <TableRow id="LMaYrjfIBBsEeXBj873fMb">
+    <TableCell id="ozwqBBWkNfPURAh7BOSsAN">
+      <Paragraph id="hWuqSMCiWzXtGx5eUYyyjS">
+        知识库加载
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="eC9NVMVNVDVLilpN5QSCTM">
+      <Paragraph id="XnlBv36RR2lZFewIPsbK0j">
+        <Mark bold>关键词按需</Mark> / 全塞 / AI 自选
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="OtheqRNCo8USofXo6CDoDV">
+      <Paragraph id="Q6r965H0SWcYpswcfJtsIU">
+        <Mark bold>按需</Mark>
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+</Table>
+
+<Heading id="LrzerbQzhHP3PT4WPuX6Mj" level="3">
+  交互与风控
+</Heading>
+
+<Table id="zLKl74QSuKG1EVCRyhOdDm" readonly rowHeader>
+  <TableRow id="u9Yb3QWhlE3wRNLztZfitn">
+    <TableCell id="55qQqkDAT2xEa7hvY2NUW4">
+      <Paragraph id="N1aDRzAmfen3xdjiVedmjr">
+        决策
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="jbZHoTya4TXluCe95GB7HQ">
+      <Paragraph id="UBgkBt9hCtdotds5w1mRT9">
+        选项
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="yyoq0D238ts5qf7IKJHXrv">
+      <Paragraph id="pShGPjXxumawXjaiKgI8Vq">
+        采用
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+
+  <TableRow id="RWywyMWWxhjrv0dsBghvdm">
+    <TableCell id="sQ49KQS6iDlH7TXAiCXPDt">
+      <Paragraph id="W8sYR7RY49jHhK7UzJ13bi">
+        已回复判定
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="NP5kTZaBOvMkui08jATIhw">
+      <Paragraph id="I6IMlnmQPHMDQF7cz4Ei8w">
+        <Mark bold>自动+手动兜底</Mark> / 纯手动 / 纯自动
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="Ibj8xdQRkXkYjOtK1iTeAA">
+      <Paragraph id="d1Z3ODOQQVv1wcwIdMUBF2">
+        <Mark bold>双轨</Mark>
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+
+  <TableRow id="cHx32VVr4O5DxFiWAsHjm2">
+    <TableCell id="r58s5DY7njdrqFXGTuJrZM">
+      <Paragraph id="2vpZewus2S2YFhCxlVWMFT">
+        提醒
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="Q8B9CRlENsLG746V7TkaQh">
+      <Paragraph id="PqU76g3JjpyWlWYyy0g15W">
+        <Mark bold>弹窗+红点</Mark> / 只红点 / 加声音
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="vzEaOWDJ1yHxlp6ugTOl2b">
+      <Paragraph id="QEfkOW8AJ6LVEnB5TEl8iE">
+        <Mark bold>弹窗+红点</Mark>
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+
+  <TableRow id="7jzzrg9mbJm0o0m5XBXGO0">
+    <TableCell id="wOOdfoQdvLmFOpTQZmFqwc">
+      <Paragraph id="nCPW7j683kESo4GpvM31rh">
+        建议呈现
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="nbx0LG2NU3RVgImxo0Uvl7">
+      <Paragraph id="0ywkzqpfUgkiPXRCAvbf5n">
+        <Mark bold>三条候选</Mark> / 一条最佳 / 草稿框
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="nAuofMEbaDH0u1l381uw6X">
+      <Paragraph id="QgcFT2Ig6GM9hI8dtdUUnj">
+        <Mark bold>三条</Mark>
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+
+  <TableRow id="8Uy4lA83XU2vE0wbaRrGN8">
+    <TableCell id="NLIpudza2Pr4KpBfh5Sr8A">
+      <Paragraph id="klrSd8b3qaNYhr3iL3LBiV">
+        发送
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="EjKBRPiiZFlxpvWbO7bqf4">
+      <Paragraph id="Veuoik4rjIqoW2kesF5Mqj">
+        <Mark bold>只给建议不自动发</Mark> / 填框待点 / 全自动
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="5sdiDcphlhECVzrsvIwSnC">
+      <Paragraph id="Lzo0Ze5Vmt1wTOJhp5j4Vs">
+        <Mark bold>只给建议</Mark>
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+
+  <TableRow id="1tMK5uCbzcuZYOWU3Hsqnp">
+    <TableCell id="bcFL7LgRO9XY6IZ5pGvk0K">
+      <Paragraph id="7SnCQvm3HRAmrrx5W15I8U">
+        限速
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="E6SBnNE4MAcIR8NK7V2mYp">
+      <Paragraph id="YMoZVAFUbGuCMC0EnaB4c6">
+        不限制 / <Mark bold>随机延迟+打字间隔</Mark> / 严格拟人作息
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="iLLTUIXD7GOnjYmhAB8L8X">
+      <Paragraph id="euHtzjzMPWn9lukQtFo2Yd">
+        <Mark bold>随机延迟</Mark>
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+</Table>
+
+<Heading id="Fayvpig3jAsAFpZDZA1X24" level="3">
+  暂不做（已留接口）
+</Heading>
+
+<Paragraph id="MBw2LytHgh02oeESq4q1MT">
+  图片理解、语音转文字、Instagram/邮件多渠道、阶段自动推进、成交流水分析。
+</Paragraph>
+
+<Divider id="nC7NfzNBfGnEmAiWulbJJZ" />
+
+<Heading id="om0dHXQnAA7C7Y1gYRSZno" level="2">
+  四、代码交付清单与状态
+</Heading>
+
+<Paragraph id="0kpYRv4K44B6oB0KCWTuK6">
+  目录：`/workspace/wa-assistant/`
+</Paragraph>
+
+<Table id="wYvQdnbrUjNDpnSm0Eixxc" readonly rowHeader>
+  <TableRow id="Dg8g643sNP1KpcF80nHT4e">
+    <TableCell id="MkMtx9Q9i6SQ5aPwBdzgtD">
+      <Paragraph id="Qlpay5jDBDLSPiiVaG6zgh">
+        文件
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="WFztz5pGVNphdAKUq6pwdF">
+      <Paragraph id="zoCD5Pe002Gxi4Z09xeqNa">
+        作用
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="3nFFyi2AuPCv3BfgzkaXNX">
+      <Paragraph id="quwPrehJPqLjLranBILPAK">
+        状态
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+
+  <TableRow id="JTUmYU4h0bhWcOulewpsX3">
+    <TableCell id="4etyccxO2YC1Auklho3fSo">
+      <Paragraph id="qt8Y2Rgd5wEo0NQsVbt61p">
+        `src/ids.js`
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="62A9Jf19ZMxquvBA8lb6j1">
+      <Paragraph id="9YLFAkKXNGCqWTTCAh5IwV">
+        编号生成器（进位逻辑）
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="TNSljGIuEOvDkU690eJxz6">
+      <Paragraph id="fM0Sqx6Z5zKV8fVzV4bi94">
+        ✅ 测试通过
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+
+  <TableRow id="68ucwi8sdBD6ecYWXcx3Te">
+    <TableCell id="7YvGRrmKcplhVWoipqKPfU">
+      <Paragraph id="7E6912ADvT86Fupkdbg8zb">
+        `src/db.js`
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="Sws5iQ9nVESFTbdoCC91a3">
+      <Paragraph id="eh0nu2B8HG2M1KeWNem6MI">
+        SQLite（双驱动兜底）+ 建表
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="4ZEkh2We9AAN1q12cholTR">
+      <Paragraph id="p9yADu6cC1rLb2h6fKgbSv">
+        ✅ 测试通过
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+
+  <TableRow id="OSDGUC8r9np9n54DCCaK9x">
+    <TableCell id="ftpFTvLoR71OIUiMfVniOd">
+      <Paragraph id="pv8tNuihaYfkY6sGiR6DY9">
+        `src/ai.js`
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="Ky6oLQqRmBhnNniZxNkR61">
+      <Paragraph id="YbQ62G9IzjyWYxPwz67IdI">
+        可插拔 AI 客户端（混元/Claude）
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="m0cJeuKTPEmDCptra1rKT8">
+      <Paragraph id="MLYV6dD0lQNNYgzLdaPbGM">
+        ✅ 接口就绪，待填 key
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+
+  <TableRow id="vja57mbbrWMNcehAsdXmw9">
+    <TableCell id="DOZEALDnN53jWWAduqV1jQ">
+      <Paragraph id="5f1Xp7yGw82Wkp1P9RWX7A">
+        `src/knowledge.js`
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="QVSkBc8SsiNMap50N6T4V5">
+      <Paragraph id="rgm4jF0JHlW7wQFRbagOUL">
+        知识库按需加载
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="l2sPPgVGmxh6PqaTzr9Phw">
+      <Paragraph id="e11qjVrC3t8fYJ2bxrh3BY">
+        ✅
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+
+  <TableRow id="jeyB9AdPRKV1CKMBJPO9Gf">
+    <TableCell id="mNuHNbpWswfEqdfpjTCDV6">
+      <Paragraph id="MOuZAn3PhdIbocJbTVd60u">
+        `src/session.js`
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="YXj8BH33zJIzJOeWGGQO7O">
+      <Paragraph id="Y62oegAwgyTbRAtaAFYCVc">
+        浏览器启动 + 反检测 + 扫码
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="pLDxbYHHrkp4HnviGAPL8f">
+      <Paragraph id="W8Nrpfac7cOGHHTi1IWVfn">
+        ✅
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+
+  <TableRow id="ZlgefktLHFpdCt52TRt4O3">
+    <TableCell id="09tBtRBO1PsK8KlltKEi4j">
+      <Paragraph id="BDHh1o6jQMtpb73Q3Hd6cj">
+        `src/server.js`
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="ajFgZCpUkG1GZqPpEvyEtz">
+      <Paragraph id="KvxKR8JhdxtnecjhvxI1Ky">
+        HTTP 服务 + 消息监听入库 + 建议
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="pyRfyzJ5M0Dj5Hl9mGOqXs">
+      <Paragraph id="lAy4mXlO3H4lN7hpG4KiqA">
+        ✅
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+
+  <TableRow id="nmoBHGcR0fpvbGg0skwFtT">
+    <TableCell id="zXViEUwYsxXmPDBbtNq7ie">
+      <Paragraph id="81vaTjdj0o3kUMFFyk2LCt">
+        `src/main.js`
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="R1433qkUd9s0qIKevbcphO">
+      <Paragraph id="up2Fyr4VgzT6nZCGvQhWIa">
+        主入口
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="YgpKNM7m2KzjQIFZU8gy6N">
+      <Paragraph id="OdCytva7pbrgCLwYL2aDZ4">
+        ✅
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+
+  <TableRow id="D293Td6mqtivli44l5cKk8">
+    <TableCell id="wLa5vxeNrI4rtASNdRQm8I">
+      <Paragraph id="YOuHCBnr34xl2Acu0cZkKc">
+        `src/customerDoc.js`
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="KwsuGpOMSnbPzZGzDkkpVJ">
+      <Paragraph id="ztZDZjHOpS0AtbihuFG1BU">
+        每客户档案文档生成/重命名
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="VNg26ynsUNRmPtURR9yLZs">
+      <Paragraph id="uK2nwFXdO8NwuidwxECUb6">
+        ✅ 测试通过
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+
+  <TableRow id="Tkm1k7eFVT5lMBK1VHgo6n">
+    <TableCell id="nPKY8jyGsDnMtswVxLu2JR">
+      <Paragraph id="f7Xvaqn9KJwD9RaemEH9fb">
+        `public/`
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="yvANOxP9lBiCxm2WmkZ16D">
+      <Paragraph id="44C25bRIX0DSGejPArtpV3">
+        三栏界面（html/css/js）
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="K4TekAfXTBA5UxQekzDEIF">
+      <Paragraph id="vz2pQxz0HNu5iqec4p8Pj5">
+        ✅
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+
+  <TableRow id="n2Qm3NQZhZTH9pKKpM6iSz">
+    <TableCell id="AZ9oR8IcxL4KkSXhcogcKA">
+      <Paragraph id="fDoQb3bwwJ6Ip7Ktna6oc2">
+        `config.yaml`
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="ggxvNWj8gyjnbX24Nec4NH">
+      <Paragraph id="BByFwOl9OHxKiIPHXuiAgO">
+        5 账号 + 模型 + 代理配置
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="4fxtqUpPdnrq4pyKyFMWtz">
+      <Paragraph id="pxawFqHTIhvqO0YNLIdn7A">
+        ✅ 默认 Hy3
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+
+  <TableRow id="T6CW75VhwfSp7BU4g1yBdh">
+    <TableCell id="FsL8oTAlrH6dZnEoBtA8dt">
+      <Paragraph id="A4QFoDi1AAPv7WXortu7Kq">
+        `knowledge/`
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="eGKlPr1PQL3wCxIicE6GBz">
+      <Paragraph id="CCSiHesxOodaqSZJoaAEcn">
+        persona/redlines/templates/products/stories
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="rjLWBlx4W0SuphIEeHHTOk">
+      <Paragraph id="29zwecmU88BLVYxqgtn4Sc">
+        ✅
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+
+  <TableRow id="Wk2pFZtq01RjJ28u6xXDTM">
+    <TableCell id="xijtu9ATd1BWrJ0CTEcyP3">
+      <Paragraph id="UhiAHBQimOwj0dXdbmChgP">
+        `test/`
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="eUbqXSe9YN0J0qHmDTdlrC">
+      <Paragraph id="ZvMU119QIjgrosLLH0GQJa">
+        ids/db/smoke/doc 自测
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="yb6EYsuFKJoXxijY0zZMNA">
+      <Paragraph id="pD4JTzQI81Q9KEuTn7Suyg">
+        ✅ 70 项全过
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+
+  <TableRow id="xsFVVK9evxL66tsHgzc7Pp">
+    <TableCell id="aLAC1EUuShclNtBHn9fdh5">
+      <Paragraph id="axm0l0g1esD2yGvTgxEUBr">
+        `README.md`
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="14bBEC8FDURJG50UbmADvR">
+      <Paragraph id="udbZDA4NvvpyZxJ2EF8II9">
+        使用说明
+      </Paragraph>
+    </TableCell>
+
+    <TableCell id="2Pn3ugW6N1oTQrIUWzGVRX">
+      <Paragraph id="AWv0M3rnpjFxfFU7CA7Wmb">
+        ✅
+      </Paragraph>
+    </TableCell>
+  </TableRow>
+</Table>
+
+<Divider id="BeqMtrJZ1W8VLC8LNH7kZ4" />
+
+<Heading id="T5FMHQzsaiqAQMppAL6sak" level="2">
+  五、用户下一步待办（真机验证前）
+</Heading>
+
+<NumberedList id="WtSTbwVAwZlvEUuF0bOMYF">
+  <Mark bold>填 `knowledge/templates.md`</Mark>：贴 15–30 条自己写得满意的真实回复（最影响建议质量）
+</NumberedList>
+
+<NumberedList id="fv6V6XJEHm9D9N4IYSSc23">
+  <Mark bold>填 Hy3 的 API 地址 + key</Mark>（`config.yaml` 的 `ai.providers.hunyuan`）
+</NumberedList>
+
+<NumberedList id="9yhrryW38dOOWvh8HmXz0B">
+  <Mark bold>`npm install && npm start`</Mark>，先只开 1 号账号扫码跑
+</NumberedList>
+
+<NumberedList id="PicoJlhTy4K0LDt2T6P7ch">
+  真机验证：扫码登录、消息监听入库、中文翻译、客户档案文档生成
+</NumberedList>
+
+<BlockQuote id="b5kyFmEY3uN09FrnH0wOut">
+  <Paragraph id="svsxD9wBtcrAe4rUC5ykWk">
+    尚未真机验证的部分：扫码登录、消息监听（沙箱无 WhatsApp 环境）、Hy3 建议质量。
+  </Paragraph>
+</BlockQuote>
+KS_DOC_REVIEWS	cEZ6Mqq3Eh7uznEnoWsSba	43537	https://www.workbuddy.cn/space/d/cEZ6Mqq3Eh7uznEnoWsSba

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>AI 模型设置 · 后台只读预览</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+         background: #f0f2f5; color: #1f2329; font-size: 14px; }
+  .layout { display: flex; min-height: 100vh; }
+  .sidebar { width: 220px; background: #1f2329; color: #c5cad1; padding: 18px 0; flex: 0 0 auto; }
+  .brand { padding: 0 20px 16px; font-size: 15px; font-weight: 600; color: #fff; border-bottom: 1px solid #2c3138; }
+  .tab { display: block; padding: 11px 20px; color: #c5cad1; cursor: pointer; font-size: 13.5px; }
+  .tab:hover { background: #2a2f37; }
+  .tab.active { background: #2f6fed; color: #fff; font-weight: 600; }
+  .main { flex: 1; padding: 28px 34px; }
+  .page-title { font-size: 20px; font-weight: 700; margin: 0 0 6px; }
+  .page-desc { color: #6b7280; margin: 0 0 20px; line-height: 1.6; }
+  .note { background: #fff7e6; border: 1px solid #ffd591; color: #874d00;
+          padding: 10px 14px; border-radius: 6px; margin-bottom: 18px; font-size: 13px; }
+  table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden;
+          box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  th, td { text-align: left; padding: 12px 16px; border-bottom: 1px solid #eef0f3; }
+  th { background: #fafbfc; font-size: 13px; color: #4b5563; font-weight: 600; }
+  td { font-size: 13.5px; }
+  .mono { font-family: "SFMono-Regular", Consolas, monospace; font-size: 12.5px; color: #374151; }
+  .key-mask { font-family: "SFMono-Regular", Consolas, monospace; font-size: 12.5px; color: #b45309; }
+  .key-none { color: #9ca3af; }
+  .badge-new { background: #e6f0ff; color: #2f6fed; font-size: 11px; padding: 1px 6px; border-radius: 4px; margin-left: 6px; }
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand">mingfengxx 后台</div>
+    <div class="tab">概览</div>
+    <div class="tab">客户数据</div>
+    <div class="tab">运营账号</div>
+    <div class="tab active">AI 模型设置</div>
+    <div class="tab">系统</div>
+  </aside>
+  <main class="main">
+    <h1 class="page-title">AI 模型设置</h1>
+    <p class="page-desc">只读展示：管理员在桌面软件「AI 设置」里填好并点「同步 AI 设置」后，这里能看到各家服务商接入情况。<br>
+       Key 不显示明文，只显示「单向哈希前 8 位 + 已加密」掩码，图个安心——谁都还原不出真 key。</p>
+    <div class="note">说明：下方 Key 列即为当前实现方式（sha256 前 8 位 +「…（已加密）」）。若你想改成显示明文 key，告诉我即可。</div>
+    <table>
+      <thead>
+        <tr><th>服务商</th><th>接入地址</th><th>模型名</th><th>Key</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>DeepSeek</td><td class="mono">https://api.deepseek.com/v1</td><td class="mono">deepseek-v4-flash</td><td class="key-mask">9f3a7c21 …（已加密）</td></tr>
+        <tr><td>Agnes</td><td class="mono">https://api.agnes.ai/v1</td><td class="mono">agnes-3.0-flash</td><td class="key-mask">1c8e02b4 …（已加密）</td></tr>
+        <tr><td>硅基流动 SiliconFlow</td><td class="mono">https://api.siliconflow.cn/v1</td><td class="mono">deepseek-ai/DeepSeek-V3</td><td class="key-mask">7d5b1a90 …（已加密）</td></tr>
+        <tr><td>OpenRouter</td><td class="mono">https://openrouter.ai/api/v1</td><td class="mono">openai/gpt-4o</td><td class="key-none">—</td></tr>
+        <tr><td>TikHub</td><td class="mono">https://api.tikhub.io/v1</td><td class="mono">gpt-4o-mini</td><td class="key-mask">a04f6d3e …（已加密）</td></tr>
+        <tr><td>阿里百炼 Bailian</td><td class="mono">https://dashscope.aliyuncs.com/compatible-mode/v1</td><td class="mono">qwen-plus</td><td class="key-none">—</td></tr>
+        <tr><td>AstrBot</td><td class="mono">http://154.64.255.143:6185/api/v1</td><td class="mono">chat</td><td class="key-mask">e29c4b71 …（已加密）</td></tr>
+        <tr><td>ChatAnyWhere<span class="badge-new">新增</span></td><td class="mono">https://api.chatanywhere.tech/v1</td><td class="mono">gpt-4.1-mini</td><td class="key-mask">3b7f90ac …（已加密）</td></tr>
+        <tr><td>API2GPT<span class="badge-new">新增</span></td><td class="mono">https://api.api2gpt.com/v1</td><td class="mono">gpt-4.1-mini</td><td class="key-none">—</td></tr>
+        <tr><td>钱多多<span class="badge-new">新增</span></td><td class="mono">https://api2.aigcbest.top/v1</td><td class="mono">gpt-4.1-mini</td><td class="key-mask">c51d8e23 …（已加密）</td></tr>
+        <tr><td>No.1 API-Pro<span class="badge-new">新增</span></td><td class="mono">https://platform.rcouyi.com/v1</td><td class="mono">gpt-4.1-mini</td><td class="key-none">—</td></tr>
+        <tr><td>智创聚合<span class="badge-new">新增</span></td><td class="mono">https://lconai.apifox.cn/v1</td><td class="mono">gpt-4.1-mini</td><td class="key-mask">88a2f6b0 …（已加密）</td></tr>
+      </tbody>
+    </table>
+  </main>
+</div>
+</body>
+</html>

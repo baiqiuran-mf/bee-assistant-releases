@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>每日话术编排台</title>
+  <!-- 独立浮窗页面：由 Electron 的 board 窗口加载（board.html?code=客户编号）。
+       与主界面共用 style.css / board.js；body.board-window 让面板铺满整窗、标题栏可拖动。 -->
+  <link rel="stylesheet" href="/style.css?v=__BUILD__">
+</head>
+<body class="board-window">
+  <div id="board-panel" class="board-panel">
+    <div class="board-head">
+      <div class="board-title">每日话术编排台</div>
+      <div class="board-cust" id="board-cust"></div>
+      <button id="board-close" class="x" title="关闭">×</button>
+    </div>
+    <div class="board-body">
+      <div class="board-left" id="board-left">
+        <div class="board-left-tip" id="board-left-tip">Day 1 话题碎片</div>
+        <div class="board-list" id="board-list"></div>
+        <div class="board-left-btns">
+          <button class="bp-btn bp-add" id="board-add" title="添加一个话题碎片">＋添加</button>
+          <button class="bp-btn" id="board-edit">改</button>
+          <button class="bp-btn bp-del" id="board-del">删</button>
+          <!-- V3.7.6.1 导入段（2026-10-06）：一次性把新增的 267 个碎片补进这份看板。
+               幂等：只补本地没有的，不覆盖老板改过的内容。只在这份看板还没导入过时出现。 -->
+          <button class="bp-btn bp-v376 hidden" id="board-v376" title="把 V3.7.6.1 新增的话术碎片补进这份看板（只补没有的，不覆盖你改过的）">补全新话术</button>
+        </div>
+      </div>
+      <div class="board-right" id="board-right">
+        <div class="board-right-head">
+          <span class="board-frag-name" id="board-frag-name">—</span>
+          <button class="bp-btn" id="board-sentall" title="把当前话题里的对话一次标完「已发」（只记本机，不联网）">全部已发</button>
+          <button class="bp-btn bp-add" id="board-adddlg">+ 添加对话</button>
+          <button class="bp-btn bp-del" id="board-delfrag">删</button>
+          <!-- Day 分页（2026-09-30 用户指定放在这里）：按话术流程翻到前一天/后一天的话题碎片 -->
+          <span class="bp-pager">
+            <button class="bp-btn" id="board-prev" title="上一页（前一天的话题碎片）">上一页</button>
+            <span class="bp-page" id="board-page">Day 1</span>
+            <button class="bp-btn" id="board-next" title="下一页（下一天的话题碎片）">下一页</button>
+          </span>
+        </div>
+        <div class="board-cards" id="board-cards">
+          <div class="board-empty">← 点左侧一个碎片查看对话</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 改碎片弹窗（名称 + 早上/晚上；都不选=通用） -->
+    <div class="board-pop hidden" id="board-pop-frag">
+      <div class="board-pop-box">
+        <div class="board-pop-title" id="bp-frag-title">修改碎片</div>
+        <label class="board-field">碎片名称
+          <input id="bp-frag-name" type="text" maxlength="40">
+        </label>
+        <label class="board-check"><input id="bp-frag-morning" type="checkbox"> 早上的对话</label>
+        <label class="board-check"><input id="bp-frag-evening" type="checkbox"> 这是晚上的对话</label>
+        <div class="board-check-tip">两个都不选 = 通用（早晚都能用）</div>
+        <div class="board-pop-btns">
+          <button class="bp-btn" id="bp-frag-cancel">取消</button>
+          <button class="bp-btn bp-primary" id="bp-frag-save">保存</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 添加/修改对话弹窗 -->
+    <div class="board-pop hidden" id="board-pop-dlg">
+      <div class="board-pop-box">
+        <div class="board-pop-title" id="bp-dlg-title">添加对话</div>
+        <label class="board-field">英文（发到 WhatsApp 的内容）
+          <textarea id="bp-dlg-en" rows="3"></textarea>
+        </label>
+        <label class="board-field">中文翻译（仅参考，不发）
+          <textarea id="bp-dlg-zh" rows="2"></textarea>
+        </label>
+        <div class="board-pop-btns">
+          <button class="bp-btn" id="bp-dlg-cancel">取消</button>
+          <button class="bp-btn bp-primary" id="bp-dlg-save">保存</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 删除碎片弹窗（密码 123456） -->
+    <div class="board-pop hidden" id="board-pop-del">
+      <div class="board-pop-box">
+        <div class="board-pop-title">删除碎片</div>
+        <p class="board-pop-warn">确定删除「<span id="bp-del-name"></span>」及其所有对话？此操作不可恢复。</p>
+        <label class="board-field">密码
+          <input id="bp-del-pwd" type="password" maxlength="20" placeholder="123456">
+        </label>
+        <div class="board-pop-btns">
+          <button class="bp-btn" id="bp-del-no">否</button>
+          <button class="bp-btn bp-danger" id="bp-del-yes">是</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 删除单条对话弹窗（右上角「删」：删右侧被点选的那条） -->
+    <div class="board-pop hidden" id="board-pop-del-dlg">
+      <div class="board-pop-box">
+        <div class="board-pop-title">删除这条对话</div>
+        <p class="board-pop-warn">确定删除右侧选中的这条对话？此操作不可恢复。</p>
+        <p class="board-pop-quote" id="bp-deldlg-text"></p>
+        <div class="board-pop-btns">
+          <button class="bp-btn" id="bp-deldlg-no">否</button>
+          <button class="bp-btn bp-danger" id="bp-deldlg-yes">是</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    window.__BOARD_STANDALONE__ = true;
+    window.__BOARD_CODE__ = new URLSearchParams(location.search).get('code') || '';
+  </script>
+  <script src="/board.js?v=__BUILD__"></script>
+</body>
+</html>

@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GitHub 发布更新 · 完整教程</title>
+<style>
+  :root{
+    --bg:#f5f6f8;--card:#fff;--line:#e2e5ea;--ink:#1a1e23;--sub:#5c6570;
+    --ok:#0a7d3f;--okbg:#e7f6ed;--bad:#b3261e;--badbg:#fdecea;
+    --warn:#8a5a00;--warnbg:#fff5e0;--blue:#1257c4;--bluebg:#e9f1fd;
+    --purple:#5b3fb8;--purplebg:#f0ecfc;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.75 -apple-system,"Segoe UI","Microsoft YaHei",sans-serif}
+  .wrap{max-width:1000px;margin:0 auto;padding:30px 20px 70px}
+  h1{font-size:26px;margin:0 0 6px}
+  .sub{color:var(--sub);font-size:14px;margin-bottom:22px}
+  h2{font-size:20px;margin:38px 0 14px;padding-bottom:9px;border-bottom:2px solid var(--line)}
+  h2 .num{display:inline-block;background:var(--blue);color:#fff;width:29px;height:29px;
+    line-height:29px;text-align:center;border-radius:50%;font-size:15px;margin-right:10px;vertical-align:2px}
+  h3{font-size:16.5px;margin:22px 0 10px}
+  h4{font-size:15px;margin:16px 0 8px;color:#3a424c}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 22px;margin-bottom:16px}
+  .warnbox{background:var(--warnbg);border-left:4px solid #d99b00;border-radius:8px;padding:14px 18px;margin-bottom:14px}
+  .redbox{background:var(--badbg);border-left:4px solid var(--bad);border-radius:8px;padding:14px 18px;margin-bottom:14px}
+  .greenbox{background:var(--okbg);border-left:4px solid var(--ok);border-radius:8px;padding:14px 18px;margin-bottom:14px}
+  .bluebox{background:var(--bluebg);border-left:4px solid var(--blue);border-radius:8px;padding:14px 18px;margin-bottom:14px}
+  .purplebox{background:var(--purplebg);border-left:4px solid var(--purple);border-radius:8px;padding:14px 18px;margin-bottom:14px}
+  table{width:100%;border-collapse:collapse;font-size:14px;margin:10px 0}
+  th,td{padding:9px 11px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+  th{background:#f0f2f5;font-weight:600;font-size:13px;color:#3c454f}
+  tbody tr:last-child td{border-bottom:none}
+  code{background:#eef0f3;padding:1.5px 6px;border-radius:4px;font-size:13px;
+    font-family:ui-monospace,Consolas,monospace;word-break:break-all}
+  pre{background:#22262b;color:#e6e9ed;padding:15px 18px;border-radius:10px;
+    overflow-x:auto;font-size:13px;line-height:1.8;
+    font-family:ui-monospace,Consolas,monospace;margin:10px 0}
+  pre.cmd{background:#f6f8fa;color:#24292f;border:1px solid #d8dee4}
+  pre.cmd b{color:#0550ae;font-weight:500}
+  pre.cmd i{color:#6a737d;font-style:normal}
+  .tag{display:inline-block;padding:2px 9px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap}
+  .t-ok{background:var(--okbg);color:var(--ok)}
+  .t-bad{background:var(--badbg);color:var(--bad)}
+  .t-warn{background:var(--warnbg);color:var(--warn)}
+  .t-blue{background:var(--bluebg);color:var(--blue)}
+  ol,ul{margin:8px 0;padding-left:24px}
+  li{margin:7px 0}
+  ol.step{list-style:none;padding-left:0;counter-reset:s}
+  ol.step>li{counter-increment:s;position:relative;padding-left:38px;margin:11px 0}
+  ol.step>li::before{content:counter(s);position:absolute;left:0;top:2px;width:25px;height:25px;
+    background:var(--blue);color:#fff;border-radius:50%;text-align:center;
+    line-height:25px;font-size:13px;font-weight:700}
+  .ui{border:2px dashed #b8c0ca;border-radius:8px;padding:12px 14px;margin:10px 0;background:#fafbfc}
+  .ui-t{font-size:12px;color:var(--sub);font-weight:600;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+  .fld{background:#fff;border:1px solid #c4ccd6;border-radius:6px;padding:7px 11px;margin:6px 0;font-size:13.5px}
+  .btnrow{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+  .btn{background:#e8ebef;border:1px solid #a8b2be;border-radius:5px;padding:5px 15px;font-size:13px}
+  .btn.pri{background:var(--blue);color:#fff;border-color:var(--blue)}
+  .btn.ok{background:var(--ok);color:#fff;border-color:var(--ok)}
+  .chk{display:inline-block;width:15px;height:15px;border:2px solid #7d8794;border-radius:3px;
+    margin-right:7px;vertical-align:-2px;background:#fff}
+  .chk.on{background:var(--ok);border-color:var(--ok);position:relative}
+  .chk.on::after{content:"✓";color:#fff;position:absolute;left:1px;top:-3px;font-size:13px;font-weight:700}
+  .pit{margin:12px 0 0;padding:11px 14px;background:#fff8f5;border-left:3px solid #d99b00;border-radius:6px;font-size:13.5px}
+  .tip{margin:12px 0 0;padding:11px 14px;background:#f2f9f4;border-left:3px solid var(--ok);border-radius:6px;font-size:13.5px}
+  .kv{display:grid;grid-template-columns:140px 1fr;gap:5px 14px;font-size:14px}
+  .kv dt{color:var(--sub)}
+  .kv dd{margin:0}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>GitHub 发布更新 · 完整教程</h1>
+<div class="sub">蜜蜂信息采集 ｜ 仓库 baiqiuran-mf/bee-assistant-releases ｜ 2026-10-08</div>
+
+<div class="redbox">
+<h3 style="margin-top:0">🔴 先说一个好消息：配置已经是对的，不用改</h3>
+<p style="margin-bottom:0"><code>package.json</code> 里的更新源<strong>本来就配好了 GitHub</strong>：
+<code>baiqiuran-mf / bee-assistant-releases</code>。
+我实测这个仓库<strong>已经建好了、是公开的、可以访问</strong>。
+所以你<strong>不需要改任何代码</strong>，只要把安装包发上去就行。</p>
+</div>
+
+<h2><span class="num">0</span>我实测到的现状（这决定了要做什么）</h2>
+
+<div class="card">
+<table>
+<thead><tr><th style="width:230px">检查项</th><th style="width:180px">结果</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>仓库 <code>baiqiuran-mf/bee-assistant-releases</code></td><td><span class="tag t-ok">存在，公开</span></td><td>HTTP 200，创建于 2026-10-07</td></tr>
+<tr><td><b>Release 数量</b></td><td><span class="tag t-bad">0 个（空）</span></td><td><b>这就是问题所在</b></td></tr>
+<tr><td>标签（tags）</td><td><span class="tag t-bad">0 个</span></td><td>没打过版本标签</td></tr>
+<tr><td>仓库大小</td><td>0 KB</td><td>完全空的，文件一个都没传</td></tr>
+<tr><td><code>package.json</code> 的 publish</td><td><span class="tag t-ok">已配好 github</span></td><td><b>不用改</b></td></tr>
+<tr><td>本项目是不是 git 仓库</td><td><span class="tag t-warn">不是</span></td><td>没 <code>.git</code>，但发 Release 不需要它</td></tr>
+<tr><td><code>gh</code> 命令行工具</td><td><span class="tag t-warn">未安装</span></td><td>正在装</td></tr>
+</tbody>
+</table>
+
+<div class="bluebox" style="margin-bottom:0">
+<strong>结论：</strong>软件里点「检查更新」现在查不到东西，<b>不是代码问题，是仓库里一个文件都没有</b>。
+把 1.5.0 的文件传上去就好了。
+</div>
+</div>
+
+<h2><span class="num">1</span>登录 GitHub</h2>
+
+<div class="card">
+<p>发布 Release 需要 GitHub 账号有权限。仓库挂在 <code>baiqiuran-mf</code> 这个账号下，
+所以要用<strong>这个账号</strong>登录。</p>
+
+<p><strong>方式 A：浏览器登录（推荐，有图形界面）</strong></p>
+<pre class="cmd"><b>gh auth login</b>
+
+? What account do you want to log into? <b>GitHub.com</b>
+? What is your preferred protocol? <b>GitHub.com via HTTPS</b>
+? Authenticate Git with your GitHub credentials? <b>Yes</b>
+? How authenticating? <b>Login with a web browser</b>
+
+<i>你的浏览器会自动打开一个页面 → 点「授权」→ 复制页面显示的 8 位验证码回来粘贴</i></pre>
+
+<p style="margin-top:12px"><strong>方式 B： Personal Access Token（如果浏览器登录失败）</strong></p>
+<ol class="step">
+<li>浏览器打开 <code>https://github.com/settings/tokens/new</code></li>
+<li>Note 填 <code>wa-update</code>，Expiration 选 90 days</li>
+<li>勾选权限：<code>repo</code>（勾它下面全选的子项）</li>
+<li>点 Generate token → <strong>立刻复制</strong>（关掉就再也看不到了）</li>
+<li>回来跑 <code>gh auth login</code>，选 Paste token</li>
+</ol>
+
+<p><strong>验证登录成功：</strong></p>
+<pre class="cmd"><b>gh auth status</b></pre>
+<p>看到 <code>Logged in to github.com account baiqiuran-mf</code> 就成了。</p>
+
+<div class="warnbox">
+<b>⚠️ 2026-10-08 实际情况：gh 已装好（2.102.0），但登录卡在你这边。</b><br>
+gh 装完后不会自动进 PATH，如果提示「找不到 gh」，用完整路径：<br>
+<code>"C:\Program Files\GitHub CLI\gh.exe" auth login --hostname github.com --git-protocol https --web</code><br>
+登录时如果浏览器没自动打开，手动访问 <code>https://github.com/login/device</code>，
+粘贴命令行显示的一次性验证码（如 <code>XXXX-XXXX</code>）→ Authorize。
+</div>
+</div>
+
+<h2><span class="num">2</span>打包（生成要传的文件）</h2>
+
+<div class="card">
+<pre class="cmd">cd /d E:\WorkBuddy-Projects\wa-assistant
+
+<i>:: 1) 先删掉旧的 7z 中间产物，不然可能打包失败</i>
+rm -f dist/*.7z
+
+<i>:: 2) 打包（必须带 ELECTRON_BUILDER_CACHE，不然缓存不在 C 盘会很慢）</i>
+set ELECTRON_BUILDER_CACHE=E:/WorkBuddy-Projects/_builder-cache
+npm run pack
+
+<i>:: 3) 确认产物齐了</i>
+dir release\</pre>
+
+<p><strong>要确认这 3 个文件都在：</strong></p>
+<table>
+<thead><tr><th style="width:290px">文件</th><th style="width:130px">大小</th><th>作用</th></tr></thead>
+<tbody>
+<tr><td><code>wa-assistant-setup-1.5.0.exe</code></td><td>138,569,700</td><td>安装包本体</td></tr>
+<tr><td><code>wa-assistant-setup-1.5.0.exe.blockmap</code></td><td>146,844</td><td><b>差分更新用，不能少</b></td></tr>
+<tr><td><code>latest.yml</code></td><td>353</td><td><b>版本清单，不能少</b></td></tr>
+</tbody>
+</table>
+
+<div class="warnbox" style="margin-bottom:0">
+<b>⚠️ 版本号要对得上：</b><code>package.json</code> 的 <code>version</code> 现在是 <code>1.5.0</code>，
+所以才能生成 <code>wa-assistant-setup-1.5.0.exe</code>。以后发新版要先改这个数字。
+</div>
+</div>
+
+<h2><span class="num">3</span>发布（一条命令）</h2>
+
+<div class="card">
+<p>在项目目录下跑这一条：</p>
+<pre class="cmd"><b>gh release create v1.5.0</b> ^
+  <i>release\wa-assistant-setup-1.5.0.exe</i> ^
+  <i>release\wa-assistant-setup-1.5.0.exe.blockmap</i> ^
+  <i>release\latest.yml</i> ^
+  --title "蜜蜂信息采集 v1.5.0" ^
+  --notes "Signal 采集 + 图片解密 + 状态灯" ^
+  --latest</pre>
+
+<p><strong>参数说明：</strong></p>
+<dl class="kv">
+<dt><code>v1.5.0</code></dt><dd>版本号，<strong>必须带 v 前缀</strong>，且要和 exe 文件名里的版本一致</dd>
+<dt>三个文件</dt><dd>要传的产物，路径用<strong>正斜杠或双反斜杠</strong>都行</dd>
+<dt><code>--title</code></dt><dd>显示在 Release 页面的大标题</dd>
+<dt><code>--notes</code></dt><dd>更新说明文字</dd>
+<dt><code>--latest</code></dt><dd>标记为最新版（<strong>建议加</strong>，不加的话客户端可能提示但不弹窗）</dd>
+</dl>
+
+<div class="tip">
+<b>💡 以后发新版只有版本号变：</b>改 <code>package.json</code> 的 version → 重新打包 → 跑这条命令（版本号和文件名都换新）。
+</div>
+
+<div class="pit">
+<b>⚠️ 常见失败：</b>
+<ul style="margin:6px 0 0">
+<li><code>HTTP 404</code> → 仓库名拼错了，或登录的账号没权限</li>
+<li><code>HTTP 403</code> → 登录的账号不是 <code>baiqiuran-mf</code>，或者 token 权限不够</li>
+<li><code>release already exists</code> → 已经有 <code>v1.5.0</code> 了。加 <code>--clobber</code> 覆盖：<br>
+<code>gh release create v1.5.0 ... --clobber</code></li>
+<li>文件找不到 → 当前目录不对，要先 <code>cd</code> 到项目根目录</li>
+</ul>
+</div>
+</div>
+
+<h2><span class="num">4</span>验证发布成功</h2>
+
+<div class="card">
+<p><strong>① 命令行确认：</strong></p>
+<pre class="cmd"><b>gh release list</b>
+
+<i>应该看到：</i>
+v1.5.0  蜜蜂信息采集 v1.5.0  Latest  Oct 8 14:07</pre>
+
+<p><strong>② 浏览器确认：</strong>打开</p>
+<pre>https://github.com/baiqiuran-mf/bee-assistant-releases/releases</pre>
+<p>应该能看到 v1.5.0 和 3 个文件。</p>
+
+<p><strong>③ 关键：确认 latest.yml 能公开下载</strong>（因为仓库是公开的，这个必须能通）</p>
+<pre class="cmd">curl -s -o /dev/null -w "HTTP %%{http_code}\n" ^
+  https://github.com/baiqiuran-mf/bee-assistant-releases/releases/latest/download/latest.yml
+
+<i>要返回 200。如果是 404，说明文件没传对或者 tag 名不对。</i></pre>
+</div>
+
+<h2><span class="num">5</span>客户端怎么更新</h2>
+
+<div class="greenbox">
+发布成功后，<strong>不需要做任何客户端操作</strong> —— 客户在软件里点「检查更新」就会自动发现。
+</div>
+
+<div class="card">
+<p><strong>自动更新的流程（软件内部自动完成）：</strong></p>
+<ol class="step">
+<li>软件读 <code>package.json</code> 知道自己是 <code>1.5.0</code></li>
+<li>去 GitHub 拉 <code>latest.yml</code>，看到最新是 <code>1.5.0</code></li>
+<li>版本相同 → 显示「已经是最新版本」</li>
+<li>（以后发 1.6.0 时）版本更高 → 自动下载 → 显示进度 → 提示安装</li>
+</ol>
+
+<p><strong>注意软件里的两个保护（之前设计的，不是 bug）：</strong></p>
+<ul>
+<li><b>开发模式下不能更新</b> —— 必须打成 exe 才有更新功能</li>
+<li><b>正在采集客户消息时不自动重启</b> —— 会提示「采集结束后再点一次」，这是故意的，避免丢消息</li>
+</ul>
+</div>
+
+<h2><span class="num">6</span>以后发新版的完整流程</h2>
+
+<div class="card">
+<ol class="step">
+<li>改 <code>package.json</code> 的 <code>version</code>：<code>1.5.0</code> → <code>1.6.0</code></li>
+<li>更新 <code>CHANGELOG.md</code></li>
+<li>打包：<code>rm -f dist/*.7z</code> 然后 <code>set ELECTRON_BUILDER_CACHE=E:/WorkBuddy-Projects/_builder-cache</code> + <code>npm run pack</code></li>
+<li>发布：<code>gh release create v1.6.0 release\wa-assistant-setup-1.6.0.exe release\wa-assistant-setup-1.6.0.exe.blockmap release\latest.yml --title "..." --notes "..." --latest</code></li>
+<li>验证：<code>gh release list</code> + 浏览器打开 Releases 页</li>
+</ol>
+</div>
+
+<h2>不用 gh 的替代方案（网页手动上传）</h2>
+
+<div class="card">
+<p>如果不想用命令行，也可以在网页上传：</p>
+<ol class="step">
+<li>浏览器打开 <code>https://github.com/baiqiuran-mf/bee-assistant-releases/releases/new</code></li>
+<li>点 <code>Create a new release</code></li>
+<li>选标签：点 <code>Choose a tag name</code> → 输入 <code>v1.5.0</code> → 选 <code>Create new tag on publish</code></li>
+<li>填 Release 标题：<code>蜜蜂信息采集 v1.5.0</code></li>
+<li>填说明</li>
+<li><strong>把 3 个文件拖到灰色上传区</strong>（可以一次拖多个）</li>
+<li>勾上 <code>Set as a pre-release</code> <strong>不要勾</strong>；<code>Set as the latest release</code> <strong>要勾</strong></li>
+<li>点 <code>Publish release</code></li>
+</ol>
+
+<div class="warnbox" style="margin-bottom:0">
+<b>⚠️ 网页上传时最容易漏的：</b><code>latest.yml</code> 这个文件名字很普通，容易被当成无关文件。
+<b>必须确认 3 个文件都上传成功</b>，少一个客户端就更新不了。
+</div>
+</div>
+
+<h2>常见问题</h2>
+
+<div class="card">
+<table>
+<thead><tr><th style="width:250px">症状</th><th>原因和解决</th></tr></thead>
+<tbody>
+<tr><td>客户端说「已经是最新版本」但明明有新版</td><td>新 Release 没勾 <code>Set as the latest release</code>，或没传 <code>latest.yml</code></td></tr>
+<tr><td>点检查更新报网络错误</td><td>检查这个地址能不能打开：<code>https://github.com/baiqiuran-mf/bee-assistant-releases/releases/latest/download/latest.yml</code></td></tr>
+<tr><td>下载安装时报校验失败</td><td><code>latest.yml</code> 和 exe <b>不是同一次打包</b>的。yml 里记着 exe 的 sha512，必须同一次打包的三个文件一起传</td></tr>
+<tr><td>源码会不会泄露</td><td><b>不会</b>。这个仓库只放打包好的 exe 和 yml，源码不在这儿</td></tr>
+<tr><td>别人会不会删掉我的 Release</td><td>不会。<b>公开仓库不需要 token</b>，源码里没有密钥可偷（私有仓库才需要，那才危险）</td></tr>
+<tr><td>132 MB 会不会传不上去</td><td>GitHub 单文件限制 100 MB，<b>但 Release 附件限制 2 GB</b>，132 MB 没问题</td></tr>
+<tr><td>更新很慢</td><td>正常。因为有 <code>.blockmap</code>，只下载变化的部分，不是整个 132 MB</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="greenbox">
+<strong>为什么 GitHub 比共享文件夹好（你这个场景）：</strong><br>
+① 不用在 204 上开防火墙、设权限、建账号；② 客户端在哪都能更新，不限局域网；
+③ 有历史版本记录，能回滚；④ 已经有差分更新（blockmap），更新只下载变化部分，快。
+</div>
+
+</div>
+</body>
+</html>
