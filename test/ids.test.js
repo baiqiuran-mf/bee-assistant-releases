@@ -65,6 +65,21 @@ throws('账号号非整数应抛错', () => ids.nextCustomerCode(1.5, null));
 throws('账号与编号不匹配应抛错', () => ids.nextCustomerCode(2, '1A00001'));
 throws('无法解析的历史编号应抛错', () => ids.nextCustomerCode(1, '乱码'));
 
+// 7.5 🔴 2026-10-21 Tele①（账号 7）编号前缀 7A/7B/7C → TA/TB/TC
+eq('无历史时账号7(Tele①) 起始编号', ids.nextCustomerCode(7, null), 'TA00001');
+eq('账号7 TA00001 下一个', ids.nextCustomerCode(7, 'TA00001'), 'TA00002');
+eq('账号7 TA99999 进位到 TB', ids.nextCustomerCode(7, 'TA99999'), 'TB00001');
+eq('账号7 TC99999 进位到 TD', ids.nextCustomerCode(7, 'TC99999'), 'TD00001');
+eq('accountPrefix(7) 返回 T', ids.accountPrefix(7), 'T');
+eq('prefixAccount(T) 返回 7', ids.prefixAccount('T'), 7);
+const pt = ids.parseCode('TA00001');
+check('parseCode(TA00001) 返回非空', !!pt);
+eq('parseCode(TA00001) 账号', pt.account, 7);
+eq('parseCode(TA00001) 字母', pt.letter, 'A');
+eq('parseCode(TA00001) 序号', pt.seq, 1);
+check('账号8不在 T 系列（仍 8A00001 起始）', ids.nextCustomerCode(8, null) === '8A00001');
+check('账号9不在 T 系列（仍 9A00001 起始）', ids.nextCustomerCode(9, null) === '9A00001');
+
 // 8. 排序（位数固定，字典序即数值序）
 check('1A00009 < 1A00010', ids.compareCode('1A00009', '1A00010') < 0);
 check('1A99999 < 1B00001', ids.compareCode('1A99999', '1B00001') < 0);

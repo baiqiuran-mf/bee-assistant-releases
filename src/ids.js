@@ -4,7 +4,9 @@
  * 格式：{账号号}{字母段}{5位序号}      例：1A00001
  * 规则：
  *   - 账号号 1-5，对应你手上的 5 个 WhatsApp 号（外部独立 Chrome）
- *   - 账号号 6=Signal / 7-9=Tele①-③ / 10=WA①（内置浏览器版，编号段 WA）
+ *   - 账号号 6=Signal / 7-9=Tele①②③ / 10=WA①（内置浏览器版，编号段 WA）
+ *   - 🔴 2026-10-21 老板拍板：Tele①（账号 7）编号前缀 7A/7B/7C → TA/TB/TC；
+ *     账号 8/9（Tele②③）暂不动（仍 8A/9A，老板只点名 7A/7B/7C，且库内无客户无断裂风险）。
  *   - 序号 00001 起，递增到 99999
  *   - 满 99999 后字母进一位（A→B→C…），序号重置为 00001
  *   - 编号一经分配永不回收、永不复用
@@ -14,7 +16,7 @@
  *   两者根本不是同类，绝不能共用编号段。所以给它独立的 WA 段：
  *     一号~五号 1A00001 / 2A00001 / …
  *     Signal    6A00001
- *     Tele①~③   7A00001 / 8A00001 / 9A00001
+ *     Tele①    TA00001（🔴 2026-10-21 起；原为 7A00001）/ 8A00001 / 9A00001
  *     WA①      WA00001   ← 一眼认出是内置浏览器版，绝不撞任何现有账号
  *   实现方式：账号号段支持「WA」两字符前缀，WA① 传 ACC_WA_EMBEDDED（=10），
  *   由 ACC_PREFIX 把 10 映射成 'WA'。这样**不必把 account_id 列从 INTEGER 改成 TEXT**
@@ -27,7 +29,8 @@
 
 const SEQ_MAX = 99999;
 // 🔴 数字号：一位账号号 + 字母段 + 5 位序号（1A00001）—— 原样不动
-const CODE_RE = /^([1-9])([A-Z])(\d{5})$/;
+//   🔴 2026-10-21：首位放宽到 [1-9T]，多容纳 Tele① 的 T 系列前缀（TA/TB/TC…）。
+const CODE_RE = /^([1-9T])([A-Z])(\d{5})$/;
 // 🔴 WA①~⑤ 内置浏览器版：WA/WB/WD/WE/WF + 5 位序号（WA00001 / WB00001 …）。
 //    🔴 2026-10-16 老板拍板：复刻 WA① 成 5 个内置浏览器标签，编号段**各自独立**：
 //       WA① = WA00001（accId 10）｜WA② = WB00001（accId 11）｜WA③ = WD00001（accId 12）
@@ -39,6 +42,12 @@ const WA_CODE_RE = /^(WA|WB|WD|WE|WF)(\d{5})$/;
 
 /** 账号号 → 编号前缀。数字号原样，WA①~⑤（10~14）各映射成 WA/WB/WD/WE/WF。 */
 const ACC_PREFIX = { 10: 'WA', 11: 'WB', 12: 'WD', 13: 'WE', 14: 'WF' };
+
+/** 🔴 2026-10-21 老板拍板：Telegram 编号前缀从 7A/7B/7C 改成 TA/TB/TC。
+ *  账号 7（Tele①）→ 'T'：TA00001 / TA99999→TB00001 / TB99999→TC00001 …（字母进位）。
+ *  账号 8/9（Tele②③）暂不动（仍 8A/9A，老板只点名 7A/7B/7C；且库内无客户、无序列断裂风险）。
+ *  各自独立计数器、绝不共用编号段（与 WA①~⑤ 同铁律）。 */
+const TG_PREFIX = { 7: 'T' };
 
 /** WA① 内置浏览器版的账号号（老库 account_id 是 INTEGER，用 10 占位） */
 const ACC_WA_EMBEDDED = 10;
@@ -68,6 +77,7 @@ function isWaPrefix(p) {
 function accountPrefix(account) {
   const acc = Number(account);
   if (ACC_PREFIX[acc]) return ACC_PREFIX[acc];
+  if (TG_PREFIX[acc]) return TG_PREFIX[acc];   // 🔴 新增：Telegram T 系列（账号 7 → 'T'）
   if (!Number.isInteger(acc) || acc < 1 || acc > 9) {
     throw new Error(`账号号非法: ${account}`);
   }
@@ -78,6 +88,9 @@ function accountPrefix(account) {
 function prefixAccount(prefix) {
   const p = String(prefix || '').trim().toUpperCase();
   for (const [acc, pre] of Object.entries(ACC_PREFIX)) {
+    if (pre === p) return Number(acc);
+  }
+  for (const [acc, pre] of Object.entries(TG_PREFIX)) {   // 🔴 新增：T 系列反向映射
     if (pre === p) return Number(acc);
   }
   if (/^[1-9]$/.test(p)) return Number(p);
@@ -91,7 +104,10 @@ function parseCode(code) {
   if (w) return { account: WA_PREFIX_TO_ACC[w[1]], prefix: w[1], letter: '', seq: Number(w[2]) };
   const m = CODE_RE.exec(s);
   if (!m) return null;
-  return { account: Number(m[1]), prefix: m[1], letter: m[2], seq: Number(m[3]) };
+  // 🔴 改：前缀首字符可能是字母（T），不能直接 Number()；走 prefixAccount 反解出账号号。
+  const account = prefixAccount(m[1]);
+  if (account == null) return null;
+  return { account, prefix: m[1], letter: m[2], seq: Number(m[3]) };
 }
 
 function formatSeq(seq) {

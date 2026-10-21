@@ -350,7 +350,7 @@ try {
  *
  * 🔴 占 account_id = 7 / 8 / 9（1~5 是五个 WhatsApp，6 是 Signal）。
  *   同样受 nextCustomerCode 只接受 1~9、CODE_RE 只匹配一位数字的限制，所以走 7/8/9，
- *   编号形如 7A00001 —— 一眼能看出是 Telegram 客户。
+ *   编号形如 TA00001（🔴 2026-10-21 起 Tele①=账号7 由 7A00001 改为 TA00001；8A/9A 为 Tele②③）。
  *   渠道另存 channel='telegram'：判「是不是 Telegram 客户」以 channel 为准，account_id 兜底。
  *
  * 配置在 config.yaml 的 telegram.accounts（id/label/enabled/cdpProfile/cdpPort/waAccount）。

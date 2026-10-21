@@ -7,6 +7,27 @@
 > **规矩：每次改动都要在这里加一条**，写清「优化了什么」和「修好了什么问题」——  
 > 老版本记录一律保留，不许删。
 
+## 2.6.1195（Telegram 客户编号前缀 7A/7B/7C → TA/TB/TC）
+
+> 老板要求：Telegram 客户文件名编号前缀，从 `7A/7B/7C` 改成 `TA/TB/TC`。🔴 **本版只改 Tele①（账号 7）的编号生成，WA 系列、Signal、Tele②/③（账号 8/9）一行代码都没动**。
+
+### 改动
+| 位置 | 改动 |
+|---|---|
+| src/ids.js | 新增 `TG_PREFIX = { 7: 'T' }`；`accountPrefix(7)` 由 `'7'`→`'T'`；`prefixAccount('T')`→7（反向映射）；`CODE_RE` 首位放宽到 `[1-9T]`；`parseCode` 改走 `prefixAccount(m[1])` 反解账号（前缀可能是字母 T，不能直接 `Number()`） |
+| src/main.js | 注释 `7A00001`→`TA00001` |
+| test/ids.test.js | 新增 TA/TB/TC 前缀断言（起始 / 进位 / 解析 / 反向映射 / 账号 8·9 不受影响） |
+
+新客户编号：`TA00001` → 满 99999 进位 `TB00001` → `TC00001` → `TD00001`…（`nextCustomerCode`/`nextCode` 逻辑不动，字母进位自动成立）。`customerDoc.js` 的 `parseDocFileName` 首段校验 `^[A-Z0-9]{4,}$` 本就能匹配 `TA00001`，无需改。
+
+### 验证（可核对）
+- 实跑：`nextCustomerCode(7,null)`=`TA00001`、`(7,'TA99999')`=`TB00001`、`parseCode('TA00001').account`=7、`prefixAccount('T')`=7；账号 8/9 仍 `8A00001`/`9A00001`；账号与编号不匹配仍抛错 ✅
+- 测试全过：ids **48/0**、db **82/0**、doc **46/0**、coach **53/0**、loop **40/0**；新增 T 前缀断言全过 ✅
+- ⚠️ **失败归属**：manual.test.js `phone 仍能剥出来用于查重` + smoke.test.js `suggest/vision 解析服务商+模型名` 共 **3 条失败，在原始代码（stash 我的改动后）同样复现** → 既存问题，与本次前缀改动零关联（未动手）。
+
+### 未动清单（本版严守）
+WA 系列（外置一号~五号 + 内置 WA①~⑤）、Signal、Tele②/③（账号 8/9）、`db.js`、`customerDoc.js` 解析逻辑、`wa-assistant` 其余模块 —— 全部 unchanged。
+
 ## 2.6.1194（Telegram 六项修复：客户编码只认 tg+数字 / 电话补 + / 档案按 ID 命名 / 日期不入对话信息 / 乱码不翻译）
 
 > 老板实机截图 6 张，6 条需求。🔴 **本版只改 Telegram 一个模块，WA 系列（外置一号~五号 + 内置 WA①~⑤）、Signal 一行代码都没动**（18 个受保护文件逐一比对，全部 unchanged）。
