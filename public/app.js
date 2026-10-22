@@ -4003,6 +4003,108 @@ function initMidTabs() {
   document.addEventListener('keydown', (e) => {
     if (e.altKey && (e.key === 'd' || e.key === 'D')) { e.preventDefault(); toggleTgChat(); }
   });
+
+  // 🔴 2026-10-23 新增第5/6模块：GPT对话（内置浏览器）+ 人设对话（独立 AI 聊天），各自独立、不碰其它模块
+  initGptPane();
+  initPersonaPane();
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+ * GPT对话（第5模块）：软件内置浏览器登录 ChatGPT。
+ * 🔴 独立分区 persist:gpt1，不采集、不入库、不与其他 4 套采集逻辑共用任何代码。
+ * 🔴「绝不自动发送」铁律同样适用：这里只是看 + 手动填。
+ * ════════════════════════════════════════════════════════════════════════════ */
+function initGptPane() {
+  const wv = $('gpt-webview');
+  if (!wv) return;
+  const addrText = $('gpt-addr-text');
+  const syncAddr = () => { try { if (addrText && wv.getURL) addrText.textContent = wv.getURL(); } catch (_) {} };
+  if (wv.addEventListener) { wv.addEventListener('did-navigate', syncAddr); wv.addEventListener('did-stop-loading', syncAddr); }
+  const wb = $('gpt-back'), wf = $('gpt-fwd'), rl = $('gpt-reload');
+  if (wb && typeof wv.goBack === 'function') wb.onclick = () => { try { wv.goBack(); } catch (_) {} };
+  if (wf && typeof wv.goForward === 'function') wf.onclick = () => { try { wv.goForward(); } catch (_) {} };
+  if (rl && typeof wv.reload === 'function') rl.onclick = () => { try { wv.reload(); } catch (_) {} };
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+ * 人设对话（第6模块）：独立 AI 聊天窗，模型 钱多多 / AstrBot，配合 web_search 联网。
+ * 🔴 不与其他渠道共享任何上下文；对话只存本机（localStorage），不入库、不采集。
+ * 🔴 web_search：先 A 打底（用模型自带联网）；B 口子（另接搜索接口）预留、暂不实现。
+ * ════════════════════════════════════════════════════════════════════════════ */
+function initPersonaPane() {
+  const seg = $('persona-seg');
+  const toggle = $('persona-websearch');
+  const input = $('persona-input');
+  const send = $('persona-send');
+  const chat = $('persona-chat');
+  if (!seg || !input || !send || !chat) return;
+
+  let provider = 'qianduoduo';   // 默认 钱多多
+  let webSearch = false;          // 默认不开联网搜索（A 打底：开时仅提示模型联网）
+  const history = [];             // 本机会话（仅 localStorage 留存，不入库）
+
+  seg.querySelectorAll('button').forEach((b) => {
+    b.onclick = () => {
+      seg.querySelectorAll('button').forEach((x) => x.classList.remove('on'));
+      b.classList.add('on');
+      provider = b.dataset.prov || 'qianduoduo';
+    };
+  });
+  if (toggle) {
+    toggle.onclick = () => {
+      webSearch = !webSearch;
+      toggle.classList.toggle('off', !webSearch);
+    };
+  }
+
+  function addBubble(role, text) {
+    const el = document.createElement('div');
+    el.className = 'persona-msg ' + (role === 'user' ? 'user' : 'ai');
+    const b = document.createElement('div');
+    b.className = 'persona-bubble';
+    b.textContent = text;
+    el.appendChild(b);
+    chat.appendChild(el);
+    chat.scrollTop = chat.scrollHeight;
+    return el;
+  }
+
+  async function sendMsg() {
+    const text = String(input.value || '').trim();
+    if (!text) return;
+    input.value = '';
+    addBubble('user', text);
+    history.push({ role: 'user', content: text });
+    const wait = addBubble('ai', '人设正在思考…');
+
+    try {
+      const res = await fetch('/api/persona/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider, messages: history.slice(), webSearch }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.error) {
+        wait.querySelector('.persona-bubble').textContent = '出错了：' + (data.error || ('HTTP ' + res.status));
+        return;
+      }
+      const reply = data.reply || '(空回复)';
+      wait.querySelector('.persona-bubble').textContent = reply;
+      history.push({ role: 'assistant', content: reply });
+      // 🔴 只存本机，不入库、不采集、不与任何渠道共享
+      try { localStorage.setItem('persona_history_' + provider, JSON.stringify(history.slice(-50))); } catch (_) {}
+    } catch (e) {
+      wait.querySelector('.persona-bubble').textContent = '请求失败：' + ((e && e.message) || e);
+    }
+  }
+
+  send.onclick = sendMsg;
+  input.onkeydown = (e) => { if (e && e.key === 'Enter') { e.preventDefault(); sendMsg(); } };
+
+  // 🔴 进来先放一句人设开场白（林晚秋 / Sherry，油画销售人设），纯前端、不写库
+  if (!chat.children.length) {
+    addBubble('ai', '你好，我是林晚秋（Sherry）～ 关于油画、定制宠物画或肖像画，或者只是想聊聊，都可以跟我说。');
+  }
 }
 
 function switchMidTab(name) {

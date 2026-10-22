@@ -572,17 +572,60 @@ body.panel-thin #panel.narrow::after { content: none; }
   border-bottom: 1px solid var(--line);
   background: var(--panel);
   flex: 0 0 auto;
+  overflow-x: auto; /* 🔴 2026-10-23：10 个标签排开 > 窄窗口中栏宽，允许横向滚动兜底 */
 }
 .mtab {
-  /* 2026-10-12 老板看图要求（红框）：中栏页签「标签」固定 140px，不再各占一半。
-     原来 flex:1 会让「通用」「Tele①」平分宽度，标签宽度随窗口变，看着不齐。
-     现在统一 140px 固定，两个标签一样宽。 */
-  flex: 0 0 140px; width: 140px; border: 1px solid #e2e9f1; background: #f7fafd; color: #4b5563;
-  border-radius: 8px; padding: 6px 8px; font: inherit; font-size: 12px; cursor: pointer;
+  /* 2026-10-23 老板要求：标签固定 65px（原为 140px）。
+     现在统一 65px 固定，10 个标签一排，系列分色一眼可辨。 */
+  flex: 0 0 65px; width: 65px; border: 1px solid #e2e9f1; background: #f7fafd; color: #4b5563;
+  border-radius: 8px; padding: 6px 2px; font: inherit; font-size: 12px; cursor: pointer;
   position: relative; /* 🔴 2026-10-17：角标绝对定位的参照 */
+  text-align: center; line-height: 1.2; white-space: nowrap;
 }
 .mtab:hover { background: #eef5fc; }
 .mtab.on { background: #2f7fd1; border-color: #2f7fd1; color: #fff; }
+
+/* 🔴 2026-10-23 老板拍板：标签系列分色（不同模块不同色，互不混用）
+   通用=灰蓝 / GPT对话=淡紫(第5模块) / 人设对话=淡粉(第6模块) / WA①~⑤=绿 / Tele①~②=蓝 */
+.mtab.gpt { background: #f1ecfb; border-color: #d8cbf3; color: #6b4fae; }
+.mtab.gpt.on { background: #a795de; border-color: #a795de; color: #fff; }
+.mtab.persona { background: #fde7ee; border-color: #f5c4d4; color: #b9486f; }
+.mtab.persona.on { background: #e58aa8; border-color: #e58aa8; color: #fff; }
+.mtab.wa { background: #e9f8ef; border-color: #bfe8cf; color: #1f7a4d; }
+.mtab.wa.on { background: #23a35a; border-color: #23a35a; color: #fff; }
+.mtab.tg { background: #e7f4fd; border-color: #b9dff5; color: #1d6fa5; }
+.mtab.tg.on { background: #2aabee; border-color: #2aabee; color: #fff; }
+
+/* ════════════ GPT对话（第5模块，独立内置浏览器，分区 persist:gpt1，不采集不入库） ════════════ */
+.gpt-browser { flex: 1; min-height: 0; display: flex; flex-direction: column; background: #f3f4f6; }
+.gpt-chrome { flex: 0 0 auto; display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: #eef1f4; border-bottom: 1px solid #dde3ea; }
+.gpt-chrome .navbtn { width: 26px; height: 26px; border-radius: 6px; border: 1px solid #d7dee7; background: #fff; color: #6b7280; display: flex; align-items: center; justify-content: center; font-size: 13px; cursor: pointer; }
+.gpt-addr { flex: 1; background: #fff; border: 1px solid #d7dee7; border-radius: 16px; padding: 6px 14px; font-size: 12px; color: #374151; display: flex; align-items: center; gap: 8px; overflow: hidden; }
+.gpt-addr .lock { color: #23a35a; font-size: 11px; }
+.gpt-body { flex: 1; min-height: 0; position: relative; }
+.gpt-body webview { width: 100%; height: 100%; }
+
+/* ════════════ 人设对话（第6模块，独立 AI 聊天，钱多多/AstrBot 双模型 + web_search 联网） ════════════ */
+.persona-head { display: flex; align-items: center; gap: 10px; padding: 9px 14px; border-bottom: 1px solid #e7ecf2; }
+.persona-title { font-weight: 700; font-size: 13px; }
+.persona-title .sub { font-weight: 400; color: #9ca3af; font-size: 11px; margin-left: 8px; }
+.persona-seg { display: flex; border: 1px solid #f5c4d4; border-radius: 8px; overflow: hidden; }
+.persona-seg button { border: 0; background: #fff5f8; color: #b9486f; font: inherit; font-size: 12px; padding: 5px 12px; cursor: pointer; }
+.persona-seg button.on { background: #e58aa8; color: #fff; }
+.persona-toggle { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #4b5563; margin-left: 6px; border: 1px solid #cfe9dc; background: #f2fbf6; border-radius: 8px; padding: 4px 10px; cursor: pointer; user-select: none; }
+.persona-toggle .switch { width: 30px; height: 16px; border-radius: 9px; background: #23a35a; position: relative; transition: background .15s; }
+.persona-toggle .switch::after { content: ""; position: absolute; right: 2px; top: 2px; width: 12px; height: 12px; border-radius: 50%; background: #fff; transition: right .15s; }
+.persona-toggle.off .switch { background: #cbd5e1; }
+.persona-toggle.off .switch::after { right: 16px; }
+.persona-chat { flex: 1; min-height: 0; overflow: auto; padding: 16px 18px; display: flex; flex-direction: column; gap: 14px; background: #fbfcfd; }
+.persona-msg { max-width: 80%; }
+.persona-msg.user { align-self: flex-end; }
+.persona-bubble { padding: 9px 12px; border-radius: 12px; line-height: 1.55; font-size: 13px; white-space: pre-wrap; word-break: break-word; }
+.persona-msg.user .persona-bubble { background: #e58aa8; color: #fff; border-bottom-right-radius: 4px; }
+.persona-msg.ai .persona-bubble { background: #fff; border: 1px solid #e7ecf2; color: #1f2937; border-bottom-left-radius: 4px; }
+.persona-input { flex: 0 0 auto; display: flex; gap: 8px; padding: 10px 14px; border-top: 1px solid #e7ecf2; background: #fff; }
+.persona-input input { flex: 1; border: 1px solid #e2e9f1; border-radius: 10px; padding: 9px 12px; font: inherit; font-size: 13px; outline: none; }
+.persona-send { border: 0; background: #e58aa8; color: #fff; border-radius: 10px; padding: 9px 18px; font: inherit; font-size: 13px; cursor: pointer; }
 
 /* 每个页签的内容区：必须 flex:1 + min-height:0，
    否则里面靠 flex:1 撑开的 #msgs（消息列表）会失去高度、中栏塌掉。 */

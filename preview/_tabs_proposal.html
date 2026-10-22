@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>标签方案预览</title>
+<style>
+  :root{
+    --line:#000; --panel:#fff;
+    --ln-green:#63bd93; --ln-purple:#a795de; --ln-orange:#ecb27c;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;}
+  body{
+    font-family:"Microsoft YaHei","Segoe UI","PingFang SC",sans-serif;
+    background:#e9edf2;color:#1f2937;font-size:13px;
+  }
+  .app{width:1600px;height:900px;background:#fff;display:flex;flex-direction:column;overflow:hidden;}
+  /* 顶栏 */
+  .topbar{height:44px;flex:0 0 auto;display:flex;align-items:center;gap:10px;padding:0 14px;
+    border-bottom:1px solid var(--line);background:#fff;}
+  .logo{width:22px;height:22px;border-radius:6px;background:linear-gradient(135deg,#f6c453,#e8a23a);
+    display:flex;align-items:center;justify-content:center;font-size:13px;}
+  .brand{font-weight:700;font-size:14px;}
+  .top-spacer{flex:1}
+  .top-chip{font-size:12px;color:#6b7280;border:1px solid #e2e9f1;border-radius:6px;padding:4px 10px;background:#f7fafd;}
+
+  .main{flex:1;min-height:0;display:grid;grid-template-columns:265px minmax(0,1fr) 500px;background:var(--line);gap:1px;}
+  .col{background:var(--panel);min-height:0;display:flex;flex-direction:column;}
+
+  /* 左栏 */
+  .left-head{padding:10px 12px;border-bottom:1px solid #e7ecf2;font-weight:700;font-size:13px;color:#374151;}
+  .cust{padding:10px 12px;border-bottom:1px solid #f0f3f7;display:flex;gap:8px;align-items:center;}
+  .avatar{width:30px;height:30px;border-radius:50%;background:#dbeafe;color:#2563eb;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;}
+  .cust-name{font-size:13px;color:#111827;}
+  .cust-sub{font-size:11px;color:#9ca3af;margin-top:2px;}
+
+  /* ============ 标签栏（核心） ============ */
+  .mid-tabs{
+    display:flex;gap:6px;padding:6px 8px;border-bottom:1px solid var(--line);
+    background:var(--panel);flex:0 0 auto;overflow-x:auto;
+  }
+  .mtab{
+    flex:0 0 65px;width:65px;border:1px solid #e2e9f1;background:#f7fafd;color:#4b5563;
+    border-radius:8px;padding:6px 2px;font:inherit;font-size:12px;cursor:pointer;
+    position:relative;white-space:nowrap;text-align:center;line-height:1.2;
+  }
+  .mtab:hover{filter:brightness(.97);}
+  /* 系列配色：非选中=浅底，选中=实色 */
+  .mtab.general{background:#f1f4f8;border-color:#d7dee7;color:#4b5563;}
+  .mtab.general.on{background:#5b6b7f;border-color:#5b6b7f;color:#fff;}
+
+  .mtab.wa{background:#e9f8ef;border-color:#bfe8cf;color:#1f7a4d;}
+  .mtab.wa.on{background:#23a35a;border-color:#23a35a;color:#fff;}
+
+  .mtab.tg{background:#e7f4fd;border-color:#b9dff5;color:#1d6fa5;}
+  .mtab.tg.on{background:#2aabee;border-color:#2aabee;color:#fff;}
+
+  .mtab.gpt{background:#f1ecfb;border-color:#d8cbf3;color:#6b4fae;}
+  .mtab.gpt.on{background:#a795de;border-color:#a795de;color:#fff;}
+
+  .mtab.persona{background:#fde7ee;border-color:#f5c4d4;color:#b9486f;}
+  .mtab.persona.on{background:#e58aa8;border-color:#e58aa8;color:#fff;}
+
+  .legend{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:11px;color:#6b7280;padding-left:10px;}
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px;}
+
+  /* 内容区 */
+  .pane{flex:1;min-height:0;display:flex;flex-direction:column;}
+
+  /* —— 人设对话 —— */
+  .persona-head{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid #e7ecf2;}
+  .p-title{font-weight:700;font-size:13px;}
+  .p-title .sub{font-weight:400;color:#9ca3af;font-size:11px;margin-left:8px;}
+  .seg{display:flex;border:1px solid #f5c4d4;border-radius:8px;overflow:hidden;}
+  .seg button{border:0;background:#fff5f8;color:#b9486f;font:inherit;font-size:12px;padding:5px 12px;cursor:pointer;}
+  .seg button.on{background:#e58aa8;color:#fff;}
+  .toggle{display:flex;align-items:center;gap:6px;font-size:12px;color:#4b5563;margin-left:6px;
+    border:1px solid #cfe9dc;background:#f2fbf6;border-radius:8px;padding:4px 10px;}
+  .switch{width:30px;height:16px;border-radius:9px;background:#23a35a;position:relative;}
+  .switch::after{content:"";position:absolute;right:2px;top:2px;width:12px;height:12px;border-radius:50%;background:#fff;}
+  .model-note{margin-left:auto;font-size:11px;color:#9ca3af;}
+
+  .chat{flex:1;min-height:0;overflow:auto;padding:16px 18px;display:flex;flex-direction:column;gap:14px;background:#fbfcfd;}
+  .msg{max-width:78%;}
+  .msg.user{align-self:flex-end;}
+  .bubble{padding:9px 12px;border-radius:12px;line-height:1.55;font-size:13px;}
+  .msg.user .bubble{background:#e58aa8;color:#fff;border-bottom-right-radius:4px;}
+  .msg.ai .bubble{background:#fff;border:1px solid #e7ecf2;color:#1f2937;border-bottom-left-radius:4px;}
+
+  .search-card{border:1px solid #e2e9f1;border-radius:10px;background:#fff;padding:10px;margin-top:8px;}
+  .search-head{font-size:11px;color:#6b7280;display:flex;align-items:center;gap:6px;margin-bottom:8px;}
+  .search-head b{color:#2aabee;font-weight:600;}
+  .thumbs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}
+  .thumb{height:64px;border-radius:8px;position:relative;overflow:hidden;
+    display:flex;align-items:flex-end;justify-content:flex-start;color:#fff;font-size:10px;padding:4px 6px;}
+  .thumb::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.35));}
+  .thumb span{position:relative;z-index:1;}
+  .t1{background:linear-gradient(135deg,#f7c948,#e8892a);}
+  .t2{background:linear-gradient(135deg,#63bd93,#2f9e63);}
+  .t3{background:linear-gradient(135deg,#7fb2f0,#2f7fd1);}
+  .t4{background:linear-gradient(135deg,#c39be6,#8b6fd4);}
+
+  .input-row{flex:0 0 auto;display:flex;gap:8px;padding:10px 14px;border-top:1px solid #e7ecf2;background:#fff;}
+  .input-row input{flex:1;border:1px solid #e2e9f1;border-radius:10px;padding:9px 12px;font:inherit;font-size:13px;outline:none;}
+  .send{border:0;background:#e58aa8;color:#fff;border-radius:10px;padding:9px 18px;font:inherit;font-size:13px;cursor:pointer;}
+
+  /* —— GPT 对话（内置浏览器） —— */
+  .browser{flex:1;min-height:0;display:flex;flex-direction:column;background:#f3f4f6;}
+  .chrome{flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:8px 10px;background:#eef1f4;border-bottom:1px solid #dde3ea;}
+  .navbtn{width:26px;height:26px;border-radius:6px;border:1px solid #d7dee7;background:#fff;color:#6b7280;
+    display:flex;align-items:center;justify-content:center;font-size:13px;}
+  .addr{flex:1;background:#fff;border:1px solid #d7dee7;border-radius:16px;padding:6px 14px;font-size:12px;color:#374151;
+    display:flex;align-items:center;gap:8px;}
+  .lock{color:#23a35a;font-size:11px;}
+  .browser-body{flex:1;min-height:0;background:#fff;display:flex;align-items:center;justify-content:center;}
+  .gpt-login{text-align:center;max-width:420px;}
+  .gpt-logo{width:54px;height:54px;border-radius:50%;background:#10a37f;margin:0 auto 16px;
+    display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px;font-weight:700;}
+  .gpt-login h2{margin:0 0 8px;font-size:20px;color:#111827;}
+  .gpt-login p{margin:0 0 18px;color:#6b7280;font-size:13px;}
+  .gpt-btn{display:inline-block;background:#10a37f;color:#fff;border-radius:8px;padding:10px 22px;font-size:14px;}
+  .gpt-hint{margin-top:16px;font-size:11px;color:#9ca3af;}
+
+  /* 右栏 */
+  .right-head{padding:10px 14px;border-bottom:1px solid #e7ecf2;font-weight:700;font-size:13px;}
+  .right-card{margin:12px;border:1px solid #e7ecf2;border-radius:10px;padding:12px;background:#fafbfc;}
+  .kv{display:flex;justify-content:space-between;font-size:12px;color:#4b5563;padding:5px 0;border-bottom:1px dashed #eef1f4;}
+  .kv:last-child{border-bottom:0;}
+
+  .note{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);background:rgba(31,41,55,.92);color:#fff;
+    padding:8px 16px;border-radius:8px;font-size:12px;letter-spacing:.3px;}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="logo">🐝</div>
+    <div class="brand">蜜蜂信息采集</div>
+    <div class="top-spacer"></div>
+    <div class="top-chip">一号~五号账号条（略）</div>
+  </div>
+
+  <div class="main">
+    <!-- 左栏（略） -->
+    <div class="col left">
+      <div class="left-head">待处理</div>
+      <div class="cust"><div class="avatar">W</div><div><div class="cust-name">WA00001 Lin Wan Zhu</div><div class="cust-sub">WhatsApp · 2 分钟前</div></div></div>
+      <div class="cust"><div class="avatar" style="background:#ede9fe;color:#7c3aed;">L</div><div><div class="cust-name">WA00002 L Sherry</div><div class="cust-sub">WhatsApp · 9 分钟前</div></div></div>
+      <div class="cust"><div class="avatar" style="background:#e0f2fe;color:#0284c7;">T</div><div><div class="cust-name">Tele · Dio</div><div class="cust-sub">Telegram · 21 分钟前</div></div></div>
+    </div>
+
+    <!-- 中栏 -->
+    <div class="col mid">
+      <!-- ===== 标签栏 ===== -->
+      <div class="mid-tabs" id="tabs">
+        <button class="mtab general">通用</button>
+        <button class="mtab gpt">GPT对话</button>
+        <button class="mtab persona on">人设对话</button>
+        <button class="mtab wa">WA①</button>
+        <button class="mtab wa">WA②</button>
+        <button class="mtab wa">WA③</button>
+        <button class="mtab wa">WA④</button>
+        <button class="mtab wa">WA⑤</button>
+        <button class="mtab tg">Tele①</button>
+        <button class="mtab tg">Tele②</button>
+      </div>
+
+      <!-- 人设对话 pane -->
+      <div class="pane" id="pane-persona">
+        <div class="persona-head">
+          <div class="p-title">人设对话<span class="sub">独立模块 · 不与其他渠道混用</span></div>
+          <div class="seg">
+            <button class="on">钱多多</button>
+            <button>AstrBot</button>
+          </div>
+          <div class="toggle"><span class="switch"></span>联网搜索 web_search</div>
+          <div class="model-note">低成本 · 带图回答</div>
+        </div>
+        <div class="chat">
+          <div class="msg user"><div class="bubble">帮我找几个适合挂在客厅的抽象油画参考，暖色调的。</div></div>
+          <div class="msg ai">
+            <div class="bubble">
+              给你找了几组暖色调抽象参考，尺寸建议 90×120cm 竖挂更显层高。
+              <div class="search-card">
+                <div class="search-head">🔎 <b>web_search</b> · 已检索 8 条结果（压低成本，只取前 4 张）</div>
+                <div class="thumbs">
+                  <div class="thumb t1"><span>暖橙抽象 · 90×120</span></div>
+                  <div class="thumb t2"><span>金棕肌理 · 80×80</span></div>
+                  <div class="thumb t3"><span>落日渐变 · 100×140</span></div>
+                  <div class="thumb t4"><span>陶土暖调 · 70×100</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="input-row">
+          <input placeholder="和人设聊，或让它联网找参考图…" />
+          <button class="send">发送</button>
+        </div>
+      </div>
+
+      <!-- GPT 对话 pane（默认隐藏，截图时切换） -->
+      <div class="pane" id="pane-gpt" style="display:none">
+        <div class="browser">
+          <div class="chrome">
+            <div class="navbtn">‹</div><div class="navbtn">›</div><div class="navbtn">⟳</div>
+            <div class="addr"><span class="lock">🔒</span>https://chatgpt.com</div>
+          </div>
+          <div class="browser-body">
+            <div class="gpt-login">
+              <div class="gpt-logo">G</div>
+              <h2>登录以继续使用 ChatGPT</h2>
+              <p>这是软件内置浏览器（独立分区 persist:gpt1），登录态与你电脑上的浏览器互不影响。</p>
+              <div class="gpt-btn">登录 ChatGPT</div>
+              <div class="gpt-hint">登录后即可在软件内直接对话，不采集、不入库、独立模块。</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 右栏（略） -->
+    <div class="col right">
+      <div class="right-head">客户档案</div>
+      <div class="right-card">
+        <div class="kv"><span>渠道</span><span>Telegram</span></div>
+        <div class="kv"><span>编号</span><span>TG00003</span></div>
+        <div class="kv"><span>电话</span><span>+1 541 801 0646</span></div>
+        <div class="kv"><span>地区</span><span>美国 · 俄勒冈</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // 通过 hash 切换：#persona（默认） 或 #gpt
+  function applyView(){
+    var wantGpt = location.hash === '#gpt';
+    document.getElementById('pane-persona').style.display = wantGpt ? 'none' : 'flex';
+    document.getElementById('pane-gpt').style.display = wantGpt ? 'flex' : 'none';
+    document.querySelectorAll('.mtab').forEach(function(b){ b.classList.remove('on'); });
+    if (wantGpt) {
+      document.querySelector('.mtab.gpt').classList.add('on');
+    } else {
+      document.querySelector('.mtab.persona').classList.add('on');
+    }
+  }
+  applyView();
+  window.addEventListener('hashchange', applyView);
+</script>
+</body>
+</html>

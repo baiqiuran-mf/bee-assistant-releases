@@ -1628,6 +1628,45 @@ function createServer(deps, port = 8787) {
         return json(res, 200, r);
       }
 
+      // ---- 🔴 2026-10-23 第6模块「人设对话」：独立 AI 聊天，钱多多 / AstrBot 双模型 + web_search ----
+      //     不碰 WA/Tele/Signal 任何采集/话术逻辑；对话不入客户库、不进 translation_memory，只回文本。
+      if (p === '/api/persona/chat' && req.method === 'POST') {
+        const body = await readJsonBody(req);
+        const provider = String(body?.provider || 'qianduoduo').trim();
+        const allowed = ['qianduoduo', 'astrbot'];
+        if (!allowed.includes(provider)) return json(res, 400, { error: '不支持的模型：' + provider });
+        if (typeof ai.providerReady === 'function' && !ai.providerReady(provider)) {
+          const why = (ai.notConfiguredReason && ai.notConfiguredReason(provider)) || '请在 AI 设置里配置';
+          return json(res, 400, { error: '「' + provider + '」未配置或不可用：' + why });
+        }
+        const prov = (cfg?.ai?.providers && cfg.ai.providers[provider]) || {};
+        const model = String(prov.model || body?.model || '').trim();
+        if (!model) return json(res, 400, { error: '「' + provider + '」未设置模型名，请在 AI 设置里填好' });
+        const msgs = Array.isArray(body?.messages) ? body.messages : [];
+        if (!msgs.length) return json(res, 400, { error: '没有消息内容' });
+        const webSearch = !!body?.webSearch;
+        const PERSONA = '你是林晚秋（英文名 Sherry），中国美术学院油画系出身、常驻厦门的女性画家，擅长宠物画与肖像画定制。'
+          + '你说话真诚、温柔、有朋友感，不推销、不夸大、不编故事、不谈恋爱。'
+          + '客户聊油画、宠物画、肖像画、价格或只是闲聊，你都自然回应；涉及价格和工期只给区间、不承诺死。'
+          + (webSearch ? ' 如需要最新信息（如参考图、行情），可自行联网搜索后回答，并尽量给出带图的参考。' : '');
+        const userText = msgs.map((m) => ((m.role === 'user' ? '客户' : '你') + '：' + (m.content || ''))).join('\n');
+        try {
+          // 🔴 web_search：先 A 打底（用模型自带联网，上面已写进 system）；
+          //    B 口子预留：将来要"带图更稳"时，在此先调搜索接口、把结果拼进 userText 再发，不另接服务。
+          const reply = await ai.callProviderByName(provider, model, {
+            system: PERSONA,
+            user: userText,
+            temperature: 0.8,
+            maxTokens: 1200,
+            timeout: 60000,
+          });
+          if (!reply) return json(res, 502, { error: 'AI 没有返回正文' });
+          return json(res, 200, { reply: String(reply) });
+        } catch (e) {
+          return json(res, 502, { error: 'AI 调用失败：' + ((e && e.message) || e) });
+        }
+      }
+
       // ---- 打开某个账号的 WhatsApp 浏览器（没开就启动，开了就拉到前台）----
       const mAccOpen = /^\/api\/account\/(\d+)\/open$/.exec(p);
       if (mAccOpen && req.method === 'POST') {

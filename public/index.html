@@ -173,21 +173,25 @@ I live on a farm, I also have peaches, plums and pears
       <!-- 中栏页签（独立 class .mtab，绝不复用右栏的 .ptab —— 那个被 switchPanelTab 全局绑死了） -->
       <div class="mid-tabs">
         <button class="mtab on" data-mp="general" title="原来的消息框：客户对话 + 回复建议">通用</button>
-        <button class="mtab" data-mp="tele1" title="Telegram 官方通道（T①）：好友对话 / 对话信息 / 客户资料 / 采集日志">Tele①</button>
-        <!-- 🔴 v2.6.1113 新增 Tele②（老板 2026-10-14 17:38 拍板）：
-             T② 独立账号，功能与 Tele① **完全一样**（好友对话 / 对话信息 / 客户资料 / 采集日志），
-             只是数据源是 T② 那个号。老板在Tele① 登 T①、在 Tele② 登 T②，两处登录态互不干扰。 -->
-        <button class="mtab" data-mp="tele2" title="Telegram 官方通道（T②）：功能与 Tele① 相同，数据来自 T② 账号">Tele②</button>
+        <!-- 🔴 2026-10-23 新增 GPT对话（第5模块）：软件内置浏览器登录 chatgpt.com，独立分区 persist:gpt1，不采集不入库，与其它模块互不混用 -->
+        <button class="mtab gpt" data-mp="gpt" title="GPT对话（第5模块）：软件内置浏览器登录 ChatGPT，独立分区、登录态独立，不采集不入库">GPT对话</button>
+        <!-- 🔴 2026-10-23 新增 人设对话（第6模块）：独立 AI 聊天窗，接 钱多多 / AstrBot，配合 web_search 联网带图；不与其他渠道共享 -->
+        <button class="mtab persona" data-mp="persona" title="人设对话（第6模块）：AI 聊天对话窗口，模型 钱多多 / AstrBot，联网搜索，独立模块">人设对话</button>
         <!-- 🔴 v2.6.1094 老板拍板新增（QQ20261013 三方案真截图，选「方案一 · 内置浏览器」）：
              WA① = WhatsApp 内置浏览器，形态与 Tele① 完全对称（老板原话「功能界面可以模仿Tele①」）。
              partition 与 Tele① 分开，互不顶掉对方的登录态。 -->
-        <button class="mtab" data-mp="wa1" title="WhatsApp 内置浏览器（WA①）：在软件里直接开 WhatsApp 网页版">WA①</button>
+        <button class="mtab wa" data-mp="wa1" title="WhatsApp 内置浏览器（WA①）：在软件里直接开 WhatsApp 网页版">WA①</button>
         <!-- 🔴 v2.6.1134 复刻 WA① → WA②~⑤（老板 2026-10-16 拍板）：五个内置浏览器页签，共用一套采集/气泡代码，仅参数化（partition / 账号号 / 编号段）。
              每个页签各自独立分区、独立登录态、独立客户编号段（WA/WB/WD/WE/WF），互不影响互不踢。 -->
-        <button class="mtab" data-mp="wa2" title="WhatsApp 内置浏览器（WA②）：独立分区 persist:wa7，编号段 WB00001">WA②</button>
-        <button class="mtab" data-mp="wa3" title="WhatsApp 内置浏览器（WA③）：独立分区 persist:wa8，编号段 WD00001">WA③</button>
-        <button class="mtab" data-mp="wa4" title="WhatsApp 内置浏览器（WA④）：独立分区 persist:wa9，编号段 WE00001">WA④</button>
-        <button class="mtab" data-mp="wa5" title="WhatsApp 内置浏览器（WA⑤）：独立分区 persist:wa10，编号段 WF00001">WA⑤</button>
+        <button class="mtab wa" data-mp="wa2" title="WhatsApp 内置浏览器（WA②）：独立分区 persist:wa7，编号段 WB00001">WA②</button>
+        <button class="mtab wa" data-mp="wa3" title="WhatsApp 内置浏览器（WA③）：独立分区 persist:wa8，编号段 WD00001">WA③</button>
+        <button class="mtab wa" data-mp="wa4" title="WhatsApp 内置浏览器（WA④）：独立分区 persist:wa9，编号段 WE00001">WA④</button>
+        <button class="mtab wa" data-mp="wa5" title="WhatsApp 内置浏览器（WA⑤）：独立分区 persist:wa10，编号段 WF00001">WA⑤</button>
+        <!-- 🔴 v2.6.1113 新增 Tele②（老板 2026-10-14 17:38 拍板）：
+             T② 独立账号，功能与 Tele① **完全一样**（好友对话 / 对话信息 / 客户资料 / 采集日志），
+             只是数据源是 T② 那个号。老板在Tele① 登 T①、在 Tele② 登 T②，两处登录态互不干扰。 -->
+        <button class="mtab tg" data-mp="tele1" title="Telegram 官方通道（T①）：好友对话 / 对话信息 / 客户资料 / 采集日志">Tele①</button>
+        <button class="mtab tg" data-mp="tele2" title="Telegram 官方通道（T②）：功能与 Tele① 相同，数据来自 T② 账号">Tele②</button>
       </div>
 
       <!-- 页签1「通用」：原聊天工作台，整体搬进 pane 里，内部元素一个没删。
@@ -705,6 +709,42 @@ I live on a farm, I also have peaches, plums and pears
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- ══════════════ 页签「GPT对话」（第5模块，v2.7.1251 新增）══════════════
+           🔴 软件内置浏览器登录 ChatGPT，独立分区 persist:gpt1，登录态独立；不采集、不入库、不与其他模块共享。
+           🔴「绝不自动发送」铁律同样适用：这里只是看 + 手动填，不自动发。 -->
+      <div class="mid-pane hidden" data-mp="gpt">
+        <div class="gpt-browser">
+          <div class="gpt-chrome">
+            <button class="navbtn" id="gpt-back" type="button" title="后退">‹</button>
+            <button class="navbtn" id="gpt-fwd" type="button" title="前进">›</button>
+            <button class="navbtn" id="gpt-reload" type="button" title="刷新">⟳</button>
+            <div class="gpt-addr"><span class="lock">🔒</span><span id="gpt-addr-text">https://chatgpt.com</span></div>
+          </div>
+          <div class="gpt-body">
+            <webview id="gpt-webview" partition="persist:gpt1" src="https://chatgpt.com" allowpopups></webview>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════ 页签「人设对话」（第6模块，v2.7.1251 新增）══════════════
+           🔴 独立 AI 聊天窗，接 钱多多 / AstrBot 模型，配合 web_search 联网带图；不与其他渠道共享上下文。
+           🔴 web_search：先 A 打底（用模型自带联网），预留 B 口子（另接搜索接口）后续启用。 -->
+      <div class="mid-pane hidden" data-mp="persona">
+        <div class="persona-head">
+          <span class="persona-title">人设对话<span class="sub">独立模块 · 不与其他渠道混用</span></span>
+          <div class="persona-seg" id="persona-seg">
+            <button type="button" data-prov="qianduoduo" class="on">钱多多</button>
+            <button type="button" data-prov="astrbot">AstrBot</button>
+          </div>
+          <div class="persona-toggle off" id="persona-websearch"><span class="switch"></span>联网搜索</div>
+        </div>
+        <div class="persona-chat" id="persona-chat"></div>
+        <div class="persona-input">
+          <input id="persona-input" type="text" placeholder="和人设聊天，或让它联网找参考图…" autocomplete="off">
+          <button class="persona-send" id="persona-send" type="button">发送</button>
         </div>
       </div>
     </section>

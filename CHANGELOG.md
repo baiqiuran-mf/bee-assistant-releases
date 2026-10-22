@@ -7,6 +7,25 @@
 > **规矩：每次改动都要在这里加一条**，写清「优化了什么」和「修好了什么问题」——  
 > 老版本记录一律保留，不许删。
 
+## 2.7.1251（主窗口标签改造：标签宽 65px + GPT对话/人设对话两个新模块 + 系列分色）
+
+> 老板 2026-10-23 拍板：主窗口标签改动。先看真渲染截图（`preview/_tabs_*.png`）确认样式，老板点头才动代码。GPT对话＝第5模块、人设对话＝第6模块，严格独立、不与其他四套采集逻辑混用。
+
+### 改动（严格限定文件）
+- **标签宽 140px → 65px**（`public/style.css` `.mtab`），`.mid-tabs` 加 `overflow-x:auto` 兜底（窄窗口横向滚动，不挤坏）。
+- **标签顺序改为**：通用 / GPT对话 / 人设对话 / WA①~⑤ / Tele①~②（GPT 与人设移到 WA 左边；Tele 仍在 WA⑤ 右边）。
+- **系列分色**（不同模块一眼区分）：通用＝灰蓝、GPT对话＝淡紫、人设对话＝淡粉、WA①~⑤＝绿、Tele①~②＝蓝。
+- **新增第5模块「GPT对话」**：`data-mp="gpt"`，内置浏览器登录 chatgpt.com，独立分区 `persist:gpt1`，登录态独立；**不采集、不入库、不自动发送**。
+- **新增第6模块「人设对话」**：`data-mp="persona"`，独立 AI 聊天窗，可切 **钱多多 / AstrBot** 模型（两者 `src/ai.js` 已接好），带 web_search 联网开关；对话只存本机 localStorage，不入库、不与其他渠道共享。
+- **后端**：新增 `POST /api/persona/chat`，用 `ai.callProviderByName(provider, model, ...)` 调所选模型；web_search 先 A 打底（模型自带联网写进 system 提示），**预留 B 口子**（另接搜索接口）未实现。
+
+### 验证
+- `node --check`：`public/app.js` / `src/server.js` / `src/ai.js` 全过。
+- puppeteer 真渲染截图：标签顺序/宽度/分色、`GPT对话` 内置浏览器页、`人设对话` 聊天页均正常（见 `preview/_tabs_bar.png` / `_tabs_gpt.png` / `_tabs_persona.png`）。
+
+### 未动清单
+- WA①②③④⑤ / Tele①~② / Signal / 外置 WA 一号~五号 四套采集逻辑一律未碰；`src/ai.js` 仅复用已有 `callProviderByName`，未改其逻辑；`src/update.js`、启动窗、更新进度窗均未动。
+
 ## 2.7.1241（更新进度窗口：下载/安装时弹独立「更新版本中，请稍等…」窗口）
 
 > 老板 2026-10-23：「检查更新进入安装的时候没有任何进度条窗口。这个需要一个进度条安装的窗口，提示说更新版本中，请稍等之类的提示。这样会误会以为卡死。」先看截图确认样式后再做（已出 `preview/_update_install.png` / `preview/_update_download.png` 两张真渲染截图，老板点头才动代码）。
