@@ -13,50 +13,114 @@
     background: #ffffff;
     color: #1f2329;
     overflow: hidden;
+    -webkit-user-select: none;
+    user-select: none;
   }
   #app {
     height: 100%;
-    padding: 30px 32px 26px;
+    display: flex;
+    align-items: stretch;
+  }
+
+  /* ---------- 左侧：机器人 ---------- */
+  .art {
+    flex: 0 0 244px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .art .halo {
+    position: absolute;
+    left: 50%; top: 50%;
+    width: 340px; height: 340px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: radial-gradient(circle,
+      rgba(99, 189, 147, .17) 0%,
+      rgba(167, 149, 222, .11) 46%,
+      rgba(255, 255, 255, 0) 68%);
+  }
+  .art img {
+    position: relative;
+    z-index: 1;
+    width: 196px;
+    height: auto;
+    filter: drop-shadow(0 16px 22px rgba(198, 74, 64, .18));
+    animation: float 4s ease-in-out infinite;
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-8px); }
+  }
+
+  /* ---------- 右侧：标题 + 进度 + 步骤 ---------- */
+  .pane {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 44px 44px 32px 10px;
     display: flex;
     flex-direction: column;
   }
-  .dots { display: flex; gap: 7px; margin-bottom: 16px; }
+  .dots { display: flex; gap: 7px; }
   .dots i { width: 9px; height: 9px; border-radius: 50%; display: block; }
   .dots .g { background: #63bd93; }
   .dots .p { background: #a795de; }
   .dots .o { background: #ecb27c; }
-  h1 { font-size: 16px; font-weight: 600; letter-spacing: .5px; }
-  .sub { font-size: 13px; color: #8a8f99; margin-top: 4px; }
+  h1 { font-size: 25px; font-weight: 600; letter-spacing: .6px; margin-top: 14px; }
+  .sub { font-size: 13.5px; color: #8a8f99; margin-top: 7px; }
+
   .bar-wrap {
-    margin-top: 20px;
-    height: 8px;
-    border-radius: 4px;
+    margin-top: 26px;
+    height: 10px;
+    border-radius: 5px;
     background: #eef0f3;
     overflow: hidden;
   }
   #bar {
     height: 100%;
     width: 6%;
-    border-radius: 4px;
-    background: #63bd93;
-    transition: width .35s ease;
+    border-radius: 5px;
+    background: linear-gradient(90deg, #63bd93 0%, #8fd0b0 100%);
+    transition: width .38s ease;
   }
   .bar-row {
     display: flex;
     justify-content: space-between;
-    font-size: 12px;
+    align-items: baseline;
+    font-size: 12.5px;
     color: #8a8f99;
-    margin-top: 8px;
+    margin-top: 9px;
   }
+  #pct {
+    font-size: 20px;
+    font-weight: 600;
+    color: #2f3a44;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+
   #list {
-    margin-top: 18px;
+    margin-top: 22px;
     flex: 1 1 auto;
+    min-height: 0;
     overflow: hidden;
     display: flex;
     flex-direction: column;
     gap: 9px;
   }
-  .step { display: flex; align-items: center; gap: 9px; font-size: 13px; color: #4b5563; }
+  .step {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 13px;
+    color: #4b5563;
+    animation: stepIn .28s ease both;
+  }
+  @keyframes stepIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: none; }
+  }
   .step .tick {
     width: 14px; height: 14px; border-radius: 50%;
     background: #63bd93; flex: 0 0 auto;
@@ -72,7 +136,9 @@
     transform: rotate(45deg);
   }
   #done {
-    margin-top: 14px;
+    margin-top: auto;
+    padding-top: 12px;
+    flex: 0 0 auto;
     font-size: 13px;
     color: #63bd93;
     font-weight: 600;
@@ -84,34 +150,81 @@
 </head>
 <body>
   <div id="app">
-    <div class="dots"><i class="g"></i><i class="p"></i><i class="o"></i></div>
-    <h1>蜜蜂信息采集</h1>
-    <div class="sub">正在启动，先缓存前期加载项…</div>
-    <div class="bar-wrap"><div id="bar"></div></div>
-    <div class="bar-row"><span id="state">加载中</span><span id="pct">6%</span></div>
-    <div id="list"></div>
-    <div id="done">加载完成，正在进入登录…</div>
+    <aside class="art">
+      <div class="halo"></div>
+      <img src="img/bee-robot.png" alt="" />
+    </aside>
+    <main class="pane">
+      <div class="dots"><i class="g"></i><i class="p"></i><i class="o"></i></div>
+      <h1>蜜蜂信息采集</h1>
+      <div class="sub">正在启动，先缓存前期加载项…</div>
+      <div class="bar-wrap"><div id="bar"></div></div>
+      <div class="bar-row"><span id="state">加载中</span><span id="pct">6%</span></div>
+      <div id="list"></div>
+      <div id="done">加载完成，正在进入登录…</div>
+    </main>
   </div>
 
 <script>
   (function () {
     var bar = document.getElementById('bar');
-    var pct = document.getElementById('pct');
+    var pctEl = document.getElementById('pct');
     var list = document.getElementById('list');
     var state = document.getElementById('state');
     var doneEl = document.getElementById('done');
-    var steps = 0;
-    var MAX_VISIBLE = 7;
 
-    function clampPct(p) { return Math.max(6, Math.min(100, p)); }
+    var START = 6;      // 起步值
+    /* 🔴 v2.7.1221：done() 之前进度条**最高只到 92%**。
+       旧版是 `6 + 步数 * 13`，第 8 步就顶到 100%，而启动实际有十几步、
+       后面还要等云端握手和主窗口加载 —— 于是「进度条 100% 了却半天进不去登录」。 */
+    var CAP = 92;
+    var MAX_VISIBLE = 8;
+    var t0 = Date.now();
+    var floor = START;   // 由「走到第几步」决定的保底百分比
+    var steps = 0;
+
+    /* 每一步的权重，按实测启动日志（<数据目录>/logs/boot-*.log）的真实耗时分配，合计 84：
+       快的步骤（清理/校验/令牌）给 3~4，真正卡时间的（后端内核已就绪前等云端握手、
+       主窗口页面加载）给 17~20。这样进度条涨的位置跟真正在做的事对得上。 */
+    var W = {
+      '准备启动后端内核（src/main.startCore —— 数据库 / 采集模块都在这里加载）': 3,
+      '清理历史空消息与假号码': 4,
+      '校验知识库与 AI 配置': 3,
+      '生成浏览器插件连接令牌': 3,
+      '创建本地 HTTP 服务': 4,
+      '启动图片延时重抓': 3,
+      '启动器预热（Signal S1~S3）': 5,
+      '加载 Telegram 登录/登出控制器': 6,
+      '后端内核已就绪': 20,
+      '准备加载主窗口页面': 5,
+      '主窗口已创建': 5,
+      '桌面内核启动完成，主窗口已交出来': 6,
+      '主窗口页面加载完成，界面已交给用户': 17
+    };
+
+    /* 时间曲线：实测整轮启动约 12 秒。不管步数怎么变，都保证进度条一直在动；
+       12 秒走到约 85%，再慢的机器也只是逼近 CAP，绝不提前假满。 */
+    function timePct() {
+      var t = (Date.now() - t0) / 1000;
+      return START + 84 * (1 - Math.exp(-t / 4.2));
+    }
+
+    function render() {
+      var p = Math.max(floor, timePct());
+      if (p > CAP) p = CAP;
+      bar.style.width = p + '%';
+      pctEl.textContent = Math.round(p) + '%';
+    }
+    render();
+    // 等云端握手 / 主窗口加载这类长耗时时，进度条继续缓慢往前爬，不至于看起来卡死
+    var timer = setInterval(render, 450);
 
     window.__addStep = function (label) {
       if (!label) return;
       steps += 1;
-      // 进度条按步数软增长，封顶 92%（done 时再补到 100%）
-      var p = clampPct(6 + steps * 13);
-      bar.style.width = p + '%';
-      pct.textContent = p + '%';
+      var w = W[label];
+      floor = Math.min(CAP, floor + (w == null ? 2 : w));  // 未登记的步骤按 2% 兜底
+      render();
 
       var row = document.createElement('div');
       row.className = 'step';
@@ -130,8 +243,9 @@
     };
 
     window.__done = function () {
+      clearInterval(timer);
       bar.style.width = '100%';
-      pct.textContent = '100%';
+      pctEl.textContent = '100%';
       state.textContent = '就绪';
       doneEl.classList.add('show');
     };

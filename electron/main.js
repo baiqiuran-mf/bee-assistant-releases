@@ -1066,15 +1066,23 @@ async function runCloseSequence() {
 
 async function finishClose(win, statusText, wrotePending) {
   tmSyncDone = true;
-  if (win && !win.isDestroyed()) {
-    // 把最终结论（成功/失败）发给渲染进程，覆盖之前的「重试中…」字样
-    try { win.webContents.send('tm:sync-progress', { phase: wrotePending ? 'gaveUp' : 'done', status: statusText }); } catch (e) {}
-    try { win.webContents.send('tm:sync-end'); } catch (e) {}
-  }
-  // 🔴 2026-10-22：退出前把话术编排台的任务进度（board/<编号>.sent.json）全量推回后台。
+  const notify = (phase, status) => {
+    if (!win || win.isDestroyed()) return;
+    try { win.webContents.send('tm:sync-progress', { phase, status, pct: 100 }); } catch (e) {}
+  };
+
+  // ① 先显示档案生成结果（成功/失败），覆盖之前的「正在生成…」，pct 拉满。
+  // 🔴 注意：这里**只更新进度，不收浮层** —— 浮层要一直显示到真正退出那一刻。
+  notify(wrotePending ? 'gaveUp' : 'done', statusText);
+  // 让这条最终结论停留一下，别被紧接着的「同步」文案一秒盖掉
+  await new Promise((r) => setTimeout(r, 700));
+
+  // ② 退出前把话术编排台的任务进度（board/<编号>.sent.json）全量推回后台。
   //   进度本机先存、改动时也会防抖同步（scriptBoard.scheduleProgressFlush）；
   //   这里在「确定关闭」的标准退出序列里再兜底一次，确保关闭软件时一定同步到后台数据库。
   //   失败/超时都不阻断退出（最多等 8s）。
+  //   ⚠️ 这段期间界面必须写清楚在同步，不能停在「已生成」上装作完成。
+  notify('done', '正在同步任务进度到后台…');
   try {
     const sb = require('../src/scriptBoard');
     if (sb && typeof sb.syncAllProgressToCloud === 'function') {
@@ -1083,7 +1091,17 @@ async function finishClose(win, statusText, wrotePending) {
       await Promise.race([sync, timeout]).catch(() => {});
     }
   } catch (e) { /* 进度同步失败不阻断退出 */ }
-  // 留出 ~1.6s 让用户看清最终结论（同步成功/失败），再真正退出
+  notify('done', '同步完成，正在退出…');
+
+  // ③ 🔴 2026-10-23 修「进度条没了窗口还在」：
+  //   旧版在函数开头就发了 tm:sync-end（收浮层），于是浮层早早就没了，但 app.exit 还卡在
+  //   上面那段云端同步（最多 8s）+ 下面的 1.6s 延迟里 → 窗口空挂好几秒。
+  //   现在把「收浮层」挪到真正退出这一刻：浮层持续显示（100% + 当前状态）直到进程结束，
+  //   做到「完全完成后才关闭」。收浮层与 app.exit 同一时刻发生，不会有空窗期。
+  if (win && !win.isDestroyed()) {
+    try { win.webContents.send('tm:sync-end'); } catch (e) {}
+  }
+  // 让用户看清「正在退出」，再真正退出
   setTimeout(() => {
     try { shutdownSessions(); } catch (e) {}
     app.exit();
