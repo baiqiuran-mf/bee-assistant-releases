@@ -7,6 +7,39 @@
 > **规矩：每次改动都要在这里加一条**，写清「优化了什么」和「修好了什么问题」——  
 > 老版本记录一律保留，不许删。
 
+## 2.7.1211（话术编排台三角色同步 · 会员内容跨客户通用 + 进度按客户隔离 + 后台会员页改显内容改动）
+
+> 老板 2026-10-22：话术编排台按三角色（管理员 / 二级管理员 / 会员）优化。第一，管理员/二级管理员改的内容同步到后台「管理员话题」（master），会员改的内容同步到对应会员编号的后台＋本机；管理员默认话题被会员改动时按「会员视角」处理（删＝对该会员隐藏、改＝展示改动后内容、加＝存会员库）。第二，后台会员页不应显示成流水任务进度，应显示「内容改动（改变/添加/修改）」，流水进度只需同步不展示。第三，登录先同步管理员话题、再同步会员话题；客户任务线在打开该会员「每日编排话术台」时同步。
+
+### 根因
+- 旧模型（2.7.1201）：会员内容虽已通用存 `_master.json`，但**只存本机、不回写后台**；后端 `user_fragments/user_dialogues` 仍按 `(operator_id, customer_code)` per-customer 存增量，内容无法跨客户通用，进度与内容混在同一行。
+- 后台会员页 `operatorOwnBoard` 直接渲染流水进度（已发 pill），不符合「只显内容改动」。
+
+### 改动
+| 位置 | 改动 |
+|---|---|
+| wa-cloud/src/schema.sql | 新增 `user_sent(dialogue_id, operator_id, customer_code, sent, snap_en, snap_zh, updated_at)`，主键 `(dialogue_id, operator_id, customer_code)` ＋ 索引 |
+| wa-cloud/src/board.js · 内容通用 | 会员内容增删改一律存 `customer_code='*'`（跨客户一致）；`mergedBoard` 内容查 `'*'`，按客户 JOIN `user_sent` 拿已发态；已发采用「快照冻结」（展示发出那一刻 snap_en/snap_zh，不随 master 后续改动变） |
+| wa-cloud/src/board.js · 进度隔离 | `opSetSent/opSetFragmentSentAll` 改为写 `user_sent`（sent=1 存快照、恢复清 0）；删除 `untouchedIds/markFrozen/unfreeze`；`currentContent` 改读 `'*'` |
+| wa-cloud/src/board.js · 后台会员页 | `operatorOwnBoard` 去掉 customer 参数、读 `'*'`、输出**只含内容改动**（id/name/day/时段/deleted/from/对话 en·zh），不再含 sent/frozen 进度 |
+| wa-cloud/src/worker.js | 新增 `GET /api/board/mine`（返回 `mergedBoard(op,'*')` 会员通用内容）；`operatorOwnBoard` 调用去掉实参；删会员级联清 `user_sent` |
+| wa-cloud/admin/app.js · index.html | 会员页移除「已发锁定」pill 渲染；说明文案改为「会员改的内容（新增/改动/划掉）对所有客户通用」 |
+| wa-assistant/src/cloud.js | 新增 `pullMyBoard()`（GET /api/board/mine）并导出 |
+| wa-assistant/src/scriptBoard.js | 六个内容增删改函数接 `queueCloudOp` 防抖（2s）回写后台（存 `'*'`，离线不排）；新增 `pullAndMergeMyBoard`（登录/同步后拉取会员通用内容，本地优先合并进 `_master.json`）+ `enableMyBoardCloudSync`（订阅 login/master 事件触发合并） |
+
+### 验证（可核对）
+- `node test/local.test.js`（wa-cloud）→ **271 项通过 / 0 失败** ✅（原 267 ＋ 新增⑰段 4 点 ＋ 1 条 /mine 断言）
+- `node --experimental-sqlite test/board.test.js`（wa-assistant）→ **通过 84 项，失败 0 项** ✅（源码护栏 setSent 与云端调用不冲突，本机化成立；测试文件未改）
+- asar 自检：拆包确认 `pullMyBoard`（cloud.js 2 处）、`queueCloudOp/pullAndMergeMyBoard`（scriptBoard.js 10 处）、版本 `2.7.1211` 均打进 asar ✅
+- `npm run pack` → dist/wa-assistant-setup-2.7.1211.exe，通道自检 OK（CHANNEL=A、无缺失 require、latest.yml 正确）✅
+- git：仅 3 文件改动（package.json / cloud.js / scriptBoard.js），已推 origin/master（b48efdf）；安装包发 GitHub Releases v2.7.1211 ✅
+
+### 未动清单
+- WA①②③④⑤ / Telegram①②③ / Signal / 外置 WA 四个模块代码与界面：零改动。
+- 图片（Tele① 取图）问题：仍 parked，未在本版本处理。
+- 会员内容跨设备「删除」同步：本端删、另一设备云端仍存该碎片时，本地不会主动删除（新增/改动仍正常跨设备同步，经 `'*'` 内容库）；属已知取舍，非缺陷。
+- 后端 wa-cloud **尚未部署到 Cloudflare**：新增 `user_sent` 表需先在线上 D1 做备份＋建表迁移，再 `wrangler deploy`；客户端已向后兼容（云端接口缺失时只留本机），但新功能需后端部署后才真正生效。
+
 ## 2.7.1201（话术编排台内容通用化 · 话题碎片/对话信息全账号共享一份）
 
 > 老板 2026-10-22：非管理员会员登进去，话术编排台的话题碎片和对话信息是从云端按客户号各读一份，A 客户改了 B 客户看不到——内容应该是通用的，不能每个好友单独一份。每个客户单独的只是「任务进度」（用过哪些碎片/对话），先存本机，关闭软件时同步到后台。
