@@ -2569,7 +2569,11 @@ function createServer(deps, port = 8787) {
       }
       function tzLooksValid(tz) {
         if (!tz || typeof tz !== 'string') return false;
-        if (!/^[A-Za-z_]+\/[A-Za-z_]+$/.test(tz)) return false;
+        // 2026-10-23：放宽 IANA 名校验 —— 原正则只认「两段、纯字母下划线」，
+        // 会把 America/Argentina/Buenos_Aires、Etc/GMT+5、America/Port-au-Prince
+        // 这类合法时区判成非法（AI 明明给对了却回落静态表）。仍必须含「/」且 Intl 认得。
+        if (!/^[A-Za-z][A-Za-z0-9_+\-/]*$/.test(tz)) return false;
+        if (!tz.includes('/')) return false;
         try { new Intl.DateTimeFormat('en-US', { timeZone: tz }); return true; } catch (e) { return false; }
       }
       function localTimeOfTz(tz) {
@@ -2578,6 +2582,38 @@ function createServer(deps, port = 8787) {
           const p = {}; for (const x of f.formatToParts(new Date())) p[x.type] = x.value;
           return `${p.month}-${p.day} ${String(p.hour).padStart(2, '0')}:${String(p.minute).padStart(2, '0')}`;
         } catch (e) { return ''; }
+      }
+
+      /**
+       * 把「地区」解析成 IANA 时区（v2.7.1231）。
+       *   ① 先问「时差计算」任务指的那家 AI（默认 DeepSeek）—— 用户填的地区写法千奇百怪
+       *      （"美国 加州 洛杉矶"、"加拿大 温哥华"），静态表认不出来时只能靠 AI；
+       *   ② AI 不可用 / 返回不合法 → 回落静态表 regions.guessTimezone，功能不中断。
+       * 返回 { tz, source }，source = 'ai' | 'static' | 'none'。
+       *
+       * 🔴 只负责「地区 → 时区名」这一步；当地时间 / 与北京时差仍由 Intl 现算，
+       *    DST 才不会算错（别让 AI 直接报几点，它会报错时区）。
+       */
+      async function resolveRegionTz(region) {
+        const useRegion = String(region || '').trim();
+        if (!useRegion) return { tz: null, source: 'none' };
+        let tz = null;
+        try {
+          const tzSel = ai.resolveTask('timezone') || {};
+          const tzProv = tzSel.providerName || 'deepseek';
+          const tzModel = tzSel.model || 'deepseek-v4-flash';
+          const r = await ai.callProviderByName(tzProv, tzModel, {
+            system: '你是时区换算助手。用户给一个地区或国家名（可能为中文，如"英国""美国西海岸""日本"），请返回该地当前使用的 IANA 时区名。只输出 JSON，不要任何解释。',
+            user: `地区：${useRegion}\n请返回 JSON：{"tz":"Europe/London"}`,
+            jsonMode: true, temperature: 0, maxTokens: 64,
+            // 保存档案要等这一步，别让 AI 卡 60 秒：12 秒不回来就先落静态表，保存照常完成。
+            timeout: 12000,
+          });
+          if (r) { const m = /"tz"\s*:\s*"([^"]+)"/.exec(r); if (m) tz = m[1]; }
+        } catch (e) { tz = null; }
+        if (tzLooksValid(tz)) return { tz, source: 'ai' };
+        const guess = regions.guessTimezone(useRegion) || null;
+        return { tz: guess, source: guess ? 'static' : 'none' };
       }
 
       if (p === '/api/region/timezone' && req.method === 'POST') {
@@ -2604,20 +2640,9 @@ function createServer(deps, port = 8787) {
             });
           }
           // ① 优先用「时差计算」任务指的那家 AI 把地区映射成 IANA 时区（没配就回落 DeepSeek）
-          let tz = null, source = 'static';
-          const tzSel = ai.resolveTask('timezone') || {};
-          const tzProv = tzSel.providerName || 'deepseek';
-          const tzModel = tzSel.model || 'deepseek-v4-flash';
-          try {
-            const r = await ai.callProviderByName(tzProv, tzModel, {
-              system: '你是时区换算助手。用户给一个地区或国家名（可能为中文，如"英国""美国西海岸""日本"），请返回该地当前使用的 IANA 时区名。只输出 JSON，不要任何解释。',
-              user: `地区：${useRegion}\n请返回 JSON：{"tz":"Europe/London"}`,
-              jsonMode: true, temperature: 0, maxTokens: 64,
-            });
-            if (r) { const m = /"tz"\s*:\s*"([^"]+)"/.exec(r); if (m) tz = m[1]; }
-          } catch (e) { tz = null; }
-          if (!tzLooksValid(tz)) tz = regions.guessTimezone(useRegion) || null;
-          else source = 'deepseek';
+          const resolved = await resolveRegionTz(useRegion);
+          let tz = resolved.tz;
+          const source = resolved.source;
           if (!tz) return json(res, 200, { ok: false, reason: 'no-tz', code, region: useRegion });
           let offset = tzOffsetHoursVsBeijing(tz);
           if (offset === null) { // IANA 不合法，再回落静态
@@ -2814,10 +2839,18 @@ function createServer(deps, port = 8787) {
         } else if (bodyTzRaw === '') {
           // ② 数字框空着 = 按「地区」自动。注意：新界面**每次保存都会把这个字段发上来**，
           //   所以这里必须自己判断"地区是不是改了"，不能像以前那样靠"字段没传"来判。
-          const guess = doc.guessTimezone(region) || null;
-          if (regionChanged) timezone = guess || c.timezone || null; // 地区改了 → 按新地区重算
-          else if (manualBefore) timezone = guess;                   // 撤销原来手填的数字
-          else timezone = c.timezone || guess || null;               // 本来就没填 → 沿用
+          if (regionChanged) {
+            // 🔴 v2.7.1231（老板要求「有修改才解读」）：
+            //   地区改过 → 用 AI 重新解读一遍（静态表只作兜底），这样换了国家/城市，
+            //   右侧资料卡的「客户当地时间 / 与北京时间差」才会跟着变；
+            //   地区没改 → 绝不重复问 AI，沿用库里已有的时区。
+            const resolved = await resolveRegionTz(region);
+            timezone = resolved.tz || c.timezone || null;
+          } else if (manualBefore) {
+            timezone = doc.guessTimezone(region) || null;                // 撤销原来手填的数字
+          } else {
+            timezone = c.timezone || doc.guessTimezone(region) || null;  // 本来就没填 → 沿用
+          }
         } else if (bodyTzRaw !== null) {
           timezone = bodyTzRaw;                        // ④ 老界面/老数据传上来的 IANA，照旧优先
         } else {

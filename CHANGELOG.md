@@ -7,6 +7,36 @@
 > **规矩：每次改动都要在这里加一条**，写清「优化了什么」和「修好了什么问题」——  
 > 老版本记录一律保留，不许删。
 
+## 2.7.1231（客户档案改地区 → 点保存时用 AI 重新解读时区 · 资料卡立即刷新）
+
+> 老板 2026-10-23 看图（QQ20261023-002824.png 地区红框 / QQ20261023-003024.png 资料卡红框）：填/改「地区」后点「保存档案」，要用 AI 解读这个地区的时区，结果显示在右侧资料卡的「客户当地时间 + 与北京时间差」；**有修改才解读，没修改不要解读**。
+
+### 根因
+- **改地区不重算**：`POST /api/customer/:code/profile` 在地区变化时只用静态表 `doc.guessTimezone(region)` 推时区；AI 接口 `/api/region/timezone` 又「已有 timezone 就直接返回旧值」。客户一旦有旧时区，改地区保存也不会重新解读。
+- **资料卡不刷新**：保存后 `refreshCustomers(code) → openCustomer(code)` 只刷「通用」中栏；WA①~⑤ 页签自己的资料卡走 `WA_PANES[].loadProfile`，没被调用 → 卡片上的当地时间/时差还是旧的。
+- **三段式合法时区被误杀**：`tzLooksValid` 正则只认「两段、纯字母下划线」，`America/Argentina/Buenos_Aires`、`Etc/GMT+5` 这类会被判非法并回落静态表（AI 给对了也不用）。
+
+### 改动
+| 位置 | 改动 |
+|---|---|
+| src/server.js · `resolveRegionTz` | 新增：地区 → IANA 时区，**先问「时差计算」任务指的那家 AI**（默认 DeepSeek），失败/不合法才回落静态表；给保存链路加了 **12 秒超时**，AI 卡住也不拖死保存 |
+| src/server.js · 保存档案分支 | **地区改过** → `await resolveRegionTz(region)` 用 AI 结果写库；**地区没改** → 一步 AI 都不调，沿用库里时区；手填的小时差仍最优先 |
+| src/server.js · `/api/region/timezone` | 复用同一个 `resolveRegionTz`，不再维护两份提示词 |
+| src/server.js · `tzLooksValid` | 放宽 IANA 校验：允许三段式 / 数字 / `+` `-`，仍要求含 `/` 且 `Intl` 认得出 |
+| public/app.js · `renderProfile` | 去掉「地区框 onchange 就调 AI」和「每次打开都调 AI」；只在**客户还没有时区**时补算一次（否则卡片没法显示当地时间） |
+| public/app.js · `saveProfile` | 保存后补一步：按编号找到对应 WA①~⑤ 页签并 `loadProfile(code)`，把右侧资料卡也刷一遍 |
+
+### 验证（可核对）
+- 新增 `test/region_tz_ai.test.js` → **17 项通过 / 0 失败** ✅：地区没改不调 AI、地区改了调 1 次且时区跟着换、同地区再存不重复调、AI 挂了回落静态表、三段式 IANA 被接受、手填数字优先。
+- 真实 DeepSeek key 实测（不写库、只读配置）：`美国/加拿大 → America/New_York (2939ms)`｜`英国 → Europe/London (931ms)`｜`日本 东京 → Asia/Tokyo (1049ms)`｜`加拿大 温哥华 → America/Vancouver (937ms)` ✅
+- `npm test` 全量：**64 项通过 / 1 项失败**；唯一失败是 `test/manual.test.js`「phone 仍能剥出来用于查重」（`tg:` 前缀号码），已用 `git stash` 回到改动前复跑 → **同样失败**，属既有问题，与本次无关 ✅
+- `node --check src/server.js` / `public/app.js` 均通过 ✅
+
+### 未动清单
+- WA①②③④⑤ / Telegram①②③ / Signal / 外置 WA 的采集、翻译、话术、代理：零改动。
+- 右侧资料卡的**排版、字段、颜色、显示格式**（`客户当地时间` / `与北京时间差`）未改，只保证保存后能刷到新值。
+- 客户档案弹窗的字段、按钮、位置未改。
+
 ## 2.7.1221（启动窗改版 800×550 + 机器人 · 进度条按真实耗时算 · 关闭进度条「完全完成后才关闭」）
 
 > 老板 2026-10-22：①启动窗 460×360 太小 → 改 800×550 并把机器人形象加进去（机器人不许隐藏）；②"显示进度条已经 100 了还没进到登录窗口"要修，进度要实际；③关闭软件时的进度条也要改成"完全完成后才关闭"——现在是点关闭后进度条已经没了、窗口还挂着。

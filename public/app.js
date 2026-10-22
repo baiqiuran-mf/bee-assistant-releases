@@ -1778,10 +1778,12 @@ function renderProfile(data) {
     // 不 await：让弹窗先显示出来，抓取在后面跑（抓取可能要几秒，不能卡住界面）
     setTimeout(() => autoFillPhone(false), 120);
   }
-  // v2.6.1164：地区填了就用后端 DeepSeek 自动算时区（仅 timezone 为空时）；地区框一改也触发
-  const regionBox = $('pf-region');
-  if (regionBox) regionBox.onchange = autoFillTimezone;
-  if (typeof autoFillTimezone === 'function') {
+  // 🔴 v2.7.1231（老板要求「有修改才解读」）：
+  //   地区框**输入/失焦不再触发** AI —— 只有点「保存档案」且地区真的改过，
+  //   后端才会去解读并重算时区（见 server.js 保存档案分支）。
+  //   例外：这个客户还没有时区（旧数据/新客户）→ 打开时先补算一次，
+  //   否则右侧资料卡上「客户当地时间」只能显示「—」。
+  if (typeof autoFillTimezone === 'function' && !c.timezone && String(c.region || '').trim()) {
     setTimeout(() => autoFillTimezone(), 200);
   }
 }
@@ -2004,6 +2006,14 @@ async function saveProfile() {
     setTimeout(() => { btn.textContent = keep; }, 1500);
   }
   await refreshCustomers(code);
+  // 🔴 v2.7.1231：保存后把右侧资料卡（WA①~⑤ 内置页签）也刷一遍 ——
+  //   refreshCustomers → openCustomer 只刷「通用」中栏，刷不到 WA 页签自己的资料卡；
+  //   不补这一步，改完地区点保存，卡片上的「客户当地时间 / 与北京时间差」还是旧的。
+  try {
+    const row = (state.customers || []).find((x) => x.code === code);
+    const pane = row ? (waInstanceByCode(row.code) || WA_PANES[0]) : WA_PANES[0];
+    if (pane && typeof pane.loadProfile === 'function') await pane.loadProfile(code);
+  } catch (e) { /* 资料卡刷新失败不影响保存结果 */ }
 }
 
 /** 重新拉取并只刷新档案弹窗里的内容（不重排对话、不丢当前建议） */
