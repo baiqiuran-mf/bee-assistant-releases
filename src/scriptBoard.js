@@ -1962,8 +1962,11 @@ function addFragment(code, name, patch) {
   const evening = morning ? false : !!p.evening; // 互斥：早上优先
   const dn = Number(p.day);
   const day = (Number.isFinite(dn) && dn >= 1) ? Math.floor(dn) : 1;
-  b.fragments.push({ id: uid('f'), name: String(name || '').trim() || '新碎片', morning, evening, day, dialogues: [] });
+  const id = uid('f');
+  const nm = String(name || '').trim() || '新碎片';
+  b.fragments.push({ id, name: nm, morning, evening, day, dialogues: [] });
   saveMasterBoard(b);
+  queueCloudOp('addFragment', { id, name: nm, day, morning, evening }); // 内容改动防抖回写云端（通用 '*'）
   return applySentState(code, clone(b));
 }
 
@@ -1976,6 +1979,7 @@ function updateFragment(code, fid, patch) {
   if (typeof patch.morning === 'boolean') { f.morning = patch.morning; if (patch.morning) f.evening = false; }
   if (typeof patch.evening === 'boolean') { f.evening = patch.evening; if (patch.evening) f.morning = false; }
   saveMasterBoard(b);
+  queueCloudOp('updateFragment', { fid, body: patch }); // 内容改动防抖回写云端（通用 '*'）
   return applySentState(code, clone(b));
 }
 
@@ -1983,6 +1987,7 @@ function deleteFragment(code, fid) {
   const b = loadMasterBoard();
   b.fragments = b.fragments.filter((f) => f.id !== fid);
   saveMasterBoard(b);
+  queueCloudOp('deleteFragment', { fid }); // 内容改动防抖回写云端（通用 '*'）
   return applySentState(code, clone(b));
 }
 
@@ -2019,14 +2024,13 @@ function addDialogue(code, fid, en, zh) {
   const b = loadMasterBoard();
   const f = findFragment(b, fid);
   if (!f) throw new Error('fragment not found');
+  const id = uid('d');
+  const e = String(en || '').trim();
+  const z = String(zh || '').trim();
   f.dialogues = f.dialogues || [];
-  f.dialogues.push({
-    id: uid('d'),
-    en: String(en || '').trim(),
-    zh: String(zh || '').trim(),
-    sent: false,
-  });
+  f.dialogues.push({ id, en: e, zh: z, sent: false });
   saveMasterBoard(b);
+  queueCloudOp('addDialogue', { fid, body: { id, en: e, zh: z } }); // 内容改动防抖回写云端（通用 '*'）
   return applySentState(code, clone(b));
 }
 
@@ -2037,6 +2041,7 @@ function updateDialogue(code, did, patch, fid) {
   if (typeof patch.en === 'string') hit.dialogue.en = patch.en;
   if (typeof patch.zh === 'string') hit.dialogue.zh = patch.zh;
   saveMasterBoard(b);
+  queueCloudOp('updateDialogue', { did, body: patch }); // 内容改动防抖回写云端（通用 '*'）
   return applySentState(code, clone(b));
 }
 
@@ -2046,6 +2051,7 @@ function deleteDialogue(code, did, fid) {
   const hit = findDialogue(b, did, fid);
   if (hit) hit.fragment.dialogues = hit.fragment.dialogues.filter((d) => d !== hit.dialogue);
   saveMasterBoard(b);
+  queueCloudOp('deleteDialogue', { did, fid }); // 内容改动防抖回写云端（通用 '*'）
   return applySentState(code, clone(b));
 }
 
@@ -2113,6 +2119,82 @@ async function syncAllProgressToCloud() {
   return { ok: true, pushed };
 }
 
+/* ---------------- 内容同步后台（防抖回写云端） ----------------
+ * 会员的「内容改动」（新增 / 改动 / 划掉话题碎片与对话）一律按通用一份存云端
+ * （customer_code = '*'，跨客户一致）。本地先落 _master.json，改动后防抖回写云端，
+ * 断网 / 未登录时只留本地（与进度同步同一套兜底思路）。 */
+let _contentQueue = [];
+let _contentFlushTimer = null;
+function queueCloudOp(type, payload) {
+  const c = cloudMod();
+  if (!c || !cloudReady()) return;   // 没登录就不排（离线本机先存）
+  _contentQueue.push({ type, payload });
+  scheduleContentFlush();
+}
+function scheduleContentFlush() {
+  if (_contentFlushTimer) return;
+  _contentFlushTimer = setTimeout(() => {
+    _contentFlushTimer = null;
+    flushContentQueue().catch(() => {});
+  }, 2000);
+}
+async function flushContentQueue() {
+  const c = cloudMod();
+  if (!c || !cloudReady()) { _contentQueue = []; return; }
+  const ops = _contentQueue; _contentQueue = [];
+  for (const op of ops) {
+    try {
+      if (op.type === 'addFragment') await c.addFragment('*', op.payload);
+      else if (op.type === 'updateFragment') await c.updateFragment('*', op.payload.fid, op.payload.body);
+      else if (op.type === 'deleteFragment') await c.deleteFragment('*', op.payload.fid);
+      else if (op.type === 'addDialogue') await c.addDialogue('*', op.payload.fid, op.payload.body);
+      else if (op.type === 'updateDialogue') await c.updateDialogue('*', op.payload.did, op.payload.body);
+      else if (op.type === 'deleteDialogue') await c.deleteDialogue('*', op.payload.did, op.payload.fid);
+    } catch (e) { /* 单条失败不影响其它 */ }
+  }
+}
+
+/** 登录 / 同步成功后：拉取会员通用内容（跨设备一致）并合并进本地 _master.json（本地优先、不覆盖未同步改动）。 */
+async function pullAndMergeMyBoard() {
+  const c = cloudMod();
+  if (!c || !cloudReady()) return { ok: false, reason: 'no-cloud' };
+  let cloudBoard;
+  try { cloudBoard = await c.pullMyBoard(); }
+  catch (e) { return { ok: false, reason: 'pull-fail', error: e.message }; }
+  if (!cloudBoard || !Array.isArray(cloudBoard.fragments)) return { ok: false, reason: 'empty' };
+  const local = loadMasterBoard();
+  const localById = new Map((local.fragments || []).map((f) => [f.id, f]));
+  for (const cf of cloudBoard.fragments) {
+    if (!cf || !cf.id) continue;
+    const lf = localById.get(cf.id);
+    if (!lf) {
+      const add = clone(cf);
+      add.dialogues = (cf.dialogues || []).map(clone);
+      (local.fragments = local.fragments || []).push(add);
+    } else {
+      const lDlgIds = new Set((lf.dialogues || []).map((d) => d.id));
+      for (const cd of (cf.dialogues || [])) {
+        if (cd && cd.id && !lDlgIds.has(cd.id)) (lf.dialogues = lf.dialogues || []).push(clone(cd));
+      }
+    }
+  }
+  normalizeBoard(local);
+  saveMasterBoard(local);
+  return { ok: true };
+}
+
+/** 订阅云端「登录 / 同步」事件，触发上面的合并（只在第一次调用时挂一次监听）。 */
+let _myBoardSynced = false;
+function enableMyBoardCloudSync() {
+  const c = cloudMod();
+  if (!c || _myBoardSynced) return;
+  c.onEvent((type) => {
+    if (type === 'login' || type === 'master') pullAndMergeMyBoard().catch(() => {});
+  });
+  _myBoardSynced = true;
+}
+enableMyBoardCloudSync();
+
 module.exports = {
   SEED_DAY1,
   // 同步（本地）
@@ -2133,4 +2215,6 @@ module.exports = {
   setSentAsync, setFragmentSentAllAsync,
   syncAllProgressToCloud,
   cloudReady,
+  // 会员通用内容同步（v2.7.1211）：防抖回写 + 登录/同步后拉取合并
+  pullAndMergeMyBoard, enableMyBoardCloudSync, queueCloudOp, flushContentQueue,
 };

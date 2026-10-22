@@ -487,6 +487,12 @@ async function getBoard(customerCode) {
   return j.board;
 }
 
+/** 取会员通用内容（跨客户一致，customer_code = '*'）—— 登录/同步成功后拉取并合并到本地 _master.json。 */
+async function pullMyBoard() {
+  const j = await request('GET', '/api/board/mine');
+  return j.board;
+}
+
 async function addFragment(customerCode, body) {
   return request('POST', `/api/board/${encodeURIComponent(customerCode)}/fragment`, body);
 }
@@ -615,7 +621,7 @@ module.exports = {
   boot, loadConfig, login, logout, heartbeat, startHeartbeat, stopHeartbeat,
   syncMaster, cachedMaster, localMasterInfo, masterPath, myCode, mergeUnique,
   readSyncPref, setAutoSync, cooldownLeft, manualSync, MANUAL_COOLDOWN_MS,
-  getBoard, addFragment, updateFragment, deleteFragment,
+  getBoard, pullMyBoard, addFragment, updateFragment, deleteFragment,
   addDialogue, updateDialogue, deleteDialogue, setSent, setFragmentSentAll,
   getReplies, addReplyScene, updateReplyScene, deleteReplyScene,
   addReplyText, updateReplyText, deleteReplyText,
