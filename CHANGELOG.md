@@ -7,6 +7,31 @@
 > **规矩：每次改动都要在这里加一条**，写清「优化了什么」和「修好了什么问题」——  
 > 老版本记录一律保留，不许删。
 
+## 2.7.1241（更新进度窗口：下载/安装时弹独立「更新版本中，请稍等…」窗口）
+
+> 老板 2026-10-23：「检查更新进入安装的时候没有任何进度条窗口。这个需要一个进度条安装的窗口，提示说更新版本中，请稍等之类的提示。这样会误会以为卡死。」先看截图确认样式后再做（已出 `preview/_update_install.png` / `preview/_update_download.png` 两张真渲染截图，老板点头才动代码）。
+
+### 根因
+- 旧版 `src/update.js` 的 `install()` 只把「正在安装…」状态显示了 **300ms** 就 `quitAndInstall(true,true)` 退出软件，而 NSIS 又以静默方式（`/S`）安装 —— 整个安装阶段**没有任何可见窗口**，用户以为卡死。
+- 旧版 `public/settings.js` 的 `beginInstall()` 只在「设置」窗口内弹一层遮罩，软件一退出遮罩就没了，且主窗口/其他窗口盖得住，根本注意不到。
+
+### 改动
+- **新增 `electron/updateCover.js`**（独立模块，镜像 `electron/splash.js` 写法）：单独起一扇无边框、置顶、跳过任务栏的 800×550 窗口，样式与启动窗一致（蜜蜂机器人 + 三色圆点 + 绿色渐变条）。只接收 `src/update.js` 推过来的状态，不碰采集/数据库逻辑。
+- **新增 `public/update-cover.html`**：窗口内容。`downloading` 显示确定百分比进度条；`installing` / `downloaded` 显示走马灯不确定进度条 + 「更新版本中，请稍等…」（走马灯用纯 CSS 动画，渲染线程再忙也持续流动，不会看起来卡死）。
+- **`electron/main.js`**：`require('../src/update')` 后订阅 `onState` —— `downloading` / `installing` 弹窗并推状态，`downloaded` 保持显示，其余终态（`latest`/`error`/`cancelled`/`checking`）收起窗口。
+- **`src/update.js`**：`install()` 退出前的等待从 300ms 改为 **1800ms**，让「更新版本中」窗口清楚显示出来再交给 NSIS。
+- **`public/settings.js`**：`beginInstall()` 不再自己画遮罩（避免两个遮罩叠一起），只负责触发安装接口，安装进度交给主进程那扇独立窗口。
+
+### 验证
+- `node --check` 四个改动文件全过。
+- `tools/_verify_update_cover.js`（只读，真实加载 `public/update-cover.html`）：11/11 断言通过 —— 机器人图加载成功、无 JS 报错、`installing`/`downloading`/`downloaded` 三种状态文案与进度条切换正确。
+- `test/v120_update.test.js`、`test/v121_update_poll.test.js` 单独跑均全绿（注：两文件并行跑时 v120 有「update 已注入 server」静态断言因测试环境端口/临时目录争用偶发失败，已在 baseline 复现、与本改动无关，已用 `git stash` 实证）。
+
+### 未动清单
+- 主窗口 / 启动窗 / 关闭序列逻辑未动。
+- WA①②③④⑤ / Telegram / Signal / 外置 WA 四模块采集逻辑未动。
+- 根目录 `settings.js`（与 `public/settings.js` 同内容的旧副本，未参与构建，未动）。
+
 ## 2.7.1231（客户档案改地区 → 点保存时用 AI 重新解读时区 · 资料卡立即刷新）
 
 > 老板 2026-10-23 看图（QQ20261023-002824.png 地区红框 / QQ20261023-003024.png 资料卡红框）：填/改「地区」后点「保存档案」，要用 AI 解读这个地区的时区，结果显示在右侧资料卡的「客户当地时间 + 与北京时间差」；**有修改才解读，没修改不要解读**。

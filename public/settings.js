@@ -1154,16 +1154,12 @@ function hideRestartModal() {
   if (modal) modal.classList.add('hidden');
 }
 
-/** 真正开始安装：弹窗关闭 → 全屏"正在安装"遮罩（带加载进度条）→ 调安装接口 → App 退出 → NSIS 装完自动重启 */
+/** 真正开始安装：调安装接口 → 主进程弹出独立的「更新版本中」窗口 → App 退出 → NSIS 装完自动重启。
+ *  🔴 2026-10-23：原「全屏遮罩」已移到主进程 electron/updateCover.js（独立置顶窗口，
+ *  样式与启动窗一致），这里只负责触发安装，不再自己画遮罩，避免两个遮罩叠在一起。 */
 function beginInstall() {
   const busy = softwareIsBusy();
   hideRestartModal();
-  const cover = $('up-install-cover');
-  if (cover) {
-    cover.classList.remove('hidden');
-    const bar = cover.querySelector('.up-cover-bar');
-    if (bar) bar.classList.add('indet'); // 走马灯不确定进度条（方案A）
-  }
   try {
     fetch('/api/update/install', {
       method: 'POST',
@@ -1173,21 +1169,18 @@ function beginInstall() {
       .then((x) => x.json())
       .then((r) => {
         if (r && r.auto) {
-          // 后端 300ms 后 quitAndInstall；遮罩保持显示直到进程退出，NSIS 接管并显示真实进度，装完自动重启
+          // 后端先弹「更新版本中」窗口，约 1.8s 后 quitAndInstall，NSIS 接管，装完自动重启
           upSetState(r.reason || '正在安装…');
         } else {
-          // 被后端拒绝（如采集保护）或出错：收起遮罩、提示原因
-          if (cover) cover.classList.add('hidden');
+          // 被后端拒绝（如采集保护）或出错：提示原因
           upSetState((r && (r.reason || r.error)) || '没有安装', 'error');
           loadUpdateStatus();
         }
       })
       .catch((e) => {
-        if (cover) cover.classList.add('hidden');
         upSetState('安装失败：' + e.message, 'error');
       });
   } catch (e) {
-    if (cover) cover.classList.add('hidden');
     upSetState('安装失败：' + e.message, 'error');
   }
 }

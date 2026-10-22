@@ -39,6 +39,23 @@ bootLog.step('原生模块 sharp 加载完成');
 const ai = require('../src/ai');
 bootLog.step('AI 模块加载完成');
 
+// 🔴 v2.7.1241：更新进度窗 —— 下载/安装时弹独立窗口，避免「卡死」错觉
+const UpdateCover = require('./updateCover');
+const updaterMod = require('../src/update');
+updaterMod.onState((s) => {
+  if (!s || !s.state) return;
+  if (s.state === 'downloading' || s.state === 'installing') {
+    UpdateCover.show(s);
+  } else if (s.state === 'downloaded') {
+    // 下载完成：若窗口已在（下载阶段弹出的），保持显示；否则也弹出来过渡到安装
+    if (UpdateCover.isVisible()) UpdateCover.push(s);
+    else UpdateCover.show(s);
+  } else {
+    // latest / error / cancelled / checking → 收起窗口
+    UpdateCover.hide();
+  }
+});
+
 // 兜底：某些环境（如无法初始化 GUI 子系统的沙箱）下 Electron 内置模块未注册，
 // require('electron') 会退化为 npm 包路径字符串，此时 app 为 undefined。优雅退出并提示。
 if (typeof app === 'undefined') {

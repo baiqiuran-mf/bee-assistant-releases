@@ -400,13 +400,16 @@ async function install(o = {}) {
   try {
     recordVersion(o.db, { version: target, result: 'ok', fromVersion: cur, note: d.reason });
     bus.emit('state', { state: 'installing', version: target, text: '正在安装…' });
-    // 注意：这一步会立刻杀进程，后面的代码不会执行。
+    // 注意：这一步会杀进程，后面的代码不会执行。
     // 🔴 2026-10-19 改造：isSilent=true → NSIS 以 /S 静默装到上次记录的默认位置，
     //    不弹安装向导、不要求账号密码（更新安装跟初次装软件不一样）；
     //    装完 autoRunAppAfterInstall 自动重新打开。数据全在 D 盘，登录态保留 → 免登录回主页面。
+    // 🔴 2026-10-23 修：原先只等 300ms 就退出，主进程那扇「更新版本中」窗口根本来不及显示，
+    //    用户直接看到软件消失、NSIS 静默安装全程无窗口 → 以为卡死。改成 ~1.8s，
+    //    让窗口把「更新版本中，请稍等…」清楚显示出来再交给 NSIS。
     setTimeout(() => {
       try { au.quitAndInstall(true, true); } catch (e) { /* 正在退出就无所谓 */ }
-    }, 300);
+    }, 1800);
     return { auto: true, reason: d.reason, version: target };
   } catch (e) {
     recordVersion(o.db, { version: target, result: 'fail', fromVersion: cur, note: e.message });
