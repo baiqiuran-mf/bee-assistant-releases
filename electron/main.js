@@ -34,6 +34,14 @@ bootLog.step('进程启动', 'pid=' + process.pid + '，参数=' + JSON.stringif
 // 在终端明说日志落在哪：万一别的电脑闪退，让对方把这个文件发回来就能一眼定位
 if (bootLog.logPath()) console.log('[启动日志] ' + bootLog.logPath());
 
+// 🔴 2026-10-23 修：更新安装空挡收尾。
+// 上次安装时主进程退出前会起一个独立 HTA 助手窗（见 src/update.js），并写一个 sentinel 文件；
+// 新版本启动到这里就删掉 sentinel → HTA 检测到后自动关闭，避免安装完还留着「正在安装」窗。
+try {
+  const _lp = path.join(os.tmpdir(), 'wa-assistant-install.lock');
+  if (fs.existsSync(_lp)) fs.unlinkSync(_lp);
+} catch (_) {}
+
 const sharp = require('sharp');
 bootLog.step('原生模块 sharp 加载完成');
 const ai = require('../src/ai');

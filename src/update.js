@@ -24,6 +24,8 @@
 
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
+const { spawn } = require('child_process');
 const { EventEmitter } = require('events');
 
 const pkg = require('../package.json');
@@ -400,6 +402,11 @@ async function install(o = {}) {
   try {
     recordVersion(o.db, { version: target, result: 'ok', fromVersion: cur, note: d.reason });
     bus.emit('state', { state: 'installing', version: target, text: '正在安装…' });
+    // 🔴 2026-10-23 修（空挡）：主进程的「更新版本中」覆盖窗会在下面 quitAndInstall 杀进程时
+    //    跟着死，而 NSIS 以 /S 全静默、不弹任何窗口 → 中间一段桌面无窗口（会员以为卡死）。
+    //    所以在杀主进程【前】先起一扇**脱离主进程**的 HTA 助手窗（mshta.exe，detached），
+    //    它独立存活、持续显示「正在安装更新，请稍候…」，直到新版本启动删掉 sentinel 文件才自动关闭。
+    try { launchInstallOverlay(); } catch (_) { /* 助手窗起不来也不影响更新本身 */ }
     // 注意：这一步会杀进程，后面的代码不会执行。
     // 🔴 2026-10-19 改造：isSilent=true → NSIS 以 /S 静默装到上次记录的默认位置，
     //    不弹安装向导、不要求账号密码（更新安装跟初次装软件不一样）；
@@ -415,6 +422,76 @@ async function install(o = {}) {
     recordVersion(o.db, { version: target, result: 'fail', fromVersion: cur, note: e.message });
     return { auto: false, reason: '安装失败：' + e.message, version: target };
   }
+}
+
+/**
+ * 🔴 2026-10-23 修：更新安装空挡
+ *
+ * 旧的「更新版本中」覆盖窗（electron/updateCover.js）是主进程的子窗口，quitAndInstall
+ * 杀主进程时它跟着死；而 NSIS 以 /S 全静默安装、不弹任何窗口 → 中间一段桌面无窗口，
+ * 会员以为卡死。这里在主进程退出【前】起一扇**脱离主进程**的 HTA 覆盖窗（mshta.exe），
+ * 它独立存活、持续显示「正在安装更新，请稍候…」，直到新版本启动删掉 sentinel 文件才自动关闭。
+ *
+ * 视觉与 public/update-cover.html 一致（蜜蜂机器人 + 三色圆点 + 走马灯）。
+ * 蜜蜂机器人图从 asar 内读出转 base64 内嵌，HTA 不再需要访问 asar。
+ *
+ * 仅主进程调用；renderer 里调用直接返回。
+ */
+function launchInstallOverlay() {
+  if (process.type === 'renderer') return;
+  const lockPath = path.join(os.tmpdir(), 'wa-assistant-install.lock');
+
+  // 蜜蜂机器人图（asar 内也能读），转 base64 内嵌，避免 HTA 再读 asar
+  let imgData = '';
+  try {
+    const png = path.join(__dirname, '..', 'public', 'img', 'bee-robot.png');
+    const buf = fs.readFileSync(png);
+    imgData = 'data:image/png;base64,' + buf.toString('base64');
+  } catch (_) { imgData = ''; }
+
+  // JS 字符串里反斜杠是转义符，转成正斜杠给 FileSystemObject 用
+  const lockForJs = lockPath.replace(/\\/g, '/');
+
+  const hta = '<!doctype html><html><head><meta charset="utf-8">'
+    + '<HTA:APPLICATION APPLICATIONNAME="WAInstallOverlay" BORDER="none" CAPTION="no" CONTEXTMENU="no" SCROLL="no" SINGLEINSTANCE="yes" SELECTION="no" SHOWINTASKBAR="no" WINDOWSTATE="normal" />'
+    + '<title>蜜蜂信息采集 · 安装中</title><style>'
+    + '*{box-sizing:border-box;margin:0;padding:0;}'
+    + 'html,body{height:100%;font-family:"Segoe UI","Microsoft YaHei",sans-serif;background:#fff;color:#1f2329;overflow:hidden;user-select:none;}'
+    + '#app{height:100%;display:flex;}'
+    + '.art{flex:0 0 244px;position:relative;display:flex;align-items:center;justify-content:center;}'
+    + '.halo{position:absolute;left:50%;top:50%;width:340px;height:340px;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,rgba(99,189,147,.17) 0%,rgba(167,149,222,.11) 46%,rgba(255,255,255,0) 68%);}'
+    + '.art img{position:relative;z-index:1;width:196px;height:auto;filter:drop-shadow(0 16px 22px rgba(198,74,64,.18));}'
+    + '.pane{flex:1 1 auto;min-width:0;padding:44px 44px 32px 10px;display:flex;flex-direction:column;}'
+    + '.dots{display:flex;gap:7px;}.dots i{width:9px;height:9px;border-radius:50%;display:block;}'
+    + '.dots .g{background:#63bd93;}.dots .p{background:#a795de;}.dots .o{background:#ecb27c;}'
+    + 'h1{font-size:25px;font-weight:600;letter-spacing:.6px;margin-top:14px;}'
+    + '.sub{font-size:13.5px;color:#8a8f99;margin-top:7px;}'
+    + '.bar-wrap{margin-top:26px;height:10px;border-radius:5px;background:#eef0f3;overflow:hidden;position:relative;}'
+    + '#bar{position:absolute;top:0;left:-42%;width:42%;height:100%;border-radius:5px;background:linear-gradient(90deg,rgba(99,189,147,.35) 0%,#63bd93 100%);}'
+    + '.bar-row{display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;color:#8a8f99;margin-top:9px;}'
+    + '#pct{font-size:20px;font-weight:600;color:#2f3a44;}'
+    + '#note{margin-top:auto;padding-top:12px;flex:0 0 auto;font-size:12.5px;color:#8a8f99;line-height:1.6;}'
+    + '#note b{color:#63bd93;font-weight:600;}</style></head><body>'
+    + '<div id="app"><aside class="art"><div class="halo"></div><img src="' + imgData + '" alt="" /></aside>'
+    + '<main class="pane"><div class="dots"><i class="g"></i><i class="p"></i><i class="o"></i></div>'
+    + '<h1>正在安装更新</h1><div class="sub">更新版本中，请稍等…</div>'
+    + '<div class="bar-wrap"><div id="bar"></div></div>'
+    + '<div class="bar-row"><span>正在安装新版本到默认位置</span><span id="pct">请勿关闭软件</span></div>'
+    + '<div id="note">完成后软件会<b>自动重新打开</b>，数据都在 D 盘、登录态保留，<b>无需重新登录</b>。</div></main></div>'
+    + '<script language="JavaScript">var LOCK="' + lockForJs + '";var bar=document.getElementById("bar");var pos=-42,dir=1;'
+    + 'setInterval(function(){pos+=dir*6;if(pos>=100){pos=100;dir=-1;}if(pos<=-42){pos=-42;dir=1;}bar.style.left=pos+"%";},30);'
+    + 'function init(){try{window.resizeTo(800,550);window.moveTo((screen.width-800)/2,(screen.height-550)/2);}catch(e){}try{window.focus();}catch(e){}setTimeout(watch,600);setTimeout(function(){try{window.close();}catch(e){}},180000);}'
+    + 'function watch(){try{var fso=new ActiveXObject("Scripting.FileSystemObject");if(!fso.FileExists(LOCK)){try{window.close();}catch(e){}return;}}catch(e){}setTimeout(watch,600);}'
+    + 'window.onload=init;</script></body></html>';
+
+  const htaPath = path.join(os.tmpdir(), 'wa-assistant-install-overlay.hta');
+  fs.writeFileSync(htaPath, hta, 'utf8');
+  try { fs.writeFileSync(lockPath, String(Date.now())); } catch (_) {}
+
+  try {
+    const child = spawn('mshta.exe', [htaPath], { detached: true, stdio: 'ignore', windowsHide: true });
+    if (child && typeof child.unref === 'function') child.unref();
+  } catch (_) { /* 助手窗起不来也不影响更新本身 */ }
 }
 
 /** 设置窗口页签要显示的信息 */

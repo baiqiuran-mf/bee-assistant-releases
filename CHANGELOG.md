@@ -7,6 +7,23 @@
 > **规矩：每次改动都要在这里加一条**，写清「优化了什么」和「修好了什么问题」——  
 > 老版本记录一律保留，不许删。
 
+## 2.7.1281（修复更新安装空挡：独立 HTA 助手窗填补静默安装期）
+
+> 老板 2026-10-23 报：软件下载完进入安装界面出现「空挡」——主进程被 `quitAndInstall` 杀掉后，原来的「更新版本中」覆盖窗跟着死，而 NSIS 以 `/S` 全静默安装不弹任何窗口，中间一段桌面无窗口，会员以为卡死。修法：主进程退出【前】起一扇**脱离主进程**的 HTA 助手窗（mshta.exe, detached），视觉与 `public/update-cover.html` 一致（蜜蜂机器人+三色圆点+走马灯），持续显示「正在安装更新，请稍候…」，直到新版本启动删掉 sentinel 文件才自动关闭。先看修法图（当前时间线 vs 修法时间线）确认后动工。
+
+### 改动（严格限定文件）
+- **`src/update.js`**：
+  - 新增依赖 `os` / `child_process`（spawn）。
+  - 新增 `launchInstallOverlay()`：把蜜蜂机器人图从 asar 读出转 base64 内嵌，生成 800×550 无边框 HTA 覆盖窗写入 `%TEMP%/wa-assistant-install-overlay.hta`，并写 sentinel 文件 `%TEMP%/wa-assistant-install.lock`，再用 `spawn('mshta.exe', [...], { detached:true, stdio:'ignore', windowsHide:true })` 起独立进程（`child.unref()` 使其不随主进程死）；HTA 自身循环检测 sentinel 消失即关闭，并有 180s 安全超时。
+  - `install()` 在 emit `installing` 后调用 `launchInstallOverlay()`（包 try/catch，起不来也不影响更新）。
+- **`electron/main.js`**：
+  - 启动早期删掉 `%TEMP%/wa-assistant-install.lock` → 上一次安装留下的 HTA 助手窗检测到 sentinel 消失自动关闭，避免装完还留着「正在安装」窗。
+- **`package.json`**：版本 2.7.1271 → 2.7.1281。
+
+### 未动
+- `electron/updateCover.js`（主进程内覆盖窗，下载/安装前段照常显示）、`public/update-cover.html`、`src/waChain.js`、采集/翻译/档案各模块均未触碰。
+- NSIS 仍走 `/S` 全静默（不弹向导、不要求账密），本次只补「静默期间有窗」这一环。
+
 ## 2.7.1271（GPT 三个独立标签 + 新消息框右键设色边框）
 
 > 老板 2026-10-23 拍板：① GPT对话拆成 GPT①/②/③ 三个独立标签（第5模块内，各自独立分区）；② 左栏「新消息提醒」客户框支持右键设彩色边框，颜色存本地。先看真渲染预览（`preview/_gpt3_colors_proposal.png` 等三张）确认后动工。
