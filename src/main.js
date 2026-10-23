@@ -1923,7 +1923,11 @@ async function handleMessage(account, msg, opts = {}) {
  * @returns {Promise<{path:string,src:string,mimetype:string,kind:string}|null>}
  */
 async function refetchMedia(row) {
-  const rec = recallMsg(row.account_id, row.wa_msg_id);
+  // 🔴 2026-10-24 修复：wa_msg_id 入库时带 `waN:` 分区前缀（main.js:2798），
+  //    但 recallMsg 用真实 _serialized（无前缀）注册、WWA.Msg.get 也只认真实 id，
+  //    带前缀去查永远 miss → 语音/图片二次补抓 7 次全败。这里先把前缀剥掉再查。
+  const cleanId = String(row.wa_msg_id || '').replace(/^wa\d+:/i, '');
+  const rec = recallMsg(row.account_id, cleanId);
 
   // ---- ① 路B+C：回页面取完整对象 → 强制解密 → 压缩落盘 ----
   // 🔴 即使 msgRegistry 里没有登记也要试：路B 靠的是 msgId 回页面捞，
@@ -1932,7 +1936,7 @@ async function refetchMedia(row) {
   try {
     const raw = await mediaRaw.fetchRawImage(
       rec && rec.client ? rec.client : clientOf(row.account_id),
-      row.wa_msg_id,
+      cleanId,
       row.customer_code,
       MEDIA_DIR,
       kindOfRow,

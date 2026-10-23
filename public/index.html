@@ -52,6 +52,7 @@
         <!-- 「⚙ 设置」图标按钮：点开一扇独立窗口「全局设置」，
              里面装着 AI 设置 / AI 提示词 / 模拟新消息 三块。 -->
         <button id="btn-settings" class="ghost" title="全局设置：AI 设置 · AI 提示词 · 云端 · 模拟新消息 · 软件更新 · 代理（打开一扇独立窗口）">⚙ 设置</button>
+        <button id="btn-voicetext" class="ghost" title="扫描下载目录里的 WA 录音，语音转文字 + AI 翻译">🎤 语音文字</button>
       </span>
     </div>
     <!-- 第二行：左边五个账号（点账号名 = 开它的浏览器）。
@@ -1166,5 +1167,28 @@ I live on a farm, I also have peaches, plums and pears
   <!-- 🔴 v2.6.1106 界面权限：放在 app.js **之后**，等首页初始化跑完再收权限，
        这样「把人从受限页签挪走」这一步才压得住。规则全在 perm.js 里，这里只负责引入。 -->
   <script src="/perm.js?v=__BUILD__"></script>
+  <!-- 🔴 v2.7.1321 语音文字：扫描下载目录的 WA 录音 → 转写 + AI 翻译 -->
+  <div id="voicetext-modal" class="modal hidden">
+    <div class="modal-mask" id="voicetext-mask"></div>
+    <div class="modal-box vt-box">
+      <div class="modal-head">
+        <span>🎤 语音文字</span>
+        <button id="vt-close" class="x" title="关闭">×</button>
+      </div>
+      <div class="vt-pathbar">
+        <label>扫描目录</label>
+        <input id="vt-dir" type="text" spellcheck="false" autocomplete="off">
+        <button id="vt-browse" class="ghost">浏览…</button>
+        <button id="vt-rescan" class="ghost">重新扫描</button>
+      </div>
+      <div class="vt-toolbar">
+        <label class="chk"><input type="checkbox" id="vt-selall"> 全选</label>
+        <span class="vt-count" id="vt-count"></span>
+      </div>
+      <div class="vt-body" id="vt-body"></div>
+      <div class="vt-foot">默认扫描目录 = D:\Backup\Downloads。新转写的置顶；已转写的读本机记录、不重复转。删除 = 删文件 + 删记录；没删的永久保留。</div>
+    </div>
+  </div>
+
 </body>
 </html>

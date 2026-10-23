@@ -1706,6 +1706,34 @@ button:disabled { opacity: .55; cursor: not-allowed; }
 .modal-head .x:hover { background: #f1f2f4; border-color: var(--line); }
 .modal-body { padding: 14px 16px; }
 
+/* 🔴 v2.7.1321 语音文字弹窗（固定 800×800，列表区右侧滚动） */
+.vt-box { width: 800px; height: 800px; max-width: 96vw; max-height: 96vh; display: flex; flex-direction: column; }
+.vt-pathbar { display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-bottom: 1px solid #f0f3f7; background: #fafcff; flex: 0 0 auto; }
+.vt-pathbar label { font-size: 13px; color: #45596b; white-space: nowrap; }
+.vt-pathbar input { flex: 1; min-width: 0; padding: 6px 10px; border: 1px solid #cdd9e6; border-radius: 6px; font-size: 13px; color: #2f4a63; }
+.vt-toolbar { display: flex; align-items: center; gap: 10px; padding: 9px 16px; border-bottom: 1px solid #f0f3f7; font-size: 13px; flex: 0 0 auto; }
+.vt-toolbar .chk { display: flex; align-items: center; gap: 5px; }
+.vt-count { margin-left: auto; color: #9fb0c0; }
+.vt-body { padding: 12px 16px; overflow-y: auto; flex: 1 1 auto; }
+.vt-body::-webkit-scrollbar { width: 10px; }
+.vt-body::-webkit-scrollbar-thumb { background: #c3d0de; border-radius: 6px; }
+.vt-hint { font-size: 12px; color: #c47a18; padding: 2px 0 8px; }
+.vt-item { border: 1px solid #e6edf4; border-radius: 10px; padding: 12px; margin-bottom: 12px; }
+.vt-item.newitem { border-color: #f0c98a; background: #fffdf6; }
+.vt-item.missitem { border-color: #e6d6d6; background: #fdf6f6; }
+.vt-row1 { display: flex; align-items: center; gap: 8px; }
+.vt-fname { font-size: 13px; font-weight: 600; color: #2f4a63; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vt-badge { font-size: 11px; padding: 1px 8px; border-radius: 10px; flex: 0 0 auto; }
+.vt-badge.done { background: #eef4fa; color: #5a7a99; border: 1px solid #d8e6f3; }
+.vt-badge.new { background: #fff3e6; color: #c47a18; border: 1px solid #f0dcb8; }
+.vt-badge.missing { background: #fdecec; color: #c0392b; border: 1px solid #f3c4c4; }
+.vt-del { background: #fdecec; border: 1px solid #f3c4c4; color: #c0392b; border-radius: 6px; padding: 3px 9px; font-size: 12px; cursor: pointer; flex: 0 0 auto; }
+.vt-label { font-size: 11px; color: #8a99a8; margin: 8px 0 3px; }
+.vt-orig { background: #f7fafc; border: 1px solid #eef2f7; border-radius: 6px; padding: 8px 10px; font-size: 13px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
+.vt-trans { background: #fff7ec; border: 1px solid #f3e3c8; border-radius: 6px; padding: 8px 10px; font-size: 13px; line-height: 1.5; color: #6a4f23; white-space: pre-wrap; word-break: break-word; }
+.vt-empty { color: #9fb0c0; font-size: 13px; padding: 20px 0; text-align: center; }
+.vt-foot { padding: 9px 16px; border-top: 1px solid #eef2f7; font-size: 12px; color: #9fb0c0; line-height: 1.6; flex: 0 0 auto; }
+
 /* Telegram 登录弹窗（v2.5.1054） */
 .tg-login-btn {
   margin-left: 8px; padding: 2px 10px; font-size: 12px; line-height: 1.6;

@@ -6410,3 +6410,107 @@ setInterval(refreshState, 15000);
   btnCancel.addEventListener('click', () => { hide(); if (api.cancel) api.cancel(); });
   btnOk.addEventListener('click', () => { hide(); if (api.confirm) api.confirm(); });
 })();
+
+/* 🔴 v2.7.1321 语音文字：扫描下载目录 WA 录音 → 转写 + AI 翻译 */
+(function () {
+  const DEFAULT_DIR = 'D:\\Backup\\Downloads';
+  const vtModal = document.getElementById('voicetext-modal');
+  const vtDir = document.getElementById('vt-dir');
+  const vtBody = document.getElementById('vt-body');
+  const vtCount = document.getElementById('vt-count');
+  let vtBusy = false;
+
+  function vtEsc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+  function vtEscAttr(s) { return vtEsc(s).replace(/"/g, '&quot;'); }
+  function vtCssEsc(s) { return String(s).replace(/["\\]/g, '\\$&'); }
+
+  function vtOpen() {
+    if (!vtDir.value) vtDir.value = DEFAULT_DIR;
+    vtModal.classList.remove('hidden');
+    vtScan();
+  }
+  function vtClose() { vtModal.classList.add('hidden'); }
+
+  async function vtScan() {
+    if (vtBusy) return;
+    vtBusy = true;
+    vtBody.innerHTML = '<div class="vt-empty">扫描中…</div>';
+    try {
+      const data = await api('/api/voicetext/scan', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dir: vtDir.value }),
+      });
+      if (!data || !data.ok) throw new Error((data && data.error) || '扫描失败');
+      vtRender(data.items || []);
+      for (const it of (data.items || []).filter(i => i.status === 'new')) {
+        await vtTranscribe(it.path);
+      }
+    } catch (e) {
+      vtBody.innerHTML = '<div class="vt-empty">出错了：' + vtEsc(e.message) + '</div>';
+    } finally { vtBusy = false; }
+  }
+
+  function vtRender(items) {
+    if (!items.length) { vtBody.innerHTML = '<div class="vt-empty">该目录没有找到 WA 录音文件</div>'; vtCount.textContent = ''; return; }
+    const nNew = items.filter(i => i.status === 'new').length;
+    const nDone = items.filter(i => i.status === 'done').length;
+    vtCount.textContent = '共 ' + items.length + ' 个（新 ' + nNew + ' · 已转写 ' + nDone + '）';
+    const hasNew = nNew > 0;
+    vtBody.innerHTML = (hasNew ? '<div class="vt-hint">↓ 以下为本次新转写的录音（置顶）</div>' : '') + items.map(vtItemHtml).join('');
+    vtBody.querySelectorAll('.vt-del').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const fp = btn.getAttribute('data-path');
+        if (!confirm('删除这条录音及其转写记录？文件将从磁盘移除。')) return;
+        try {
+          await api('/api/voicetext/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filePath: fp }) });
+          vtScan();
+        } catch (e) { alert('删除失败：' + e.message); }
+      });
+    });
+  }
+
+  function vtItemHtml(it) {
+    const cls = it.status === 'new' ? 'vt-item newitem' : (it.status === 'missing' ? 'vt-item missitem' : 'vt-item');
+    const badge = it.status === 'new' ? '<span class="vt-badge new">新</span>'
+      : it.status === 'missing' ? '<span class="vt-badge missing">文件已不在</span>'
+      : '<span class="vt-badge done">已转写</span>';
+    const orig = it.text ? vtEsc(it.text) : (it.status === 'new' ? '<span style="color:#9fb0c0">转写中…</span>' : '');
+    const tr = it.zh ? vtEsc(it.zh) : (it.status === 'new' ? '<span style="color:#9fb0c0">翻译中…</span>' : '');
+    return '<div class="' + cls + '" data-path="' + vtEscAttr(it.path) + '">'
+      + '<div class="vt-row1"><span class="vt-fname" title="' + vtEscAttr(it.path) + '">📄 ' + vtEsc(it.name) + '</span>'
+      + badge + '<button class="vt-del" data-path="' + vtEscAttr(it.path) + '">🗑 删除</button></div>'
+      + '<div class="vt-label">原文（语音转文字）</div>'
+      + '<div class="vt-orig">' + orig + '</div>'
+      + '<div class="vt-label">AI 译文</div>'
+      + '<div class="vt-trans">' + tr + '</div>'
+      + '</div>';
+  }
+
+  async function vtTranscribe(fp) {
+    const el = vtBody.querySelector('.vt-item[data-path="' + vtCssEsc(fp) + '"]');
+    try {
+      const r = await api('/api/voicetext/transcribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filePath: fp }) });
+      if (r && r.ok && el) {
+        el.classList.remove('newitem');
+        const badge = el.querySelector('.vt-badge'); if (badge) { badge.className = 'vt-badge done'; badge.textContent = '已转写'; }
+        const o = el.querySelector('.vt-orig'); if (o) o.textContent = r.text || '';
+        const t = el.querySelector('.vt-trans'); if (t) t.textContent = r.zh || '';
+      }
+    } catch (e) {
+      if (el) { const o = el.querySelector('.vt-orig'); if (o) o.innerHTML = '<span style="color:#c0392b">转写失败：' + vtEsc(e.message) + '</span>'; }
+    }
+  }
+
+  document.getElementById('btn-voicetext').addEventListener('click', vtOpen);
+  document.getElementById('vt-close').addEventListener('click', vtClose);
+  document.getElementById('voicetext-mask').addEventListener('click', vtClose);
+  document.getElementById('vt-rescan').addEventListener('click', vtScan);
+  document.getElementById('vt-browse').addEventListener('click', async () => {
+    try {
+      const r = await api('/api/voicetext/pickdir', { method: 'POST' });
+      if (r && r.dir) { vtDir.value = r.dir; vtScan(); }
+    } catch (e) {}
+  });
+})();

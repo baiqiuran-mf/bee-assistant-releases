@@ -54,6 +54,7 @@ const aiVault = require('./aiVault');        // v2.6.115x：集中托管 API key
 const regions = require('./regions');        // 回落用静态时区表
 const telegramMtproto = require('./telegramMtproto'); // v2.5.1087：Tele① 回复框真发送（sendToPeer）
 const telegramMerge = require('./telegramMerge');   // v2.6.1194：Telegram 专属判定（乱码标记；绝不供 WA/Signal 复用）
+const voiceText = require('./voiceText');     // v2.7.1321：语音文字（扫描下载目录 WA 录音 → 转写 + AI 翻译）
 /* 🔴 安全 require（保留，理由变了）
  * 起因：A/B 双版物理隔离期间，另一版专属模块不在安装包内，直接 require 会
  * 抛 Cannot find module 整个软件起不来。双版本已取消、两个模块都会打进包，
@@ -3212,6 +3213,29 @@ function createServer(deps, port = 8787) {
         const bodyIn = await readJsonBody(req);
         const result = await handleFreeTranslate(bodyIn);
         return json(res, result.error ? 503 : 200, result);
+      }
+
+      // ---- 语音文字（v2.7.1321）：扫描下载目录 WA 录音 → 转写 + AI 翻译 ----
+      if (p === '/api/voicetext/scan' && req.method === 'POST') {
+        const b = await readJsonBody(req);
+        const r = voiceText.scan(b && b.dir ? b.dir : '');
+        return json(res, 200, Object.assign({ ok: true }, r));
+      }
+      if (p === '/api/voicetext/transcribe' && req.method === 'POST') {
+        const b = await readJsonBody(req);
+        try {
+          const r = await voiceText.transcribe(b && b.filePath);
+          return json(res, 200, Object.assign({ ok: true }, r));
+        } catch (e) { return json(res, 500, { ok: false, error: e.message }); }
+      }
+      if (p === '/api/voicetext/delete' && req.method === 'POST') {
+        const b = await readJsonBody(req);
+        voiceText.remove(b && b.filePath);
+        return json(res, 200, { ok: true });
+      }
+      if (p === '/api/voicetext/pickdir' && req.method === 'POST') {
+        const dir = voiceText.pickDir();
+        return json(res, 200, { ok: true, dir: dir || '' });
       }
 
       // ---- 截图设置：读 app.screenshot.*（默认合并，保证界面永远拿得到值）----
