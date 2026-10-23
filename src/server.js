@@ -713,7 +713,10 @@ function createServer(deps, port = 8787) {
       attempt,
       groups: groupsIn, // 需求②：逐条给建议
     });
-    if (!result) return { error: 'AI 调用失败，详见终端日志' };
+    if (!result) {
+      const detail = (typeof ai.lastError === 'function' && ai.lastError('suggest')) || '';
+      return { error: 'AI 调用失败' + (detail ? ('：' + detail) : '，详见终端日志') };
+    }
 
     const task = cfg?.ai?.tasks?.suggest;
     const modelName = task ? `${task.provider}:${task.model}` : '';
@@ -1660,7 +1663,10 @@ function createServer(deps, port = 8787) {
             maxTokens: 1200,
             timeout: 60000,
           });
-          if (!reply) return json(res, 502, { error: 'AI 没有返回正文' });
+          if (!reply) {
+            const detail = (typeof ai.lastError === 'function' && ai.lastError(provider)) || '';
+            return json(res, 502, { error: 'AI 没有返回正文' + (detail ? ('：' + detail) : '') });
+          }
           return json(res, 200, { reply: String(reply) });
         } catch (e) {
           return json(res, 502, { error: 'AI 调用失败：' + ((e && e.message) || e) });

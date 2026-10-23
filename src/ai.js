@@ -667,6 +667,22 @@ function extractAstrBotText(data) {
   return typeof t === 'string' ? t : (t ? String(t) : '');
 }
 
+/** 剥掉 AstrBot 返回里夹带的「思考过程」与元信息，只留真正回复。
+ *  AstrBot 会用单独的 type:plain 事件回一段「🤔 思考: ...」，
+ *  偶尔还会在正文里塞 <thought>…</thought> / [Profile:…]，都要去掉。 */
+function cleanAstrBotText(s) {
+  if (typeof s !== 'string') return '';
+  let t = s;
+  t = t.replace(/<thought\b[^>]*>[\s\S]*?<\/thought>/gi, '');
+  t = t.replace(/<\/?thought>/gi, '');
+  t = t.replace(/\[Profile:[^\]]*\]/gi, '');
+  // 整段都是思考（以 🤔 思考: / 🤔thinking: 开头）→ 整段丢弃
+  if (/^🤔\s*(思考|thinking)\s*[:：]/i.test(t.trim())) return '';
+  // 行内残留的「🤔 思考:」前缀也去掉
+  t = t.replace(/🤔\s*(思考|thinking)\s*[:：]\s*/gi, '');
+  return t.trim();
+}
+
 /**
  * 解析 AstrBot 的返回：可能是普通 JSON，也可能是 SSE 流。
  * SSE 实测长这样（enable_streaming:false 也照样流）：
@@ -708,9 +724,16 @@ function parseAstrBotResponse(raw, contentType) {
         : String(obj.data?.message || obj.message || '未知错误');
       continue;
     }
-    if (t === 'plain' && typeof obj.data === 'string') { parts.push(obj.data); continue; }
+    if (t === 'plain' && typeof obj.data === 'string') {
+      const c = cleanAstrBotText(obj.data);
+      if (c) parts.push(c);
+      continue;
+    }
     if (t === 'message' || t === 'content' || t === 'complete') {
-      const v = extractAstrBotText({ message: obj.data });
+      const raw = typeof obj.data === 'string'
+        ? obj.data
+        : (obj.data && (obj.data.message ?? obj.data.content ?? obj.data.text));
+      const v = cleanAstrBotText(typeof raw === 'string' ? raw : '');
       if (v) parts.push(v);
     }
   }

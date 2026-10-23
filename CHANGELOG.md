@@ -7,6 +7,24 @@
 > **规矩：每次改动都要在这里加一条**，写清「优化了什么」和「修好了什么问题」——  
 > 老版本记录一律保留，不许删。
 
+## 2.7.1291（AstrBot 两接入点报错根因：透传真实错误 + 剥思考泄漏）
+
+> 老板 2026-10-23 报：① 回复建议窗「AI 调用失败」；② 人设对话（AstrBot 开关开）「AI 没有返回正文」。
+> 排查结论：当前源码 + 真实 config 两接口都通（deepseek HTTP200 / astrbot SSE 有正文），报错多为旧版包或 astrbot 偶发抽风。但确有两个真 bug 修复。先看诊断图确认后动工。
+
+### 改动（严格限定文件）
+- **`src/ai.js`**：
+  - 新增 `cleanAstrBotText()`：剥掉 AstrBot 返回里夹带的「思考过程」与元信息——单独的 `type:plain` 思考段（`🤔 思考: …`）、行内 `<thought>…</thought>`、`[Profile:…]` 全部清掉，只留真回复。
+  - `parseAstrBotResponse()` 拼接 `plain` 段前先走 `cleanAstrBotText`，回复不再以「🤔 思考:」开头。
+  - 复用既有 `recordError` / `lastError(taskName)` 机制（`complete()` 按任务名、`callProviderByName()` 按 provider 名记录），异常不再只闷头返回 null。
+- **`src/server.js`**：
+  - 回复建议 `handleSuggest`：拿不到结果时改用 `ai.lastError('suggest')` 透传真实原因（仍无细节才回「详见终端日志」）。
+  - 人设对话 `/api/persona/chat`：拿不到回复时改用 `ai.lastError(provider)` 透传真实原因，不再只显示「AI 没有返回正文」。
+
+### 未动（铁律）
+- 不改 `tasks.suggest` 配置（注释写 AStrBot 但值仍是 deepseek，老板未拍板，保持原样）。
+- 四模块红线、WA/Telegram/Signal 其他逻辑、界面三色、打包流程均未碰。
+
 ## 2.7.1281（修复更新安装空挡：独立 HTA 助手窗填补静默安装期）
 
 > 老板 2026-10-23 报：软件下载完进入安装界面出现「空挡」——主进程被 `quitAndInstall` 杀掉后，原来的「更新版本中」覆盖窗跟着死，而 NSIS 以 `/S` 全静默安装不弹任何窗口，中间一段桌面无窗口，会员以为卡死。修法：主进程退出【前】起一扇**脱离主进程**的 HTA 助手窗（mshta.exe, detached），视觉与 `public/update-cover.html` 一致（蜜蜂机器人+三色圆点+走马灯），持续显示「正在安装更新，请稍候…」，直到新版本启动删掉 sentinel 文件才自动关闭。先看修法图（当前时间线 vs 修法时间线）确认后动工。
