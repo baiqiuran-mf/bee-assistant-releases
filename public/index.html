@@ -160,6 +160,13 @@ I live on a farm, I also have peaches, plums and pears
            客户行里**没有按钮**：整行点哪儿都是"打开这个客户"。
            「客户档案 / 从对话里提取档案」两个按钮在中栏头部最右端（见下面 #chat-head）。 -->
       <div id="list-body"></div>
+
+      <!-- 客户行右键菜单：设边框颜色（本地 localStorage，按客户编号持久化） -->
+      <div id="cust-color-menu" class="ctx-menu hidden">
+        <div class="ctx-t">边框颜色</div>
+        <div class="ctx-sw" id="cust-color-sw"></div>
+        <div class="ctx-none" id="cust-color-none">✕ 清除边框颜色</div>
+      </div>
     </aside>
 
     <section id="chat">
@@ -174,7 +181,9 @@ I live on a farm, I also have peaches, plums and pears
       <div class="mid-tabs">
         <button class="mtab on" data-mp="general" title="原来的消息框：客户对话 + 回复建议">通用</button>
         <!-- 🔴 2026-10-23 新增 GPT对话（第5模块）：软件内置浏览器登录 chatgpt.com，独立分区 persist:gpt1，不采集不入库，与其它模块互不混用 -->
-        <button class="mtab gpt" data-mp="gpt" title="GPT对话（第5模块）：软件内置浏览器登录 ChatGPT，独立分区、登录态独立，不采集不入库">GPT对话</button>
+        <button class="mtab gpt" data-mp="gpt" title="GPT对话①（第5模块）：软件内置浏览器登录 ChatGPT，独立分区 persist:gpt1，登录态独立，不采集不入库">GPT①</button>
+        <button class="mtab gpt" data-mp="gpt2" title="GPT对话②（第5模块）：独立分区 persist:gpt2，登录态独立，不采集不入库">GPT②</button>
+        <button class="mtab gpt" data-mp="gpt3" title="GPT对话③（第5模块）：独立分区 persist:gpt3，登录态独立，不采集不入库">GPT③</button>
         <!-- 🔴 2026-10-23 新增 人设对话（第6模块）：独立 AI 聊天窗，接 钱多多 / AstrBot，配合 web_search 联网带图；不与其他渠道共享 -->
         <button class="mtab persona" data-mp="persona" title="人设对话（第6模块）：AI 聊天对话窗口，模型 钱多多 / AstrBot，联网搜索，独立模块">人设对话</button>
         <!-- 🔴 v2.6.1094 老板拍板新增（QQ20261013 三方案真截图，选「方案一 · 内置浏览器」）：
@@ -725,6 +734,37 @@ I live on a farm, I also have peaches, plums and pears
           </div>
           <div class="gpt-body">
             <webview id="gpt-webview" partition="persist:gpt1" src="https://chatgpt.com" allowpopups></webview>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════ 页签「GPT对话② / GPT对话③」（第5模块，v2.7.1261 新增）══════════════
+           🔴 与 GPT① 同属第5模块，但各自独立分区 persist:gpt2 / persist:gpt3；
+              登录态、Cookie、缓存全隔离，跟 GPT①、WA、Tele 都不混。不采集不入库。 -->
+      <div class="mid-pane hidden" data-mp="gpt2">
+        <div class="gpt-browser">
+          <div class="gpt-chrome">
+            <button class="navbtn" id="gpt2-back" type="button" title="后退">‹</button>
+            <button class="navbtn" id="gpt2-fwd" type="button" title="前进">›</button>
+            <button class="navbtn" id="gpt2-reload" type="button" title="刷新">⟳</button>
+            <div class="gpt-addr"><span class="lock">🔒</span><span id="gpt2-addr-text">https://chatgpt.com</span></div>
+          </div>
+          <div class="gpt-body">
+            <webview id="gpt2-webview" partition="persist:gpt2" src="https://chatgpt.com" allowpopups></webview>
+          </div>
+        </div>
+      </div>
+
+      <div class="mid-pane hidden" data-mp="gpt3">
+        <div class="gpt-browser">
+          <div class="gpt-chrome">
+            <button class="navbtn" id="gpt3-back" type="button" title="后退">‹</button>
+            <button class="navbtn" id="gpt3-fwd" type="button" title="前进">›</button>
+            <button class="navbtn" id="gpt3-reload" type="button" title="刷新">⟳</button>
+            <div class="gpt-addr"><span class="lock">🔒</span><span id="gpt3-addr-text">https://chatgpt.com</span></div>
+          </div>
+          <div class="gpt-body">
+            <webview id="gpt3-webview" partition="persist:gpt3" src="https://chatgpt.com" allowpopups></webview>
           </div>
         </div>
       </div>

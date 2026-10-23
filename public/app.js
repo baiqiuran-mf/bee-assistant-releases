@@ -703,9 +703,76 @@ function paintCustomers() {
   for (const el of document.querySelectorAll('.cust')) {
     el.onclick = () => openCustomerRow(el.dataset.code);
   }
+  // 🔴 v2.7.1261：每次重画左栏后，把本地存的客户边框颜色重新贴回去
+  applyCustBorderColors();
   // 注意：客户行里【没有】任何按钮。
   // 「客户档案 / 从对话里提取档案」这两个按钮 2026-09-25 第二轮挪到了**中栏头部最右端**
   // （renderChatHead 里的 #ch-doc / #ch-extract），左栏客户行恢复成"点哪儿都是打开这个客户"。
+}
+
+/* ---------------- 客户行右键设边框颜色（本地 localStorage，按客户编号持久化） ----------------
+ * 🔴 v2.7.1261：在左栏「新消息提醒」客户框上点右键 → 弹出颜色菜单 → 选色即加整圈彩色边框；
+ *   颜色按客户编号存在 localStorage，关软件/重启/同客户再来新消息都保留。不碰客户档案、不动采集逻辑。 */
+const CUST_COLOR_KEY = 'wa_cust_border_colors';
+
+function getCustColors() {
+  try { return JSON.parse(localStorage.getItem(CUST_COLOR_KEY) || '{}') || {}; }
+  catch (_) { return {}; }
+}
+function setCustColor(code, color) {
+  const m = getCustColors(); m[code] = color;
+  try { localStorage.setItem(CUST_COLOR_KEY, JSON.stringify(m)); } catch (_) {}
+}
+function clearCustColor(code) {
+  const m = getCustColors(); delete m[code];
+  try { localStorage.setItem(CUST_COLOR_KEY, JSON.stringify(m)); } catch (_) {}
+}
+function applyCustBorderColors() {
+  const m = getCustColors();
+  document.querySelectorAll('.cust').forEach((el) => {
+    const c = m[el.dataset.code];
+    if (c) { el.classList.add('cb'); el.style.setProperty('--cb', c); }
+    else { el.classList.remove('cb'); el.style.removeProperty('--cb'); }
+  });
+}
+function hideCustColorMenu() {
+  const menu = $('cust-color-menu');
+  if (menu) menu.classList.add('hidden');
+  custMenuCode = null;
+}
+let custMenuCode = null;
+function initCustColorMenu() {
+  const menu = $('cust-color-menu');
+  const sw = $('cust-color-sw');
+  const noneBtn = $('cust-color-none');
+  if (!menu || !sw) return;
+  const COLORS = ['#e5484d', '#f5a524', '#e2b93b', '#23a35a', '#17a2b8', '#2f7fd1', '#a795de', '#e58aa8', '#9ca3af', '#4b5563'];
+  sw.innerHTML = COLORS.map((c) => `<i data-c="${c}" style="background:${c}"></i>`).join('');
+  sw.querySelectorAll('i').forEach((i) => {
+    i.onclick = () => {
+      if (custMenuCode) { setCustColor(custMenuCode, i.dataset.c); applyCustBorderColors(); }
+      hideCustColorMenu();
+    };
+  });
+  if (noneBtn) noneBtn.onclick = () => {
+    if (custMenuCode) { clearCustColor(custMenuCode); applyCustBorderColors(); }
+    hideCustColorMenu();
+  };
+  const list = $('list-body');
+  if (list) {
+    list.addEventListener('contextmenu', (e) => {
+      const row = e.target.closest('.cust');
+      if (!row) return;            // 只在客户行上弹，别处不拦
+      e.preventDefault();
+      custMenuCode = row.dataset.code;
+      const m = getCustColors();
+      sw.querySelectorAll('i').forEach((i) => i.classList.toggle('on', m[custMenuCode] === i.dataset.c));
+      menu.style.left = Math.min(e.clientX, window.innerWidth - 220) + 'px';
+      menu.style.top = Math.min(e.clientY, window.innerHeight - 230) + 'px';
+      menu.classList.remove('hidden');
+    });
+  }
+  document.addEventListener('click', (e) => { if (menu && !menu.contains(e.target)) hideCustColorMenu(); });
 }
 
 function customerRowHtml(c) {
@@ -4007,18 +4074,30 @@ function initMidTabs() {
   // 🔴 2026-10-23 新增第5/6模块：GPT对话（内置浏览器）+ 人设对话（独立 AI 聊天），各自独立、不碰其它模块
   initGptPane();
   initPersonaPane();
+  initCustColorMenu();   // 🔴 v2.7.1261：左栏客户行右键设边框颜色（localStorage）
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
  * GPT对话（第5模块）：软件内置浏览器登录 ChatGPT。
- * 🔴 独立分区 persist:gpt1，不采集、不入库、不与其他 4 套采集逻辑共用任何代码。
+ * 🔴 独立分区 persist:gpt1/gpt2/gpt3（三页签各自隔离），不采集、不入库、不与其他 4 套采集逻辑共用任何代码。
  * 🔴「绝不自动发送」铁律同样适用：这里只是看 + 手动填。
  * ════════════════════════════════════════════════════════════════════════════ */
+const GPT_PANES = [
+  { mp: 'gpt',  prefix: 'gpt',  partition: 'persist:gpt1' },
+  { mp: 'gpt2', prefix: 'gpt2', partition: 'persist:gpt2' },
+  { mp: 'gpt3', prefix: 'gpt3', partition: 'persist:gpt3' },
+];
+
 function initGptPane() {
-  const wv = $('gpt-webview');
+  GPT_PANES.forEach(initOneGptPane);
+}
+
+function initOneGptPane(cfg) {
+  const p = cfg.prefix;
+  const wv = $(p + '-webview');
   if (!wv) return;
-  const addrText = $('gpt-addr-text');
-  const wb = $('gpt-back'), wf = $('gpt-fwd'), rl = $('gpt-reload');
+  const addrText = $(p + '-addr-text');
+  const wb = $(p + '-back'), wf = $(p + '-fwd'), rl = $(p + '-reload');
 
   const syncAddr = () => { try { if (addrText && wv.getURL) addrText.textContent = wv.getURL(); } catch (_) {} };
   // 🔴 导航按钮可用性：guest 真正 attach 后才读得到 canGoBack/canGoForward

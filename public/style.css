@@ -538,6 +538,19 @@ body.panel-thin #panel.narrow::after { content: none; }
 }
 .cust .tags { font-size: 11px; color: var(--muted); margin-top: 2px; }
 
+/* 客户行右键设色：整圈彩色边框（v2.7.1261，localStorage 按客户编号持久化） */
+.cust.cb { border: 2px solid var(--cb, #e5484d); border-radius: 9px; margin: 5px 8px; padding: 8px 10px; }
+
+/* 右键菜单：边框颜色 */
+.ctx-menu { position: fixed; z-index: 9999; width: 204px; background: #fff; border: 1px solid #d9e0e8; border-radius: 10px; box-shadow: 0 12px 30px rgba(20,40,70,.18); padding: 8px; }
+.ctx-menu.hidden { display: none; }
+.ctx-menu .ctx-t { font-size: 11.5px; color: #6b7686; padding: 4px 8px 7px; border-bottom: 1px solid #f0f3f6; margin-bottom: 7px; }
+.ctx-menu .ctx-sw { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; padding: 2px 6px 6px; }
+.ctx-menu .ctx-sw i { display: block; height: 22px; border-radius: 6px; cursor: pointer; border: 2px solid #fff; box-shadow: 0 0 0 1px #e3e8ee inset; }
+.ctx-menu .ctx-sw i.on { box-shadow: 0 0 0 2px #26313f inset; }
+.ctx-menu .ctx-none { font-size: 12px; color: #5b6675; padding: 7px 8px; border-top: 1px solid #f0f3f6; margin-top: 4px; cursor: pointer; }
+.ctx-menu .ctx-none:hover { background: #f5f7fa; }
+
 /* 左栏（2026-09-26 用户第三次确认：处理完的格子要"从列表拿掉"，不是折叠置顶）
    现在左栏**只渲染"有事要办"的客户**；处理完的（标记已回复 / 跳过消息后 pending、unread 都归 0）
    直接不进 DOM = 看不见了。客户再来新消息 → 按新消息排队规则重新冒出来。

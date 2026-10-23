@@ -7,6 +7,28 @@
 > **规矩：每次改动都要在这里加一条**，写清「优化了什么」和「修好了什么问题」——  
 > 老版本记录一律保留，不许删。
 
+## 2.7.1271（GPT 三个独立标签 + 新消息框右键设色边框）
+
+> 老板 2026-10-23 拍板：① GPT对话拆成 GPT①/②/③ 三个独立标签（第5模块内，各自独立分区）；② 左栏「新消息提醒」客户框支持右键设彩色边框，颜色存本地。先看真渲染预览（`preview/_gpt3_colors_proposal.png` 等三张）确认后动工。
+
+### 改动（严格限定文件）
+- **`public/index.html`**：
+  - 标签「GPT对话」改名 **GPT①**；在其右侧新增 **GPT② / GPT③** 两个标签（`data-mp="gpt2"/"gpt3"`）。
+  - 新增两个 `mid-pane`（`data-mp="gpt2"/"gpt3"`），各自独立 `<webview>`（`partition="persist:gpt2"/"gpt3"`）与独立导航按钮 `gpt2-*` / `gpt3-*`。
+  - 左栏 `#list-body` 内新增右键菜单节点 `#cust-color-menu`（含色板 `#cust-color-sw` 与「清除」`#cust-color-none`）。
+- **`public/app.js`**：
+  - `initGptPane()` 改为按 `GPT_PANES`（gpt/gpt2/gpt3 三个实例）循环 `initOneGptPane(cfg)`，每实例独立绑定前进/后退/刷新 + 导航状态同步（沿用 v2.7.1261 的修法）。
+  - 新增客户行右键设色：`getCustColor(s)/setCustColor/clearCustColor/applyCustBorderColors/initCustColorMenu`，颜色按**客户编号**存 `localStorage`（key `wa_cust_border_colors`）；`paintCustomers()` 每次重画后 `applyCustBorderColors()` 把存的色贴回。
+- **`public/style.css`**：`.cust.cb` 整圈彩色边框（`border:2px solid var(--cb)` + 圆角/间距）；`.ctx-menu` 右键菜单样式（定位/色板/选中态/清除）。
+
+### 验证
+- `node --check public/app.js` 通过。
+- 隔离性：GPT①②③ 三分区 `persist:gpt1/gpt2/gpt3` 互不相通，登录态/缓存不混；颜色只落本地 localStorage，不碰客户档案、不动任何采集逻辑。
+- 注：交互级验证（真实右键菜单、真实切 GPT②/③ 登录）需在桌面软件内（Electron + 显示器）跑；本沙箱只做语法 + 打包产物核验（asar 内已含 `GPT_PANES` / `gpt2-webview` / `gpt3-webview` / `initCustColorMenu` / `.cust.cb` / `cust-color-menu`）。
+
+### 未动清单
+- WA①②③④⑤ / Tele①~② / Signal / 外置 WA 一号~五号 四套采集逻辑一律未碰；人设对话模块、启动窗、更新进度窗均未动；`src/ai.js` / `src/server.js` 未改（颜色纯前端 localStorage，无需后端）。
+
 ## 2.7.1261（修复 GPT对话模块「前进/后退/刷新」按钮点不动）
 
 > 老板 2026-10-23 报：GPT对话内置浏览器的「‹ ›」前进/后退按钮不能使用。根因是 `initGptPane()` 在启动早期执行，此时 `<webview>` 的 guest 实例尚未挂载、`goBack/goForward/reload` 还不是 function，原代码 `typeof wv.goBack === 'function'` 守卫为假 → `onclick` 永不绑定 → 按钮点不动。
