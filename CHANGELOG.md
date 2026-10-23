@@ -7,6 +7,27 @@
 > **规矩：每次改动都要在这里加一条**，写清「优化了什么」和「修好了什么问题」——  
 > 老版本记录一律保留，不许删。
 
+## 2.7.1301（WA①~⑤ 右栏「客户资料 + 对话信息」可收起）
+
+> 老板 2026-10-23 看图点名（QQ20261023-131332 红框）：把 WA 系列页签右侧整块栏目（客户资料卡 + 对话信息）做成可收缩到右侧的，其余不动。先看改前 / 改后对照图确认后动工。
+
+### 改动（严格限定文件：仅前端三件套，未碰任何采集 / 逻辑 / 其他模块）
+- **`public/index.html`**：在 wa1~wa5 五个页签的地址栏右侧各加一个「资料 ▤」开关按钮（id `wa1-aside-toggle` ~ `wa5-aside-toggle`）。
+- **`public/style.css`**：
+  - 新增 `.tgb-aside-toggle` 开关样式（紫色描边，与 Tele「对话 ▤」同调性）。
+  - 新增收起规则：`.mid-pane[data-mp^="wa"] .tele-wrap.wa-aside-off > .tg-conv-aside { flex:0 0 0; display:none }` —— 只命中 WA①~⑤，与 Tele 的 `.tgchat-off` 互不干扰。
+- **`public/app.js`**：镜像 Telegram 的收起逻辑、**独立实现**（不抽公共函数、不串 Tele）：
+  - 新增 `waAsideHidden`（localStorage `wa.asideHidden`）、`applyWAAsideToggle()`、`toggleWAAside()`。
+  - 启动初始化里绑定 5 个开关按钮并 `applyWAAsideToggle()`，状态跨重启记住。
+
+### 未动（铁律）
+- Tele 的 `.tgchat-off` / `tg.chatHidden` 一套逻辑一字未碰；通用页签、Signal、外置 WA 一号~五号、四模块采集逻辑全部不动。
+- 没有新增任何字段、按钮、区块到老板没点名的地方。
+
+### 自测
+- `node --check public/app.js` 通过。
+- grep 校验：index.html 含 5 个 `aside-toggle`；app.js 含 `toggleWAAside` / `waAsideHidden` / `wa-aside-off` / `wa.asideHidden`；style.css 含 `.tgb-aside-toggle` 与 `.wa-aside-off` 规则。
+
 ## 2.7.1291（AstrBot 两接入点报错根因：透传真实错误 + 剥思考泄漏）
 
 > 老板 2026-10-23 报：① 回复建议窗「AI 调用失败」；② 人设对话（AstrBot 开关开）「AI 没有返回正文」。

@@ -704,6 +704,14 @@ body.panel-thin #panel.narrow::after { content: none; }
 }
 .tgb-bar button:hover { background: #185FA5; }
 .tgb-bar button:active { background: #0C447C; }
+/* 🔴 2026-10-23 WA 系列右栏收起开关（地址栏右侧「资料 ▤」，镜像 Tele 的「对话 ▤」） */
+.tgb-aside-toggle {
+  flex: 0 0 auto; height: 24px; padding: 0 10px; margin-left: 6px;
+  font-size: 12px; cursor: pointer; color: #2C2C2A;
+  background: #fff; border: 1px solid #a795de; border-radius: 6px;
+}
+.tgb-aside-toggle:hover { background: #f3f0fb; }
+.tgb-aside-toggle.on { background: #fff; }
 .tele-left { flex: 0 0 clamp(240px, 30%, 340px); min-width: 0; min-height: 0; display: flex; flex-direction: column; }
 .tele-left { border-right: 1px solid #000; }
 /* Tele① 应用版（v2.5.1085）：原生会话列表（原 webview 地址栏已随网页版清除移除） */
@@ -3466,6 +3474,10 @@ main { background: var(--ln-purple); }                        /* 左|中、中|�
    再点一次去掉 class 就展开。app.js tgChatToggle() 负责切 class。 */
 .mid-pane[data-mp="tele1"] .tele-wrap.tgchat-off > .tg-chat,
 .mid-pane[data-mp="tele2"] .tele-wrap.tgchat-off > .tg-chat { flex: 0 0 0; display: none; }
+/* 🔴 2026-10-23 WA 系列：.tele-wrap 挂 .wa-aside-off 就把右侧 .tg-conv-aside 收掉
+   （老板看图点名 QQ20261023-131332 红框）。只作用 WA①~⑤（data-mp 以 wa 开头），
+   与 Tele 的 .tgchat-off 互不干扰、各管各的。 */
+.mid-pane[data-mp^="wa"] .tele-wrap.wa-aside-off > .tg-conv-aside { flex: 0 0 0; display: none; }
 /* 开关按钮：贴在 ② 好友列头部右端（老板图上 2 号栏目那一行），不占中栏高度 */
 .tgf-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
 .tgf-toggle {

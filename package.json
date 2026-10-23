@@ -1,6 +1,6 @@
 {
   "name": "wa-assistant",
-  "version": "2.7.1291",
+  "version": "2.7.1301",
   "private": true,
   "author": "蜜蜂信息采集",
   "description": "蜜蜂信息采集：客户消息采集 + 中文回复建议教练。第一版只做 WhatsApp。数据全本地，只给建议，发送永远人工。",

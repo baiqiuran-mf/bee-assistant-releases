@@ -4066,6 +4066,12 @@ function initMidTabs() {
     if (t) t.onclick = toggleTgChat;
   });
   applyTgChatToggle();   // 进软件先把 localStorage 里记住的状态刷到 DOM 上
+  /* 🔴 2026-10-23 WA 系列右栏收起开关：绑定 wa1~wa5 地址栏的「资料 ▤」按钮 */
+  ['wa1', 'wa2', 'wa3', 'wa4', 'wa5'].forEach((pane) => {
+    const t = document.getElementById(pane + '-aside-toggle');
+    if (t) t.onclick = toggleWAAside;
+  });
+  applyWAAsideToggle();   // 进软件先把记住的 WA 右栏状态刷到 DOM 上
   initTgCollectLog();    // 🔴 v2.6.1113 指令①：启动就写占位行，日志区绝不空白
   document.addEventListener('keydown', (e) => {
     if (e.altKey && (e.key === 'd' || e.key === 'D')) { e.preventDefault(); toggleTgChat(); }
@@ -5603,6 +5609,29 @@ function toggleTgChat() {
   try { localStorage.setItem('tg.chatHidden', tgChatHidden ? '1' : '0'); } catch (e) { /* 忽略 */ }
   applyTgChatToggle();
   showNotice(tgChatHidden ? '已收起「对话信息」列' : '已展开「对话信息」列');
+}
+/* 🔴 2026-10-23 WA 系列右栏（客户资料卡 + 对话信息）可收起（老板看图点名 QQ20261023-131332 红框）。
+ * 镜像 Tele 的「对话 ▤」开关，但**只作用 WA①~⑤**（data-mp 以 wa 开头），与 Tele 的 .tgchat-off
+ * 是两套独立 class + 独立 localStorage（wa.asideHidden vs tg.chatHidden），互不串、绝不抽公共函数。 */
+let waAsideHidden = false;
+try { waAsideHidden = localStorage.getItem('wa.asideHidden') === '1'; } catch (e) { /* 隐私模式忽略 */ }
+
+function applyWAAsideToggle() {
+  document.querySelectorAll('.mid-pane[data-mp^="wa"] .tele-wrap')
+    .forEach((wrap) => wrap.classList.toggle('wa-aside-off', waAsideHidden));
+  ['wa1', 'wa2', 'wa3', 'wa4', 'wa5'].forEach((pane) => {
+    const btn = document.getElementById(pane + '-aside-toggle');
+    if (btn) {
+      btn.classList.toggle('on', !waAsideHidden);
+      btn.title = waAsideHidden ? '展开右侧「客户资料 + 对话信息」栏' : '收起右侧「客户资料 + 对话信息」栏';
+    }
+  });
+}
+function toggleWAAside() {
+  waAsideHidden = !waAsideHidden;
+  try { localStorage.setItem('wa.asideHidden', waAsideHidden ? '1' : '0'); } catch (e) { /* 忽略 */ }
+  applyWAAsideToggle();
+  showNotice(waAsideHidden ? '已收起 WA 右栏（客户资料 + 对话信息）' : '已展开 WA 右栏');
 }
 
 /* 🔴 v2.6.1113 指令①：Telegram「采集数据」日志（老板 2026-10-14 17:31 看图点名，位置见 index.html 红框）
