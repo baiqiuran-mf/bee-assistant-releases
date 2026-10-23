@@ -7,6 +7,22 @@
 > **规矩：每次改动都要在这里加一条**，写清「优化了什么」和「修好了什么问题」——  
 > 老版本记录一律保留，不许删。
 
+## 2.7.1261（修复 GPT对话模块「前进/后退/刷新」按钮点不动）
+
+> 老板 2026-10-23 报：GPT对话内置浏览器的「‹ ›」前进/后退按钮不能使用。根因是 `initGptPane()` 在启动早期执行，此时 `<webview>` 的 guest 实例尚未挂载、`goBack/goForward/reload` 还不是 function，原代码 `typeof wv.goBack === 'function'` 守卫为假 → `onclick` 永不绑定 → 按钮点不动。
+
+### 改动（严格限定文件）
+- **`public/app.js` `initGptPane()`**：去掉启动期 `typeof` 守卫，直接无条件绑定 `gpt-back/gpt-fwd/gpt-reload` 的 `onclick`（用户点击时 guest 必然已就绪，包裹 `try/catch` 兜底）。
+- **导航可用态同步**：在 `did-attach` / `dom-ready` / `did-navigate` / `did-stop-loading` / `did-navigate-in-page` 上同步 `canGoBack()/canGoForward()`，无历史时按钮置灰（`disabled`）。
+- **`public/style.css`**：新增 `.gpt-chrome .navbtn:disabled` 置灰样式（opacity .38 + cursor default），与原有按钮风格一致。
+
+### 验证
+- `node --check public/app.js`：通过。
+- 逻辑实证：`gpt-back/fwd/reload` 元素为静态 HTML 恒存在；`onclick` 改为无条件绑定后，guest 挂载完成后点击即可调用 `wv.goBack()/goForward()/reload()`。
+
+### 未动清单
+- WA①②③④⑤ / Tele①~② / Signal / 外置 WA 一号~五号 四套采集逻辑一律未碰；人设对话模块、主窗口标签样式、启动窗、更新进度窗均未动；`src/ai.js` / `src/server.js` 未改。
+
 ## 2.7.1251（主窗口标签改造：标签宽 65px + GPT对话/人设对话两个新模块 + 系列分色）
 
 > 老板 2026-10-23 拍板：主窗口标签改动。先看真渲染截图（`preview/_tabs_*.png`）确认样式，老板点头才动代码。GPT对话＝第5模块、人设对话＝第6模块，严格独立、不与其他四套采集逻辑混用。

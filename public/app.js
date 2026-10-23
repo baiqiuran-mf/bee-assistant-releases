@@ -4018,12 +4018,35 @@ function initGptPane() {
   const wv = $('gpt-webview');
   if (!wv) return;
   const addrText = $('gpt-addr-text');
-  const syncAddr = () => { try { if (addrText && wv.getURL) addrText.textContent = wv.getURL(); } catch (_) {} };
-  if (wv.addEventListener) { wv.addEventListener('did-navigate', syncAddr); wv.addEventListener('did-stop-loading', syncAddr); }
   const wb = $('gpt-back'), wf = $('gpt-fwd'), rl = $('gpt-reload');
-  if (wb && typeof wv.goBack === 'function') wb.onclick = () => { try { wv.goBack(); } catch (_) {} };
-  if (wf && typeof wv.goForward === 'function') wf.onclick = () => { try { wv.goForward(); } catch (_) {} };
-  if (rl && typeof wv.reload === 'function') rl.onclick = () => { try { wv.reload(); } catch (_) {} };
+
+  const syncAddr = () => { try { if (addrText && wv.getURL) addrText.textContent = wv.getURL(); } catch (_) {} };
+  // 🔴 导航按钮可用性：guest 真正 attach 后才读得到 canGoBack/canGoForward
+  const syncNavState = () => {
+    try {
+      if (wb && typeof wv.canGoBack === 'function') wb.disabled = !wv.canGoBack();
+      if (wf && typeof wv.canGoForward === 'function') wf.disabled = !wv.canGoForward();
+    } catch (_) {}
+  };
+
+  // 🔴 前进/后退/刷新：直接绑定 onclick，不依赖启动期 webview 方法是否已挂载
+  // （<webview> 的 goBack/goForward/reload 在 guest 实例 attach 后才存在，
+  //  启动早期 typeof 守卫为 false 会导致 onclick 永不绑定 → 按钮点不动。
+  //  用户点击时 guest 必然已就绪，包裹 try/catch 兜底即可。）
+  if (wb) wb.onclick = () => { try { wv.goBack(); } catch (_) {} };
+  if (wf) wf.onclick = () => { try { wv.goForward(); } catch (_) {} };
+  if (rl) rl.onclick = () => { try { wv.reload(); } catch (_) {} };
+
+  if (wv.addEventListener) {
+    wv.addEventListener('did-navigate', () => { syncAddr(); syncNavState(); });
+    wv.addEventListener('did-stop-loading', () => { syncAddr(); syncNavState(); });
+    wv.addEventListener('did-navigate-in-page', () => { syncAddr(); syncNavState(); });
+    // guest 真正 attach / DOM 就绪后再同步一次导航状态
+    wv.addEventListener('did-attach', syncNavState);
+    wv.addEventListener('dom-ready', syncNavState);
+  }
+  syncAddr();
+  syncNavState();
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
